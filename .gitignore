@@ -128,3 +128,11 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+experiments/**/*.json
+api_key
+request_log.txt
+*.docx
+*.pyc
+__pychache__
+*.xlsx

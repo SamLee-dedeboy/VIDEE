@@ -1,0 +1,25 @@
+1. GOOD: Align with current agentic system
+ - similar to coding problem
+2. Evaluation:
+ - Example input output -- no matter what pipeline, just compare input output. For example, given a dataset and the KG
+ - each step -- generate input output parameters and examples for users -- better present logical connections
+ - define some common semantic and elementary tasks with accompanying visualization
+ - 
+3. Long context:
+ - compressing into short texts or (?) embeddings/short vectors
+4. Prompts are good
+5. System requirement:
+ - Decomposition and Planning 
+ - 
+ Suggestions:
+ - Assume a complete list of elementary tasks
+ - ACL 2024 call for papers (https://2024.aclweb.org/calls/main_conference_papers/)
+ - 
+
+
+
+scattershots -- what's the dimensions for the scenarios?
+the scenario dimension matrix (comparative performance metrics) -- can we use it as the dimensions?
+dynamic maps -- landscapes can be "edited" to answer "what-if" questions
+
+it might be helpful to provide some small online information session (in simple format that can be attended asynchronously) prior to the workshop to better help the attendees prepare themselves for the planned activities for them
