@@ -10,8 +10,10 @@ import {
 
 export class DAG {
     svgId: string;
-    constructor(svgId: string) {
+    nodeRadius: number;
+    constructor(svgId: string, node_radius: number=100) {
         this.svgId = svgId
+        this.nodeRadius = node_radius
     }
     init () {
         const svg = d3.select(`#${this.svgId}`)
@@ -19,21 +21,22 @@ export class DAG {
         svg.append("g").attr("class", "bubbles");
         console.log("init done")
     }
-    update(data: tNode[], expanded_nodes: string[]) {
+    update(data: tNode[], expanded_nodes: string[], selection_query: string) {
         console.log("dag update", data)
-      const svg = d3.select(`#${this.svgId}`);
+        const svg = d3.select(`#${this.svgId}`);
         const svg_bbox = svg.node().getBoundingClientRect();
         svg.attr("viewBox", `0 0 ${svg_bbox.width} ${svg_bbox.height}`);
         const max_width = 1 * svg_bbox.width;
         const max_height = 1 * svg_bbox.height;
-        const nodeRadius = 100;
         const stratify = d3_dag.graphStratify();
         const dag = stratify(data);
 
 
         const layout = d3_dag
         .sugiyama()
-        .nodeSize([2 * nodeRadius, 2 * nodeRadius])
+        .coord(d3_dag.coordGreedy())
+        .nodeSize([2 * this.nodeRadius, 2 * this.nodeRadius])
+        .gap([50, 50])
 
       const { width, height } = layout(dag);
 
@@ -44,8 +47,7 @@ export class DAG {
       }, {})
 
       // position nodes
-      const div_group = d3.select(".semantic-tasks")
-      div_group.selectAll(".task-wrapper")
+      d3.selectAll(selection_query)
         .style("left", function() {
             const id = this.dataset.id
             return vertical?
@@ -61,7 +63,20 @@ export class DAG {
             coordinate_as_dict[id].x * (max_height / width) + "px"
         })
         const line = d3.line().curve(d3.curveMonotoneY);
+    // svg.selectAll("rect.node")
+    //     .data(dag.nodes())
+    //     .join("rect")
+    //     .attr("class", "node")
+    //     .attr("x", ({ x }) => x * (max_width / width) - this.nodeRadius)
+    //     .attr("y", ({ y }) => y * (max_height / height) - this.nodeRadius)
+    //     .attr("width", 2 * this.nodeRadius)
+    //     .attr("height", 2 * this.nodeRadius)
+    //     .attr("fill", "none")
+    //     .attr("stroke", "black")
+    //     .attr("stroke-width", 1)
+    //     .attr("rx", 10)
         // plot edges
+
       svg.select("g.links")
         .selectAll("path.link")
         .data(dag.links())
@@ -107,6 +122,8 @@ export class DAG {
         .attr("stroke-dasharray", "5,5")
 
         // add bubbles
+        return
+        const self = this
         const bubble_group = svg.select("g.bubbles")
         const bubble_data = Object.groupBy(data, d => getGroup(d))
         bubble_group.selectAll("path.dag-wrapper").remove()
@@ -115,7 +132,7 @@ export class DAG {
                 [coordinate_as_dict[d.id].x, coordinate_as_dict[d.id].y]
             ) || [], max_width, max_height, width, height, vertical)
             console.log({nodes, points, coordinate_as_dict})
-            const bubble_path = create_bubble_path(points, 1.3 * nodeRadius) 
+            const bubble_path = create_bubble_path(points, 1.3 * self.nodeRadius) 
             bubble_group.append("path")
                 .attr("class", "dag-wrapper").attr("d", bubble_path)
                 .attr("fill", "lightgreen")

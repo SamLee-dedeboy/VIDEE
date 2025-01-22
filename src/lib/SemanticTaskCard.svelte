@@ -3,12 +3,14 @@
   import { slide, scale } from "svelte/transition";
   let {
     task,
-    handleDecompose,
-    handleToggle,
+    handleDecompose = () => {},
+    handleToggle = () => {},
+    handleDeleteChildren = () => {},
   }: {
     task: tSemanticTask;
-    handleDecompose: Function;
-    handleToggle: Function;
+    handleDecompose?: Function;
+    handleToggle?: Function;
+    handleDeleteChildren?: Function;
   } = $props();
   let expand = $state(false);
   let show_subtasks = $state(false);
@@ -27,12 +29,14 @@
     >
       <span class="card-label mr-2 capitalize">{task.label}</span>
       <span
+        tabindex="0"
+        role="button"
         class="ml-auto right-0 mb-0.5 shrink-0 w-7 p-1 self-stretch flex cursor-pointer hover:!bg-gray-200 rounded"
         style:background-color={expand ? "rgb(187 247 208)" : "unset"}
-        tabindex="0"
         onclick={() => {
           expand = !expand;
         }}
+        onkeyup={() => {}}
       >
         {#if expand}
           <img src="panel_left_close.svg" class="" alt="collapse" />
@@ -76,6 +80,14 @@
         >
           <!-- <img src="close.svg" alt="x" /> -->
           Delete
+        </button>
+        <button
+          class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+          tabindex="0"
+          onclick={() => handleDeleteChildren(task)}
+        >
+          <!-- <img src="close.svg" alt="x" /> -->
+          Delete Children
         </button>
       </div>
     </div>

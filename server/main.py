@@ -3,11 +3,13 @@ from fastapi import FastAPI, Request
 import json
 import os
 from collections import defaultdict
+from typing import Callable
 from openai import OpenAI
-import AutoGenUtils.query as autogen_utils
 from fastapi.middleware.cors import CORSMiddleware
-from custom_types import Node
-import decomposer as decomposer
+
+# local packages
+import server.custom_types as custom_types
+import server.decomposer as decomposer
 
 app = FastAPI()
 origins = ["*"]
@@ -22,7 +24,10 @@ app.add_middleware(
 
 dirname = os.path.dirname(__file__)
 relative_path = lambda filename: os.path.join(dirname, filename)
-client = OpenAI(api_key=open("api_key").read(), timeout=10)
+api_key = open(relative_path("api_key")).read()
+default_model = "gpt-4o-mini"
+
+dev = True
 
 
 @app.get("/test/")
@@ -31,30 +36,96 @@ def test():
 
 
 @app.post("/goal_decomposition/")
-async def goal_decomposition(request: Request) -> list[Node]:
+async def goal_decomposition(request: Request) -> list[custom_types.Node]:
     goal = await request.body()
     goal = json.loads(goal)["goal"]
-    decomposed_steps = await decomposer.goal_decomposition(goal)
-    # decomposed_steps = json.load(
-    #     open(relative_path("test_decomposed_steps_w_children.json"))
-    # )
+    if dev:
+        decomposed_steps = json.load(
+            open(relative_path("test_decomposed_steps_w_children.json"))
+        )
+    else:
+        decomposed_steps = await decomposer.goal_decomposition(
+            goal, model=default_model, api_key=api_key
+        )
+        save_json(
+            decomposed_steps, relative_path("test_decomposed_steps_w_children.json")
+        )
     return decomposed_steps
 
 
-@app.post("/task_decomposition/")
-async def task_decomposition(request: Request) -> list[Node]:
+@app.post("/semantic_task/task_decomposition/")
+async def task_decomposition(request: Request) -> list[custom_types.Node]:
     request = await request.body()
     request = json.loads(request)
     task = request["task"]
     current_steps = request["current_steps"]
-    # print("get request: \n", task)
-    # current_steps = json.load(
-    #     open(relative_path("test_decomposed_steps_w_children.json"))
-    # )
-    # modifies current_steps
-    current_steps = await decomposer.task_decomposition(task, current_steps)
+    if dev:
+        current_steps = json.load(
+            open(relative_path("test_decomposed_steps_w_children.json"))
+        )
+    else:
+        # modifies current_steps
+        current_steps = await decomposer.task_decomposition(
+            task, current_steps, model=default_model, api_key=api_key
+        )
+        save_json(current_steps, relative_path("test_decomposed_steps_w_children.json"))
+    return current_steps
+
+
+@app.post("/semantic_task/decomposition_to_elementary_tasks/")
+async def task_decomposition(request: Request) -> list:
+    request = await request.body()
+    request = json.loads(request)
+    task = request["task"]
+    current_steps = request["current_steps"]
+    elementary_task_list = json.load(
+        open(relative_path("decomposer/elementary_task_defs.json"))
+    )
+    if dev:
+        decomposed_elementary_tasks = json.load(
+            open(relative_path("test_elementary_tasks.json"))
+        )
+    else:
+        decomposed_elementary_tasks = await decomposer.decomposition_to_elementary_task(
+            task,
+            current_steps,
+            elementary_task_list,
+            model=default_model,
+            api_key=api_key,
+        )
+        save_json(
+            decomposed_elementary_tasks, relative_path("test_elementary_tasks.json")
+        )
+    return decomposed_elementary_tasks
+
+
+@app.post("/semantic_task/delete_children/")
+async def task_decomposition(request: Request) -> list:
+    request = await request.body()
+    request = json.loads(request)
+    task = request["task"]
+    current_steps = request["current_steps"]
+    dfs_find_and_do(
+        current_steps, task["id"], lambda step: step.update({"children": []})
+    )
     # save_json(current_steps, "test_decomposed_steps_w_children.json")
     return current_steps
+
+
+def dfs_find_and_do(task_tree: list[custom_types.Node], task_id: str, action: Callable):
+    # find the task label in the current steps using dfs recursively
+    # if the task is found, replace it with the decomposed steps
+    # if the task is not found, return None
+    # here is the code
+    for step in task_tree:
+        if step["id"] == task_id:
+            action(step)
+            return
+        elif "children" in step:
+            dfs_find_and_do(step["children"], task_id, action)
+        else:
+            continue
+    return None
 
 
 def save_json(data, filename):
@@ -63,4 +134,7 @@ def save_json(data, filename):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # app.run(debug=True)
+    import uvicorn
+
+    uvicorn.run("server.main:app", host="127.0.0.1", port=8000, reload=True)

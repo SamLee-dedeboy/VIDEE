@@ -12,3 +12,11 @@ class Node(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class ElementaryTaskDef(BaseModel):
+    label: str
+    definition: str
+    input: str
+    output: str
+    example: dict

@@ -3,7 +3,7 @@
   import { onMount, tick } from "svelte";
   import type { tSemanticTask, tNode } from "types";
   import { DAG } from "renderer/dag";
-  import TaskCard from "./TaskCard.svelte";
+  import SemanticTaskCard from "./SemanticTaskCard.svelte";
   import { fly, fade, blur } from "svelte/transition";
   let { semantic_tasks }: { semantic_tasks: tSemanticTask[] } = $props();
   /**
@@ -18,7 +18,8 @@
   );
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
   const svgId = "dag-svg";
-  let dag_renderer = new DAG(svgId);
+  const node_radius = 100;
+  let dag_renderer = new DAG(svgId, node_radius);
 
   $effect(() => {
     update_dag(semantic_tasks_flattened);
@@ -55,13 +56,15 @@
    * @param _semantic_tasks_flattened
    */
   function update_dag(_semantic_tasks_flattened: tSemanticTask[]) {
-    console.log("updating dag:", _semantic_tasks_flattened);
+    console.log("updating semantic dag:", _semantic_tasks_flattened);
     // get the bounding box of each task card
-    const semantic_task_divs = document.querySelectorAll(".task-card");
+    const semantic_task_divs = document.querySelectorAll(
+      ".semantic-task-card-container"
+    );
     const dag_data: tNode[] = Array.from(semantic_task_divs).map((div) => {
-      const label = div.querySelector(".card-label")?.textContent || "";
+      const id = (div as HTMLElement).dataset.id || "";
       const node_data: tSemanticTask = _semantic_tasks_flattened.find(
-        (task) => task.label === label
+        (task) => task.id === id
       )!;
       return {
         ...node_data,
@@ -70,11 +73,33 @@
     });
 
     // call renderer
-    dag_renderer.update(dag_data, semantic_tasks_expanded);
+    dag_renderer.update(
+      dag_data,
+      semantic_tasks_expanded,
+      ".semantic-task-card-container"
+    );
   }
 
   function handleDecompose(task: tSemanticTask) {
-    fetch(`${server_address}/task_decomposition/`, {
+    fetch(`${server_address}/semantic_task/task_decomposition/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ task, current_steps: semantic_tasks }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        semantic_tasks = data;
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
+
+  function handleDeleteChildren(task: tSemanticTask) {
+    console.log({ task, semantic_tasks });
+    fetch(`${server_address}/semantic_task/delete_children/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -92,30 +117,36 @@
 
   onMount(() => {
     dag_renderer.init();
+    update_dag(semantic_tasks);
   });
 </script>
 
 <div
   class="relative mt-[2rem] shrink-0"
-  style:height={Math.min(semantic_tasks_flattened.length * 150, 1000) + "px"}
+  style:height={Math.min(
+    semantic_tasks_flattened.length * 2 * node_radius,
+    10000
+  ) + "px"}
 >
+  <span>Semantic Tasks</span>
   <svg id={svgId} class="w-full h-full absolute"></svg>
   <div class="semantic-tasks relative w-full flex flex-col-reverse">
     {#each semantic_tasks_flattened as task, index}
       <div
-        class="absolute task-wrapper -translate-x-1/2 -translate-y-1/2"
+        class="semantic-task-card-container absolute task-wrapper -translate-x-1/2 -translate-y-1/2"
         style:z-index={semantic_tasks_flattened.length - index}
         data-id={task.id}
       >
-        <TaskCard
+        <SemanticTaskCard
           {task}
           {handleDecompose}
+          {handleDeleteChildren}
           handleToggle={() => {
             semantic_tasks_expanded = semantic_tasks_expanded.includes(task.id)
               ? semantic_tasks_expanded.filter((id) => id !== task.id)
               : [...semantic_tasks_expanded, task.id];
           }}
-        ></TaskCard>
+        ></SemanticTaskCard>
       </div>
     {/each}
   </div>

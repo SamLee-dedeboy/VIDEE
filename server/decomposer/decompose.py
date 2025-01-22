@@ -1,19 +1,50 @@
-from custom_types import Node
-import AutoGenUtils.query as autogen_utils
+from server.custom_types import Node, ElementaryTaskDef
+import server.AutoGenUtils.query as autogen_utils
 
 
-async def goal_decomposition(goal: str) -> list[Node]:
-    decomposed_steps = await autogen_utils.run_goal_decomposition_agent(goal=goal)
-    decomposed_steps = add_uids(decomposed_steps)
-    return decomposed_steps
+async def goal_decomposition(goal: str, model: str, api_key: str) -> list[Node]:
+    decomposed_semantic_tasks = await autogen_utils.run_goal_decomposition_agent(
+        goal=goal, model=model, api_key=api_key
+    )
+    decomposed_semantic_tasks = add_parents(decomposed_semantic_tasks)
+    print(decomposed_semantic_tasks)
+    # decomposed_steps = add_uids(decomposed_steps)
+    return decomposed_semantic_tasks
 
 
-async def task_decomposition(task: str, current_steps: list[Node]) -> list[Node]:
-    decomposed_steps = await autogen_utils.run_task_decomposition_agent(task=task)
-    decomposed_steps = add_uids(decomposed_steps)
+async def task_decomposition(
+    task: str, current_steps: list[Node], model: str, api_key: str
+) -> list[Node]:
+    decomposed_semantic_tasks = await autogen_utils.run_task_decomposition_agent(
+        task=task, model=model, api_key=api_key
+    )
+    decomposed_semantic_tasks = add_parents(decomposed_semantic_tasks)
+    # decomposed_steps = add_uids(decomposed_steps)
     # modifies current_steps
-    find_and_replace(decomposed_steps, task["label"], current_steps)
+    find_and_replace(decomposed_semantic_tasks, task["label"], current_steps)
     return current_steps
+
+
+async def decomposition_to_elementary_task(
+    task: str,
+    current_steps: list[Node],
+    elementary_task_list: list[ElementaryTaskDef],
+    model: str,
+    api_key: str,
+) -> list:
+    decomposed_elementary_tasks = (
+        await autogen_utils.run_decomposition_to_elementary_task_agent(
+            task=task,
+            tree=current_steps,
+            elementary_task_list=elementary_task_list,
+            model=model,
+            api_key=api_key,
+        )
+    )
+
+    decomposed_elementary_tasks = add_parents(decomposed_elementary_tasks)
+    # decomposed_elementary_tasks = add_uids(decomposed_elementary_tasks)
+    return decomposed_elementary_tasks
 
 
 def find_and_replace(decomposed_steps, task_label, current_steps):
@@ -38,6 +69,16 @@ def find_and_replace(decomposed_steps, task_label, current_steps):
         else:
             continue
     return None
+
+
+def add_parents(decomposed_steps):
+    for i, step in enumerate(decomposed_steps):
+        step["id"] = str(step["id"])
+        step["depend_on"] = list(map(lambda d: str(d), step.get("depend_on", [])))
+        step["parentIds"] = step.get("depend_on", [])
+        step["children"] = []
+        decomposed_steps[i] = step
+    return decomposed_steps
 
 
 def add_orders(decomposed_steps):

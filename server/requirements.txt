@@ -4,4 +4,9 @@ flask[async]
 flask-cors
 autogen-agentchat==0.4.0.dev11
 autogen-ext[openai]==0.4.0.dev11
+langgraph
+langchain
+langchain-core
+
+langchain-openai
 fastapi[standard]
