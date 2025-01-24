@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # local packages
 import server.custom_types as custom_types
 import server.decomposer as decomposer
+import server.executor as executor
 
 app = FastAPI()
 origins = ["*"]
@@ -59,7 +60,7 @@ async def task_decomposition(request: Request) -> list[custom_types.Node]:
     request = json.loads(request)
     task = request["task"]
     current_steps = request["current_steps"]
-    if dev:
+    if False:
         current_steps = json.load(
             open(relative_path("test_decomposed_steps_w_children.json"))
         )
@@ -108,6 +109,17 @@ async def task_decomposition(request: Request) -> list:
     dfs_find_and_do(
         current_steps, task["id"], lambda step: step.update({"children": []})
     )
+    # save_json(current_steps, "test_decomposed_steps_w_children.json")
+    return current_steps
+
+
+@app.post("/elementary_task/execution_graph/")
+async def execute_elementary_tasks(request: Request) -> list:
+    request = await request.body()
+    request = json.loads(request)
+    tasks = request["tasks"]
+    execution_graph = await executor.create_graph(tasks)
+
     # save_json(current_steps, "test_decomposed_steps_w_children.json")
     return current_steps
 

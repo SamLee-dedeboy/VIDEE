@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import TypedDict
 
 
 class Node(BaseModel):
@@ -14,9 +15,20 @@ class Node(BaseModel):
         orm_mode = True
 
 
+class BaseStateSchema(TypedDict):
+    documents: list
+    entities: list
+
+
 class ElementaryTaskDef(BaseModel):
+    id: str
     label: str
     definition: str
-    input: str
-    output: str
-    example: dict
+    state_input_key: str
+    doc_input_key: str
+    state_output_key: str
+    parentIds: list[str]
+    execution: str
+    # input: str
+    # output: str
+    # example: dict

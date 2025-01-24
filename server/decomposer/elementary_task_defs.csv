@@ -1,0 +1,24 @@
+label,definition,input,output
+Text Processing,"The task of performing basic transformations and operations on text to prepare it for further analysis or application. This includes tasks such as tokenization, lowercasing, stopword removal, and stemming.",Sentence/Paragraph,Processed Text
+Data Processing,"The task of performing transformations and operations on raw data to prepare it for analysis or application. This includes cleaning, normalizing, and structuring data.",Raw Data,Processed Data
+Data Analysis,"The task of examining processed data to extract insights, identify patterns, and draw conclusions, often using statistical methods, visualization, or machine learning techniques.",Processed Data,Insights/Patterns
+Text Analysis,"The task of examining text to extract insights, patterns, or structure, often using methods like statistical analysis, frequency analysis, or advanced linguistic techniques.",Paragraph/Document,Insights/Patterns
+Text Generation,"The task of producing coherent, meaningful, and contextually relevant text based on a given input or prompt, often used in applications such as language modeling, story generation, and chatbot responses.",Sentence/Paragraph,Generated Text
+Information Extraction,"The task of automatically identifying and extracting structured information such as entities, relationships, and events from unstructured or semi-structured textual data.",Sentence/Paragraph,Structured Data
+Information Retrieval,"The process of identifying and retrieving relevant documents or information from a large collection based on a specific query, emphasizing precision and ranking.",Query,Ranked List of Documents
+Text Mining,"The process of analyzing large text corpora to discover patterns, trends, and insights through techniques such as clustering, topic modeling, and sentiment analysis.",Text Corpus,Patterns/Insights
+Machine Translation,The task of automatically converting text or speech from one language to another while preserving meaning and fluency.,Sentence/Paragraph,Translated Text
+Phonology,"The study of the systematic organization of sounds in languages, focusing on phonemes and their rules of combination and variation.",Word,Phonemic Representation
+Morphology,"The study of the internal structure and formation of words, including morphemes, affixes, and word formation rules.",Word,Morpheme Analysis
+Word Segmentation,"The task of dividing a text into individual words, particularly important for languages without explicit word boundaries, such as Chinese or Thai.",Raw Text,Tokenized Text
+Question Answering,The task of generating accurate and contextually relevant answers to user queries based on a given text or corpus.,Query + Context Paragraph,Answer
+Lexical Semantics,"The study of the meanings and relationships of words, including synonyms, antonyms, and word senses.",Word,Semantic Relationships
+Sentence-level Semantics,"The analysis of the meaning of a sentence as a whole, considering word relationships, syntax, and contextual nuances.",Sentence,Semantic Representation
+Textual Inference,"The task of determining whether a given hypothesis logically follows from a given premise, often referred to as natural language inference (NLI).",Premise + Hypothesis,Entailment Label
+Sentiment Analysis,"The process of identifying and classifying the emotional tone or sentiment expressed in a text, typically as positive, negative, or neutral.",Sentence/Paragraph,Sentiment Label
+Stylistic Analysis,"The examination of the style or tone of a text, focusing on aspects such as formality, genre, or authorship attribution.",Sentence/Paragraph,Style Label
+Argument Mining,"The task of identifying and extracting arguments from text, including claims, evidence, and their relationships.",Paragraph/Document,Arguments (Claims and Evidence)
+Summarization,"The task of producing a concise and coherent summary of a given text, preserving its main ideas and key information.",Paragraph/Document,Summary
+Syntax Tagging,"The annotation of words in a sentence with their corresponding syntactic roles, such as parts of speech.",Sentence,Tagged Words
+Syntax Chunking,"The process of dividing a sentence into syntactically correlated word groups, such as noun phrases or verb phrases.",Sentence,Chunks
+Syntax Parsing,"The task of generating a syntactic structure or tree representation for a sentence, revealing its hierarchical grammatical composition.",Sentence,Syntax Tree

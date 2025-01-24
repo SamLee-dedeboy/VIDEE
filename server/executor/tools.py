@@ -4,7 +4,6 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 
 
-# Define the tools for the agent to use
 def prompt_tool(
     tool_name: str,
     prompt_template: list,

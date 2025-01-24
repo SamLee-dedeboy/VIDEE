@@ -1,3 +1,3 @@
-from .custom_types import Node, ElementaryTaskDef
+from .custom_types import Node, ElementaryTaskDef, BaseStateSchema
 
-__all__ = ["Node", "ElementaryTaskDef"]
+__all__ = ["Node", "ElementaryTaskDef", "BaseStateSchema"]
