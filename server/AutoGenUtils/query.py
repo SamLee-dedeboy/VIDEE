@@ -1,5 +1,5 @@
 import json
-from server.custom_types import Node, ElementaryTaskDef
+from server.custom_types import Node, ElementaryTaskDescription
 from autogen_core import CancellationToken
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_agentchat.agents import AssistantAgent
@@ -90,7 +90,7 @@ async def run_task_decomposition_agent(task: Node, model: str, api_key: str):
 async def run_decomposition_to_elementary_task_agent(
     task: Node,
     tree: list[Node],
-    elementary_task_list: list[ElementaryTaskDef],
+    elementary_task_list: list[ElementaryTaskDescription],
     model: str,
     api_key: str,
 ) -> None:

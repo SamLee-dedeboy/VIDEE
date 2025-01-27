@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from typing import TypedDict
+from typing import TypedDict, Annotated
+import operator
 
 
 class Node(BaseModel):
@@ -16,19 +17,20 @@ class Node(BaseModel):
 
 
 class BaseStateSchema(TypedDict):
-    documents: list
+    documents: Annotated[list, lambda a, b: b]
     entities: list
 
 
-class ElementaryTaskDef(BaseModel):
+class ElementaryTaskDescription(BaseModel):
     id: str
     label: str
-    definition: str
+    description: str
+    explanation: str
+    parentIds: list[str]
+
+
+class ElementaryTaskExecution(ElementaryTaskDescription):
     state_input_key: str
     doc_input_key: str
     state_output_key: str
-    parentIds: list[str]
     execution: str
-    # input: str
-    # output: str
-    # example: dict

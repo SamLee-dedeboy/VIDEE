@@ -1,4 +1,4 @@
-from server.custom_types import Node, ElementaryTaskDef
+from server.custom_types import Node, ElementaryTaskDescription
 import server.AutoGenUtils.query as autogen_utils
 
 
@@ -28,7 +28,7 @@ async def task_decomposition(
 async def decomposition_to_elementary_task(
     task: str,
     current_steps: list[Node],
-    elementary_task_list: list[ElementaryTaskDef],
+    elementary_task_list: list[ElementaryTaskDescription],
     model: str,
     api_key: str,
 ) -> list:

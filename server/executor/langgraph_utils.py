@@ -17,36 +17,153 @@ from langchain_core.runnables import (
     RunnablePassthrough,
     RunnableAssign,
 )
+from langgraph.types import Command, interrupt
+from collections import defaultdict
 
-from server.custom_types import ElementaryTaskDef, BaseStateSchema
+
+from server.custom_types import (
+    ElementaryTaskExecution,
+    ElementaryTaskDescription,
+    BaseStateSchema,
+)
 import server.executor.tools as custom_tools
 
 
-def create_nodes(steps: list[ElementaryTaskDef]):
+def execution_plan(
+    steps: list[ElementaryTaskDescription],
+) -> list[ElementaryTaskExecution]:
+    plan = []
+    for step in steps:
+        plan.append(
+            {
+                "id": step["id"],
+                "label": step["label"],
+                "description": step["definition"],
+                "explanation": step["explanation"],
+                "parentIds": step["parentIds"],
+                "state_input_key": step["state_input_key"],  # to be generated
+                "doc_input_keys": step["doc_input_key"],  # to be generated
+                "state_output_key": step["state_output_key"],  # to be generated
+                "execution": step["execution"],  # to be generated
+            }
+        )
+    return plan
+
+
+def create_nodes(steps: list[ElementaryTaskExecution]):
     return [create_node(step) for step in steps]
 
 
-def create_graph(steps: list[ElementaryTaskDef]):
+def create_graph(steps: list[ElementaryTaskExecution]):
     graph = StateGraph(BaseStateSchema)
     nodes = create_nodes(steps)
     # create an empty node as root to signal the start of the graph
-    root = create_root()
-    graph.add_node("root", root)
-    graph.add_edge(START, "root")
+    # root = create_root()
+    # graph.add_node("root", root)
+    # graph.add_edge(START, "root")
 
-    # add nodes and edges to the graph
+    # add nodes to the graph
+    # children_dict = dict()
+    # children_dict["root"] = []
     for step, node in zip(steps, nodes):
+        # children_dict[step["id"]] = []
         graph.add_node(step["id"], node)
+        graph.add_node(f"{step['id']}_evaluation", human_approval)
+        graph.add_edge(step["id"], f"{step['id']}_evaluation")
+
         if step["parentIds"] == []:
-            graph.add_edge("root", step["id"])
+            # children_dict["root"].append(step["id"])
+            graph.add_edge(START, step["id"])
         else:
             for parent_id in step["parentIds"]:
-                graph.add_edge(parent_id, step["id"])
-    return graph
+                # children_dict[parent_id].append(step["id"])
+                graph.add_edge(f"{parent_id}_evaluation", step["id"])
+                # graph.add_edge(f"{parent_id}", step["id"])
+    # add edges
+    # for parent_id, children in children_dict.items():
+    #     if parent_id == "root":
+    #         for child in children:
+    #             graph.add_edge("root", child)
+    #     else:
+    #         graph.add_node(
+    #             f"{parent_id}_evaluation", human_approval_node(parent_id, children)
+    #         )
+    #         graph.add_edge(parent_id, f"{parent_id}_evaluation")
+    #         graph.add_edge(f"{parent_id}_evaluation", parent_id)
+    #         for child in children:
+    #             graph.add_edge(f"{parent_id}_evaluation", child)
+    return graph.compile(checkpointer=MemorySaver())
 
 
-def execute_node(node_id):
-    pass
+def human_approval(state):
+    interrupt("Please provide feedback:")
+    return state
+
+
+# def human_approval_node(parent_id, children_id):
+#     def human_approval(state):
+#         print("---human_feedback---", state["documents"][0].keys())
+#         response = interrupt("Please provide feedback:")
+#         approved = response["approved"]
+#         print("approved:", approved)
+#         print("children_id:", children_id)
+#         print("parent_id:", parent_id)
+#         if approved:
+#             print("going to children")
+#             return Command(goto=children_id)
+#         else:
+#             print("going to parent")
+#             return Command(goto=parent_id)
+
+#     return human_approval
+
+
+def get_node_config(app, thread_config, node_id, execution_version=None):
+    node_configs = list(
+        reversed(
+            [
+                step
+                for step in app.get_state_history(thread_config)
+                if step.next == f"{node_id}_evaluation"
+            ]
+        )
+    )
+    if execution_version is None:
+        return node_configs[-1]
+    else:
+        return node_configs[execution_version]
+
+
+def execute_node(app, thread_config, node_id, execution_version=None):
+    node_config = get_node_config(app, thread_config, node_id, execution_version)
+    state = app.invoke(
+        None,
+        config=node_config,
+    )
+    return state
+
+
+def execute_next(app, thread_config):
+    state = app.invoke(
+        Command(resume=True),
+        config=thread_config,
+    )
+    return state
+
+
+# def execute_node(app, thread_config, node_id, state):
+#     state = app.invoke(
+#         Command(resume=state),
+#         config=thread_config,
+#     )
+#     return state
+
+
+# def human_evaluation(state):
+#     print("interrupting...")
+#     print(state)
+#     interrupt("Please provide feedback:")
+#     return state
 
 
 # create an execution chain for the step
