@@ -24,9 +24,48 @@ from collections import defaultdict
 from server.custom_types import (
     ElementaryTaskExecution,
     ElementaryTaskDescription,
+    UserExecutionState,
     BaseStateSchema,
 )
 import server.executor.tools as custom_tools
+
+
+def init_user_execution_state(
+    execution_graph, execution_plan
+) -> dict[str, UserExecutionState]:
+    # collect dictionaries to be used later
+    node_dict = {node["id"]: node for node in execution_plan}
+    children_dict = defaultdict(list)
+    for node in execution_plan:
+        node_dict[node["id"]] = node
+        for parent_id in node["parentIds"]:
+            children_dict[parent_id].append(node["id"])
+
+    # create the user execution state
+    user_execution_state = {}
+    first_node = True
+    for node in execution_graph.get_graph().nodes:
+        if node == "__start__":
+            continue
+        if node.endswith("_evaluation"):
+            continue
+        user_execution_state[node] = {
+            "executable": first_node,
+            "childrenIds": children_dict[node],
+            "parentIds": node_dict[node]["parentIds"],
+        }
+        first_node = False
+    return user_execution_state
+
+
+def make_children_executable(execution_graph, user_execution_state, node_id):
+    for _node in execution_graph.get_graph().nodes:
+        if _node == node_id:
+            children_ids = user_execution_state[_node]["childrenIds"]
+            for child_id in children_ids:
+                user_execution_state[child_id]["executable"] = True
+            break
+    return user_execution_state
 
 
 def execution_plan(
@@ -119,27 +158,39 @@ def human_approval(state):
 
 
 def get_node_config(app, thread_config, node_id, execution_version=None):
-    node_configs = list(
-        reversed(
-            [
-                step
-                for step in app.get_state_history(thread_config)
-                if step.next == f"{node_id}_evaluation"
-            ]
-        )
+    state_history = list(
+        reversed([step for step in app.get_state_history(thread_config)])
     )
+    node_configs = [
+        step.config for step in state_history if step.next == f"{node_id}_evaluation"
+    ]
+    if len(node_configs) == 0:
+        return None
     if execution_version is None:
         return node_configs[-1]
     else:
         return node_configs[execution_version]
 
 
-def execute_node(app, thread_config, node_id, execution_version=None):
+def execute_node(
+    app, thread_config, node_id, execution_version=None, initial_state=None
+):
+    # if this is the first node executed in the graph
+    # then we need to invoke with the initial state
+    if len(list(app.get_state_history(thread_config))) == 0:
+        state = app.invoke(initial_state, config=thread_config)
+        return state
+
+    # if this is not the first node executed in the graph
+    # check if this node is executed before
     node_config = get_node_config(app, thread_config, node_id, execution_version)
-    state = app.invoke(
-        None,
-        config=node_config,
-    )
+    if node_config is None:  # first time executing this node
+        state = app.invoke(Command(resume=True), config=thread_config)
+    else:  # if this node is executed before
+        state = app.invoke(
+            None,
+            config=node_config,
+        )
     return state
 
 

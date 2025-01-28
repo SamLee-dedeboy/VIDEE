@@ -3,14 +3,59 @@
   import SemanticTasks from "lib/SemanticTasks.svelte";
   import ElementaryTasks from "lib/ElementaryTasks.svelte";
   import { server_address } from "constants";
+  import { onMount, setContext } from "svelte";
+  import type {
+    tElementaryTaskDescription,
+    tElementaryTaskExecution,
+  } from "types";
+  let session_id: string | undefined = $state(undefined);
+  setContext("session_id", () => session_id);
   let semantic_tasks = $state(undefined);
-  let elementary_tasks = $state(undefined);
+  let elementary_tasks:
+    | (tElementaryTaskDescription & Partial<tElementaryTaskExecution>)[]
+    | undefined = $state(undefined);
+  // let elementary_task_execution_plan = $state(undefined);
 
   /**
    * Stores the state of the dag
    * @value semantic | elementary
    */
   let show_dag = $state("semantic");
+
+  async function init() {
+    await fetchTest();
+    await createSession();
+  }
+
+  function fetchTest() {
+    fetch(`${server_address}/test/`)
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
+
+  function createSession() {
+    let random_session_id = Math.random().toString(36).substring(2, 15);
+    fetch(`${server_address}/session/create/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ session_id: random_session_id }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        session_id = data.session_id;
+        console.log("Session created:", session_id);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
 
   /**
    * convert the semantic tasks to elementary tasks
@@ -37,9 +82,16 @@
         console.error("Error:", error);
       });
   }
+
+  onMount(() => {
+    init();
+  });
 </script>
 
 <main class="w-[100vw] h-[100vh] flex flex-col py-2 px-[1rem] overflow-auto">
+  {#if !session_id}
+    <div class="self-center">Loading...</div>
+  {/if}
   <div class="self-center max-w-[30vw] min-w-[10rem]">
     <GoalInput semantic_tasks_fetched={(data) => (semantic_tasks = data)} />
   </div>

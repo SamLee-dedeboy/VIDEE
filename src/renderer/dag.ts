@@ -96,7 +96,7 @@ export class DAG {
         .attr("stroke", "gray")
         // plot edges between decomposed tasks
         const expansion_links = data.filter(d => expanded_nodes.includes(d.id)).map(d => {
-            const first_child_coord = coordinate_as_dict[d.children![0].id]
+            const first_child_coord = coordinate_as_dict[d.children?.[0].id]
             console.log(d, first_child_coord)
             const this_coord = coordinate_as_dict[d.id]
             const link_coords = vertical?

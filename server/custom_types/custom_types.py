@@ -34,3 +34,7 @@ class ElementaryTaskExecution(ElementaryTaskDescription):
     doc_input_key: str
     state_output_key: str
     execution: str
+
+
+class UserExecutionState(BaseModel):
+    executable: bool
