@@ -1,5 +1,5 @@
 <script lang="ts">
-  import GoalInput from "lib/GoalInput.svelte";
+  import GoalConversation from "lib/GoalConversation.svelte";
   import SemanticTasks from "lib/SemanticTasks.svelte";
   import ElementaryTasks from "lib/ElementaryTasks.svelte";
   import { server_address } from "constants";
@@ -56,6 +56,26 @@
         console.error("Error:", error);
       });
   }
+  /**
+   * Decompose the goal into semantic tasks
+   */
+  function handleDecomposeGoal(goal: string) {
+    fetch(`${server_address}/goal_decomposition/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ goal }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log({ data });
+        semantic_tasks = data;
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
 
   /**
    * convert the semantic tasks to elementary tasks
@@ -88,37 +108,46 @@
   });
 </script>
 
-<main class="w-[100vw] h-[100vh] flex flex-col py-2 px-[1rem] overflow-auto">
+<main class="w-[100vw] h-[100vh] flex flex-col py-2 px-[1rem] gap-y-1">
   {#if !session_id}
     <div class="self-center">Loading...</div>
-  {/if}
-  <div class="self-center max-w-[30vw] min-w-[10rem]">
-    <GoalInput semantic_tasks_fetched={(data) => (semantic_tasks = data)} />
-  </div>
-  <div
-    class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] flex justify-center mt-2 rounded outline outline-gray-200"
-    tabindex="0"
-    role="button"
-    onclick={() => handleConvert()}
-    onkeyup={() => {}}
-  >
-    Convert
-  </div>
-  <div
-    class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] flex justify-center mt-2 rounded outline outline-gray-200"
-    tabindex="0"
-    role="button"
-    onclick={() =>
-      (show_dag = show_dag === "semantic" ? "elementary" : "semantic")}
-    onkeyup={() => {}}
-  >
-    Switch
-  </div>
-  {#if show_dag === "semantic"}
-    <SemanticTasks semantic_tasks={semantic_tasks || []}></SemanticTasks>
-  {:else if show_dag === "elementary"}
-    <ElementaryTasks elementary_tasks={elementary_tasks || []}
-    ></ElementaryTasks>
+  {:else}
+    <div class="flex flex-[2_2_0%]">
+      <div class="flex flex-[2_2_0%] gap-x-2">
+        <div class="relative grow px-2 py-1 rounded">
+          <div
+            class="absolute top-0 left-0 right-0 bottom-0 flex overflow-auto"
+          >
+            {#if show_dag === "semantic"}
+              <SemanticTasks
+                semantic_tasks={semantic_tasks || []}
+                {handleConvert}
+              ></SemanticTasks>
+            {:else if show_dag === "elementary"}
+              <ElementaryTasks elementary_tasks={elementary_tasks || []}
+              ></ElementaryTasks>
+            {/if}
+          </div>
+          <div
+            class="absolute top-1 right-1 py-1 px-2 bg-gray-100 min-w-[10rem] flex justify-center rounded outline outline-gray-200"
+            tabindex="0"
+            role="button"
+            onclick={() =>
+              (show_dag = show_dag === "semantic" ? "elementary" : "semantic")}
+            onkeyup={() => {}}
+          >
+            Switch
+          </div>
+        </div>
+        <div class="max-w-[30vw] min-w-[10rem] flex">
+          <GoalConversation
+            {handleDecomposeGoal}
+            semantic_tasks={semantic_tasks || []}
+          />
+        </div>
+      </div>
+    </div>
+    <div class="flex-1 px-2 py-1 shrink-0">Observation Panel</div>
   {/if}
 </main>
 

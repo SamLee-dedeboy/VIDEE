@@ -105,20 +105,22 @@
 </script>
 
 <div
-  class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] flex justify-center mt-2 rounded outline outline-gray-200"
-  tabindex="0"
-  role="button"
-  onclick={() => handleCompile()}
-  onkeyup={() => {}}
+  class="relative grow shrink-0 bg-gray-50 px-2"
+  style:height={Math.max(elementary_tasks.length * 2 * node_radius, 800) + "px"}
 >
-  Compile
-</div>
-<div
-  class="relative mt-[2rem] shrink-0"
-  style:height={Math.min(elementary_tasks.length * 2 * node_radius, 10000) +
-    "px"}
->
-  <span>Elementary Tasks</span>
+  <span
+    class="text-[1.5rem] text-slate-500 font-semibold italic bg-[#f2f8fd] w-full flex justify-center"
+    >Elementary Tasks</span
+  >
+  <div
+    class="py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center mt-2 rounded outline outline-gray-200"
+    tabindex="0"
+    role="button"
+    onclick={() => handleCompile()}
+    onkeyup={() => {}}
+  >
+    Compile Graph
+  </div>
   <svg id={svgId} class="w-full h-full absolute"></svg>
   <div class="elementary-tasks relative w-full flex flex-col-reverse">
     {#each elementary_tasks as task, index}

@@ -14,6 +14,7 @@
   } = $props();
   let expand = $state(false);
   let show_subtasks = $state(false);
+  let show_actions = $state(false);
   function showSubTasks() {
     show_subtasks = !show_subtasks;
     handleToggle();
@@ -21,7 +22,7 @@
 </script>
 
 <div
-  class="task-card w-min min-w-[16rem] transition-all outline outline-2 outline-gray-100 bg-[#fbfaec] shadow px-2 py-1 rounded relative flex gap-y-1 gap-x-2"
+  class="task-card text-slate-600 w-min min-w-[18rem] transition-all outline outline-2 outline-gray-200 bg-[#fbfaec] shadow px-2 py-1 rounded relative flex gap-y-1 gap-x-2"
 >
   <div class="flex flex-col grow">
     <div
@@ -45,19 +46,17 @@
         {/if}
       </span>
     </div>
-    {#if expand}
-      <ul
+    {#if true}
+      <div
         in:slide
-        class="border-b border-gray-300 text-gray-800 flex list-disc list-inside min-w-[15rem]"
+        class="border-b border-gray-300 flex flex-col min-w-[15rem]"
       >
-        <li>
-          {task.description}
-        </li>
-      </ul>
+        <div class="text-sm text-gray-400 italic">Description</div>
+        {task.description}
+      </div>
     {/if}
     <div class="flex flex-col justify-between gap-y-2 mt-1">
       <div class="flex justify-between flex-wrap">
-        <!-- TODO: change style -->
         <button
           class="action-button outline-gray-200 bg-gray-100 hover:bg-green-100"
           class:disabled={task.children === undefined ||
@@ -66,42 +65,61 @@
           onclick={() => showSubTasks()}>SubTasks</button
         >
       </div>
-      <div class="flex gap-x-2">
-        <button
-          class="action-button outline-orange-200 bg-orange-100 hover:bg-orange-200"
-          onclick={() => handleDecompose(task)}>Decompose</button
-        >
-        <button
-          class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
-          >Edit</button
-        >
-        <button
-          class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
-        >
-          <!-- <img src="close.svg" alt="x" /> -->
-          Delete
-        </button>
-        <button
-          class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+      <div class="flex flex-col gap-x-2 relative">
+        <div
+          role="button"
           tabindex="0"
-          onclick={() => handleDeleteChildren(task)}
+          class={`action-trigger action-button flex justify-center outline outline-gray-200 bg-green-100 hover:bg-green-300 `}
+          class:showing-actions={show_actions}
+          onclick={() => (show_actions = !show_actions)}
+          onkeyup={() => {}}
         >
-          <!-- <img src="close.svg" alt="x" /> -->
-          Delete Children
-        </button>
+          Actions
+          {#if show_actions}
+            <div
+              class="more-actions absolute top-[calc(100%+5px)] left-1/2 -translate-x-1/2"
+            >
+              <div class="flex gap-x-2">
+                <button
+                  class="action-button outline-orange-200 bg-orange-100 hover:bg-orange-200"
+                  onclick={() => handleDecompose(task)}>Decompose</button
+                >
+                <button
+                  class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
+                  >Edit</button
+                >
+                <button
+                  class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+                >
+                  <!-- <img src="close.svg" alt="x" /> -->
+                  Delete
+                </button>
+                <button
+                  class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+                  tabindex="0"
+                  onclick={() => handleDeleteChildren(task)}
+                >
+                  <!-- <img src="close.svg" alt="x" /> -->
+                  Delete SubTasks
+                </button>
+              </div>
+            </div>
+          {/if}
+        </div>
       </div>
     </div>
   </div>
   {#if expand}
     <div
-      class="flex absolute left-[101%] top-1 bottom-1 bg-white px-1 outline outline-2 outline-gray-100"
+      class="flex absolute left-[101%] top-0 bottom-1 bg-white px-2 border-y border-r border-gray-200"
     >
-      <div in:slide class=" text-gray-800 relative mt-1 mb-2">
+      <div in:slide class=" relative mt-1 mb-2">
         <img
           src="bot.svg"
           alt="bot"
           class="w-7 h-7 inline-block p-0.5 border-r border-b border-gray-300 shadow min-w-[15rem]"
         />
+        <div class="text-sm text-gray-400 italic">Explanation</div>
         <span class="">
           {task.explanation}
         </span>
@@ -112,7 +130,10 @@
 
 <style lang="postcss">
   .action-button {
-    @apply outline outline-2 rounded px-1 py-0.5 text-sm text-gray-800 font-mono;
+    @apply outline outline-2 rounded px-1 py-0.5 text-sm font-mono;
+  }
+  .showing-actions {
+    @apply bg-green-300 outline-gray-500;
   }
   .disabled {
     @apply cursor-not-allowed bg-gray-300 outline-gray-200 opacity-50;

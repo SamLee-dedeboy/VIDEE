@@ -16,11 +16,12 @@
     ) => void;
   } = $props();
   let expand = $state(false);
+  let show_actions = $state(false);
   $inspect(task);
 </script>
 
 <div
-  class="task-card w-min min-w-[16rem] transition-all outline outline-2 outline-gray-100 bg-[#fbfaec] shadow px-2 py-1 rounded relative flex gap-y-1 gap-x-2"
+  class="task-card text-slate-600 w-min min-w-[16rem] transition-all outline outline-2 outline-blue-100 bg-[#F2F8FD] shadow px-2 py-1 rounded relative flex gap-y-1 gap-x-2"
 >
   <div class="flex flex-col grow">
     <div
@@ -44,31 +45,45 @@
         {/if}
       </span>
     </div>
-    <ul
-      in:slide
-      class="border-b border-gray-300 text-gray-800 flex list-disc list-inside min-w-[15rem]"
-    >
-      <li>
-        {task.description}
-      </li>
-    </ul>
+    <div in:slide class="border-b border-gray-300 flex flex-col min-w-[15rem]">
+      <div class="text-sm text-gray-400 italic">Description</div>
+      {task.description}
+    </div>
     <div class="flex flex-col justify-between gap-y-2 mt-1">
-      <div class="flex gap-x-2">
+      <div class="flex">
         <button
           class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
           class:disabled={!executable}
           onclick={() => handleExecute(task)}>Execute</button
         >
-        <button
-          class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
-          >Edit</button
+        <div
+          role="button"
+          tabindex="0"
+          class={`action-trigger action-button ml-auto flex justify-center outline outline-gray-200 bg-green-100 hover:bg-green-300 relative `}
+          class:showing-actions={show_actions}
+          onclick={() => (show_actions = !show_actions)}
+          onkeyup={() => {}}
         >
-        <button
-          class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
-        >
-          <!-- <img src="close.svg" alt="x" /> -->
-          Delete
-        </button>
+          More Actions
+          {#if show_actions}
+            <div
+              class="more-actions absolute top-[calc(100%+5px)] left-1/2 -translate-x-1/2"
+            >
+              <div class="flex gap-x-2">
+                <button
+                  class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
+                  >Edit</button
+                >
+                <button
+                  class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+                >
+                  <!-- <img src="close.svg" alt="x" /> -->
+                  Delete
+                </button>
+              </div>
+            </div>
+          {/if}
+        </div>
       </div>
     </div>
   </div>
@@ -133,7 +148,7 @@
     @apply outline outline-1 outline-gray-300 rounded px-2 my-2 hover:bg-gray-200 transition-all cursor-pointer;
   }
   .action-button {
-    @apply outline outline-2 rounded px-1 py-0.5 text-sm text-gray-800 font-mono;
+    @apply outline outline-2 rounded px-1 py-0.5 text-sm font-mono;
   }
   .disabled {
     @apply cursor-not-allowed bg-gray-300 outline-gray-200 opacity-50;

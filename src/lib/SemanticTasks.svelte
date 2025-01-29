@@ -5,7 +5,10 @@
   import { DAG } from "renderer/dag";
   import SemanticTaskCard from "./SemanticTaskCard.svelte";
   import { fly, fade, blur } from "svelte/transition";
-  let { semantic_tasks }: { semantic_tasks: tSemanticTask[] } = $props();
+  let {
+    semantic_tasks,
+    handleConvert,
+  }: { semantic_tasks: tSemanticTask[]; handleConvert: Function } = $props();
   /**
    * Stores the id of the expanded tasks
    */
@@ -18,7 +21,7 @@
   );
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
   const svgId = "dag-svg";
-  const node_radius = 100;
+  const node_radius = 150;
   let dag_renderer = new DAG(svgId, node_radius);
 
   $effect(() => {
@@ -122,13 +125,17 @@
 </script>
 
 <div
-  class="relative mt-[2rem] shrink-0"
-  style:height={Math.min(
+  class="relative grow bg-gray-50 flex flex-col gap-y-1"
+  style:height={Math.max(
     semantic_tasks_flattened.length * 2 * node_radius,
-    10000
+    1000
   ) + "px"}
 >
-  <span>Semantic Tasks</span>
+  <span
+    class="text-[1.5rem] text-slate-500 font-semibold italic bg-[#FBFADF] w-full flex justify-center"
+    >Semantic Tasks</span
+  >
+  {#if semantic_tasks.length > 0}{/if}
   <svg id={svgId} class="w-full h-full absolute"></svg>
   <div class="semantic-tasks relative w-full flex flex-col-reverse">
     {#each semantic_tasks_flattened as task, index}
@@ -149,6 +156,15 @@
         ></SemanticTaskCard>
       </div>
     {/each}
+  </div>
+  <div
+    class="py-1 mx-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10"
+    tabindex="0"
+    role="button"
+    onclick={() => handleConvert()}
+    onkeyup={() => {}}
+  >
+    Convert
   </div>
 </div>
 
