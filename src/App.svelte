@@ -8,6 +8,7 @@
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
   } from "types";
+  import GoalInput from "lib/GoalInput.svelte";
   let session_id: string | undefined = $state(undefined);
   setContext("session_id", () => session_id);
   let semantic_tasks = $state(undefined);
@@ -105,11 +106,14 @@
   });
 </script>
 
-<main class="w-[100vw] h-[100vh] flex flex-col py-2 px-[1rem] gap-y-1">
+<main class="w-[100vw] h-[100vh] flex py-2 px-[1rem] gap-y-1">
   {#if !session_id}
     <div class="self-center">Loading...</div>
   {:else}
-    <div class="flex flex-[2_2_0%]">
+    <div class="flex flex-[2_2_0%] flex-col gap-y-2">
+      <div class="bg-white">
+        <GoalInput {handleDecomposeGoal} />
+      </div>
       <div class="flex flex-[2_2_0%] gap-x-2">
         <div class="relative grow px-2 py-1 rounded">
           <div
@@ -126,7 +130,7 @@
             {/if}
           </div>
           <div
-            class="absolute top-1 right-1 py-1 px-2 bg-gray-100 min-w-[10rem] flex justify-center rounded outline outline-gray-200"
+            class="absolute top-0.5 right-0.5 py-1 px-2 bg-gray-100 min-w-[10rem] flex justify-center rounded outline outline-gray-200"
             tabindex="0"
             role="button"
             onclick={() =>
@@ -136,12 +140,12 @@
             Switch
           </div>
         </div>
-        <div class="max-w-[30vw] min-w-[10rem] flex">
+        <!-- <div class="max-w-[30vw] min-w-[10rem] flex">
           <GoalConversation
             {handleDecomposeGoal}
             semantic_tasks={semantic_tasks || []}
           />
-        </div>
+        </div> -->
       </div>
     </div>
     <div class="flex-1 px-2 py-1 shrink-0">Observation Panel</div>
