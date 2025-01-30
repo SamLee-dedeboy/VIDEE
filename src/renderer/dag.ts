@@ -10,10 +10,14 @@ import {
 
 export class DAG {
     svgId: string;
-    nodeRadius: number;
-    constructor(svgId: string, node_radius: number=100) {
+    nodeRadius: [number,number];
+    line: any
+    dag: any
+    constructor(svgId: string, node_radius: [number,number]=[100, 100]) {
         this.svgId = svgId
         this.nodeRadius = node_radius
+        this.line = d3.line().curve(d3.curveMonotoneY);
+        this.dag = undefined;
     }
     init () {
         const svg = d3.select(`#${this.svgId}`)
@@ -29,27 +33,31 @@ export class DAG {
         const max_width = 1 * svg_bbox.width;
         const max_height = 1 * svg_bbox.height;
         const stratify = d3_dag.graphStratify();
-        const dag = stratify(data);
+        this.dag = stratify(data);
 
 
         const layout = d3_dag
-        .sugiyama()
-        .coord(d3_dag.coordGreedy())
-        .nodeSize([2 * this.nodeRadius, 2 * this.nodeRadius])
-        .gap([50, 50])
+        // .sugiyama()
+        .grid()
+        .lane(d3_dag.laneOpt())
+        // .coord(d3_dag.coordGreedy())
+        .nodeSize(this.nodeRadius)
+        .gap([0, 0])
 
-      const { width, height } = layout(dag);
+        const { width, height } = layout(this.dag);
+        console.log()
 
-      const vertical = true;
-      const coordinate_as_dict = Array.from(dag.nodes()).reduce((acc, d) => {
-        acc[d.data.id] = d;
-        return acc;
-      }, {})
+        const vertical = true;
+        const coordinate_as_dict: any = Array.from(this.dag.nodes()).reduce((acc: any, d: any) => {
+            acc[d.data.id] = d;
+            return acc;
+        }, {})
 
       // position nodes
       d3.selectAll(selection_query)
         .style("left", function() {
             const id = this.dataset.id
+            return coordinate_as_dict[id].x * (max_width / width) + "px";
             return vertical?
             coordinate_as_dict[id].x * (max_width / width) + "px":
             coordinate_as_dict[id].y * (max_width / height) + "px"
@@ -57,43 +65,34 @@ export class DAG {
         })
         .style("top", function() {
             const id = this.dataset.id
-            // return coordinate_as_dict[id].x * (max_height / width) + "px"
+            return coordinate_as_dict[id].y * (max_height / height) + "px"
             return vertical ? 
             coordinate_as_dict[id].y * (max_height / height) + "px":
             coordinate_as_dict[id].x * (max_height / width) + "px"
         })
-        const line = d3.line().curve(d3.curveMonotoneY);
-    // svg.selectAll("rect.node")
-    //     .data(dag.nodes())
-    //     .join("rect")
-    //     .attr("class", "node")
-    //     .attr("x", ({ x }) => x * (max_width / width) - this.nodeRadius)
-    //     .attr("y", ({ y }) => y * (max_height / height) - this.nodeRadius)
-    //     .attr("width", 2 * this.nodeRadius)
-    //     .attr("height", 2 * this.nodeRadius)
-    //     .attr("fill", "none")
-    //     .attr("stroke", "black")
-    //     .attr("stroke-width", 1)
-    //     .attr("rx", 10)
+        const self = this
+        // svg.selectAll("rect.node")
+        //     .data(Object.keys(coordinate_as_dict))
+        //     .join("rect")
+        //     .attr("class", "node")
+        //     .attr("x", function(d) {
+        //         return coordinate_as_dict[d].x * (max_width / width) - self.nodeRadius[0]
+        //     })
+        //     .attr("y", function(d) {
+        //         return coordinate_as_dict[d].y * (max_height / height) - self.nodeRadius[1]
+        //     })
+        //     // .attr("x", ({ x }) => x * (max_width / width) - this.nodeRadius[0])
+        //     // .attr("y", ({ y }) => y * (max_height / height) - this.nodeRadius[1])
+        //     .attr("width",  this.nodeRadius[0] * 2)
+        //     .attr("height",  this.nodeRadius[1] * 2)
+        //     .attr("fill", "none")
+        //     .attr("stroke", "black")
+        //     .attr("stroke-width", 1)
+        //     .attr("rx", 10)
+
         // plot edges
 
-      svg.select("g.links")
-        .selectAll("path.link")
-        .data(dag.links())
-        .join("path")
-        .attr("class", "link")
-        .attr("d",({ points }) =>  {
-            const scaled_points = points.map(p => vertical? 
-                [p[0] * (max_width / width),  p[1] * (max_height / height)]
-                :
-                [p[1] * (max_width / height), p[0] * (max_height / width)])
-            return line(scaled_points)
-        }
-
-        )
-        .attr("fill", "none")
-        .attr("stroke-width", 3)
-        .attr("stroke", "gray")
+        this.update_links(selection_query)
         // plot edges between decomposed tasks
         const expansion_links = data.filter(d => expanded_nodes.includes(d.id)).map(d => {
             const first_child_coord = coordinate_as_dict[d.children?.[0].id]
@@ -115,7 +114,7 @@ export class DAG {
         .data(expansion_links)
         .join("path")
         .attr("class", "expansion-link")
-        .attr("d", (d) => line(d))
+        .attr("d", (d) => this.line(d))
         .attr("fill", "none")
         .attr("stroke-width", 3)
         .attr("stroke", "gray")
@@ -123,7 +122,6 @@ export class DAG {
 
         // add bubbles
         return
-        const self = this
         const bubble_group = svg.select("g.bubbles")
         const bubble_data = Object.groupBy(data, d => getGroup(d))
         bubble_group.selectAll("path.dag-wrapper").remove()
@@ -140,6 +138,27 @@ export class DAG {
         })
 
     }
+
+    update_links(selection_query) {
+        const node_positions = d3.selectAll(selection_query).nodes().reduce((acc, node) => {
+            acc[node.dataset.id] = [
+                parseFloat(node.style.left),
+                parseFloat(node.style.top)
+            ]
+            return acc
+        }, {})
+        const svg = d3.select(`#${this.svgId}`);
+        svg.select("g.links")
+            .selectAll("path.link")
+            .data(this.dag.links())
+            .join("path")
+            .attr("class", "link")
+            .attr("d", (d) => this.line([node_positions[d.source.data.id], node_positions[d.target.data.id]]))
+            .attr("fill", "none")
+            .attr("stroke-width", 3)
+            .attr("stroke", "gray")
+    }
+
     _update(data) {
         console.log({data})
         const svg = d3.select(`#${this.svgId}`)

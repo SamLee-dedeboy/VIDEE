@@ -21,9 +21,9 @@
 </script>
 
 <div
-  class="task-card text-slate-600 w-min min-w-[16rem] transition-all outline outline-2 outline-blue-100 bg-[#F2F8FD] shadow px-2 py-1 rounded relative flex gap-y-1 gap-x-2"
+  class="task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline outline-2 outline-blue-100 bg-[#F2F8FD] shadow rounded relative flex gap-y-1 gap-x-2"
 >
-  <div class="flex flex-col grow">
+  <div class="flex flex-col grow px-2 gap-y-2">
     <div
       class="border-b border-gray-300 text-[1.2rem] italic flex items-center"
     >

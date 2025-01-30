@@ -22,9 +22,9 @@
 </script>
 
 <div
-  class="task-card text-slate-600 w-min min-w-[18rem] transition-all outline outline-2 outline-gray-200 bg-[#fbfaec] shadow px-2 py-1 rounded relative flex gap-y-1 gap-x-2"
+  class="task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline outline-2 outline-[#FFCFB1] bg-[#fbfaec] shadow rounded relative flex gap-y-1 gap-x-2"
 >
-  <div class="flex flex-col grow">
+  <div class="flex flex-col grow px-2 gap-y-2">
     <div
       class="border-b border-gray-300 text-[1.2rem] italic flex items-center"
     >
@@ -47,15 +47,12 @@
       </span>
     </div>
     {#if true}
-      <div
-        in:slide
-        class="border-b border-gray-300 flex flex-col min-w-[15rem]"
-      >
+      <div in:slide class=" border-gray-300 flex flex-col min-w-[15rem]">
         <div class="text-sm text-gray-400 italic">Description</div>
         {task.description}
       </div>
     {/if}
-    <div class="flex flex-col justify-between gap-y-2 mt-1">
+    <div class="flex gap-x-2 mt-1">
       <div class="flex justify-between flex-wrap">
         <button
           class="action-button outline-gray-200 bg-gray-100 hover:bg-green-100"
@@ -65,7 +62,7 @@
           onclick={() => showSubTasks()}>SubTasks</button
         >
       </div>
-      <div class="flex flex-col gap-x-2 relative">
+      <div class="flex flex-col gap-x-2 relative grow">
         <div
           role="button"
           tabindex="0"

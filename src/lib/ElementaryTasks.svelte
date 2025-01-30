@@ -11,6 +11,7 @@
   import { DAG } from "renderer/dag";
   import ElementaryTaskCard from "./ElementaryTaskCard.svelte";
   import { fly, fade, blur } from "svelte/transition";
+  import { draggable } from "./draggable";
   import { getContext } from "svelte";
   let {
     elementary_tasks,
@@ -23,8 +24,8 @@
   const session_id = (getContext("session_id") as Function)();
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
   const svgId = "dag-svg";
-  const node_radius = 100;
-  let dag_renderer = new DAG(svgId, node_radius);
+  const node_size: [number, number] = [150, 80];
+  let dag_renderer = new DAG(svgId, node_size);
 
   $effect(() => {
     update_dag(elementary_tasks);
@@ -104,38 +105,50 @@
   });
 </script>
 
-<div
-  class="relative grow shrink-0 bg-gray-50 px-2"
-  style:height={Math.max(elementary_tasks.length * 2 * node_radius, 800) + "px"}
->
+<div class="flex flex-col gap-y-1 grow h-fit">
   <span
     class="text-[1.5rem] text-slate-500 font-semibold italic bg-[#f2f8fd] w-full flex justify-center"
     >Elementary Tasks</span
   >
+
   <div
-    class="py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center mt-2 rounded outline outline-gray-200"
-    tabindex="0"
-    role="button"
-    onclick={() => handleCompile()}
-    onkeyup={() => {}}
+    class="relative grow shrink-0 bg-gray-50 px-2"
+    style:height={Math.max(
+      elementary_tasks.length * 2 * node_size[1] * 1.5,
+      800
+    ) + "px"}
   >
-    Compile Graph
-  </div>
-  <svg id={svgId} class="w-full h-full absolute"></svg>
-  <div class="elementary-tasks relative w-full flex flex-col-reverse">
-    {#each elementary_tasks as task, index}
-      <div
-        class="elementary-task-card-container absolute task-wrapper -translate-x-1/2 -translate-y-1/2"
-        style:z-index={elementary_tasks.length - index}
-        data-id={task.id}
-      >
-        <ElementaryTaskCard
-          {task}
-          executable={execution_states?.[task.id].executable || false}
-          {handleExecute}
-        ></ElementaryTaskCard>
-      </div>
-    {/each}
+    <div
+      class="py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center mt-2 rounded outline outline-gray-200"
+      tabindex="0"
+      role="button"
+      onclick={() => handleCompile()}
+      onkeyup={() => {}}
+    >
+      Compile Graph
+    </div>
+    <svg id={svgId} class="w-full h-full absolute"></svg>
+    <div class="elementary-tasks relative w-full flex flex-col-reverse">
+      {#each elementary_tasks as task, index}
+        <div
+          class="elementary-task-card-container absolute task-wrapper -translate-x-1/2 -translate-y-1/2 bg-blue-200 flex gap-x-1 outline outline-1 outline-gray-300 rounded-sm shadow"
+          use:draggable={dag_renderer}
+          style:z-index={elementary_tasks.length - index}
+          data-id={task.id}
+        >
+          <img
+            src="handle.svg"
+            class="mt-0.5 w-4 h-4 pointer-events-none"
+            alt="handle"
+          />
+          <ElementaryTaskCard
+            {task}
+            executable={execution_states?.[task.id].executable || false}
+            {handleExecute}
+          ></ElementaryTaskCard>
+        </div>
+      {/each}
+    </div>
   </div>
 </div>
 
