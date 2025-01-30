@@ -1,15 +1,15 @@
 from .custom_types import (
     Node,
-    ElementaryTaskExecution,
-    ElementaryTaskDescription,
+    PrimitiveTaskExecution,
+    PrimitiveTaskDescription,
     UserExecutionState,
     BaseStateSchema,
 )
 
 __all__ = [
     "Node",
-    "ElementaryTaskExecution",
-    "ElementaryTaskDescription",
+    "PrimitiveTaskExecution",
+    "PrimitiveTaskDescription",
     "UserExecutionState",
     "BaseStateSchema",
 ]

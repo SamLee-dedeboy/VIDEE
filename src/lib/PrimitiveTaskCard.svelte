@@ -1,7 +1,7 @@
 <script lang="ts">
   import type {
-    tElementaryTaskDescription,
-    tElementaryTaskExecution,
+    tPrimitiveTaskDescription,
+    tPrimitiveTaskExecution,
   } from "types";
   import { slide } from "svelte/transition";
   let {
@@ -9,10 +9,10 @@
     executable,
     handleExecute,
   }: {
-    task: tElementaryTaskDescription & Partial<tElementaryTaskExecution>;
+    task: tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>;
     executable: boolean;
     handleExecute: (
-      task: tElementaryTaskDescription & tElementaryTaskExecution
+      task: tPrimitiveTaskDescription & tPrimitiveTaskExecution
     ) => void;
   } = $props();
   let expand = $state(false);

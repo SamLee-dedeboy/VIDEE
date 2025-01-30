@@ -2,22 +2,22 @@
   import { server_address } from "constants";
   import { onMount, tick } from "svelte";
   import type {
-    tElementaryTaskDescription,
-    tElementaryTaskExecution,
+    tPrimitiveTaskDescription,
+    tPrimitiveTaskExecution,
     tExecutionState,
     tNode,
     tTask,
   } from "types";
   import { DAG } from "renderer/dag";
-  import ElementaryTaskCard from "./ElementaryTaskCard.svelte";
+  import PrimitiveTaskCard from "./PrimitiveTaskCard.svelte";
   import { fly, fade, blur } from "svelte/transition";
   import { draggable } from "./draggable";
   import { getContext } from "svelte";
   let {
-    elementary_tasks,
+    primitive_tasks,
   }: {
-    elementary_tasks: (tElementaryTaskDescription &
-      Partial<tElementaryTaskExecution>)[];
+    primitive_tasks: (tPrimitiveTaskDescription &
+      Partial<tPrimitiveTaskExecution>)[];
   } = $props();
   let execution_states: Record<string, tExecutionState> | undefined =
     $state(undefined);
@@ -28,23 +28,23 @@
   let dag_renderer = new DAG(svgId, node_size);
 
   $effect(() => {
-    update_dag(elementary_tasks);
+    update_dag(primitive_tasks);
   });
 
   /**
    * Prepare the data for the dag renderer
    * by adding the bounding box of each task card
-   * @param _elementary_tasks
+   * @param _primitive_tasks
    */
-  function update_dag(_elementary_tasks: tElementaryTaskDescription[]) {
-    console.log("updating elementary dag:", _elementary_tasks);
+  function update_dag(_primitive_tasks: tPrimitiveTaskDescription[]) {
+    console.log("updating primitive dag:", _primitive_tasks);
     // get the bounding box of each task card
-    const elementary_task_divs = document.querySelectorAll(
-      ".elementary-task-card-container"
+    const primitive_task_divs = document.querySelectorAll(
+      ".primitive-task-card-container"
     );
-    const dag_data: tNode[] = Array.from(elementary_task_divs).map((div) => {
+    const dag_data: tNode[] = Array.from(primitive_task_divs).map((div) => {
       const id = (div as HTMLElement).dataset.id;
-      const node_data: tElementaryTaskDescription = _elementary_tasks.find(
+      const node_data: tPrimitiveTaskDescription = _primitive_tasks.find(
         (task) => task.id === id
       )!;
       return {
@@ -54,21 +54,21 @@
     });
 
     // call renderer
-    dag_renderer.update(dag_data, [], ".elementary-task-card-container");
+    dag_renderer.update(dag_data, [], ".primitive-task-card-container");
   }
 
   function handleCompile() {
-    console.log("Compiling...", { elementary_tasks, session_id });
-    fetch(`${server_address}/elementary_task/compile/`, {
+    console.log("Compiling...", { primitive_tasks, session_id });
+    fetch(`${server_address}/primitive_task/compile/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ elementary_tasks, session_id }),
+      body: JSON.stringify({ primitive_tasks, session_id }),
     })
       .then((response) => response.json())
       .then((data) => {
-        elementary_tasks = data.elementary_tasks;
+        primitive_tasks = data.primitive_tasks;
         execution_states = data.execution_state;
         console.log({ data });
       })
@@ -78,10 +78,10 @@
   }
 
   function handleExecute(
-    execute_node: tElementaryTaskDescription & tElementaryTaskExecution
+    execute_node: tPrimitiveTaskDescription & tPrimitiveTaskExecution
   ) {
     console.log("Executing...", { execute_node, session_id });
-    fetch(`${server_address}/elementary_task/execute/`, {
+    fetch(`${server_address}/primitive_task/execute/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -100,7 +100,7 @@
 
   onMount(() => {
     dag_renderer.init();
-    update_dag(elementary_tasks);
+    update_dag(primitive_tasks);
     console.log({ execution_states });
   });
 </script>
@@ -108,13 +108,13 @@
 <div class="flex flex-col gap-y-1 grow h-fit">
   <span
     class="text-[1.5rem] text-slate-500 font-semibold italic bg-[#f2f8fd] w-full flex justify-center"
-    >Elementary Tasks</span
+    >Primitive Tasks</span
   >
 
   <div
     class="relative grow shrink-0 bg-gray-50 px-2"
     style:height={Math.max(
-      elementary_tasks.length * 2 * node_size[1] * 1.5,
+      primitive_tasks.length * 2 * node_size[1] * 1.5,
       800
     ) + "px"}
   >
@@ -128,12 +128,12 @@
       Compile Graph
     </div>
     <svg id={svgId} class="w-full h-full absolute"></svg>
-    <div class="elementary-tasks relative w-full flex flex-col-reverse">
-      {#each elementary_tasks as task, index}
+    <div class="primitive-tasks relative w-full flex flex-col-reverse">
+      {#each primitive_tasks as task, index}
         <div
-          class="elementary-task-card-container absolute task-wrapper -translate-x-1/2 -translate-y-1/2 bg-blue-200 flex gap-x-1 outline outline-1 outline-gray-300 rounded-sm shadow"
+          class="primitive-task-card-container absolute task-wrapper -translate-x-1/2 -translate-y-1/2 bg-blue-200 flex gap-x-1 outline outline-1 outline-gray-300 rounded-sm shadow"
           use:draggable={dag_renderer}
-          style:z-index={elementary_tasks.length - index}
+          style:z-index={primitive_tasks.length - index}
           data-id={task.id}
         >
           <img
@@ -141,11 +141,11 @@
             class="mt-0.5 w-4 h-4 pointer-events-none"
             alt="handle"
           />
-          <ElementaryTaskCard
+          <PrimitiveTaskCard
             {task}
             executable={execution_states?.[task.id].executable || false}
             {handleExecute}
-          ></ElementaryTaskCard>
+          ></PrimitiveTaskCard>
         </div>
       {/each}
     </div>

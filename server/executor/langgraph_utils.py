@@ -22,8 +22,8 @@ from collections import defaultdict
 
 
 from server.custom_types import (
-    ElementaryTaskExecution,
-    ElementaryTaskDescription,
+    PrimitiveTaskExecution,
+    PrimitiveTaskDescription,
     UserExecutionState,
     BaseStateSchema,
 )
@@ -69,8 +69,8 @@ def make_children_executable(execution_graph, user_execution_state, node_id):
 
 
 def execution_plan(
-    steps: list[ElementaryTaskDescription],
-) -> list[ElementaryTaskExecution]:
+    steps: list[PrimitiveTaskDescription],
+) -> list[PrimitiveTaskExecution]:
     plan = []
     for step in steps:
         plan.append(
@@ -89,11 +89,11 @@ def execution_plan(
     return plan
 
 
-def create_nodes(steps: list[ElementaryTaskExecution]):
+def create_nodes(steps: list[PrimitiveTaskExecution]):
     return [create_node(step) for step in steps]
 
 
-def create_graph(steps: list[ElementaryTaskExecution]):
+def create_graph(steps: list[PrimitiveTaskExecution]):
     graph = StateGraph(BaseStateSchema)
     nodes = create_nodes(steps)
     # create an empty node as root to signal the start of the graph

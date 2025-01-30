@@ -46,12 +46,22 @@
         {/if}
       </span>
     </div>
-    {#if true}
-      <div in:slide class=" border-gray-300 flex flex-col min-w-[15rem]">
-        <div class="text-sm text-gray-400 italic">Description</div>
-        {task.description}
+    <div in:slide class=" border-gray-300 flex flex-col min-w-[15rem]">
+      <div class="text-sm text-gray-400 italic">Description</div>
+      {task.description}
+    </div>
+    <div in:slide class=" border-gray-300 flex gap-x-2 min-w-[15rem]">
+      <div class="text-sm text-gray-400 italic">Confidence</div>
+      <div class="text-sm">
+        {task.confidence.toFixed(2)}
       </div>
-    {/if}
+    </div>
+    <div in:slide class=" border-gray-300 flex gap-x-2 min-w-[15rem]">
+      <div class="text-sm text-gray-400 italic">Complexity</div>
+      <div class="text-sm">
+        {task.complexity.toFixed(2)}
+      </div>
+    </div>
     <div class="flex gap-x-2 mt-1">
       <div class="flex justify-between flex-wrap">
         <button

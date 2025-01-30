@@ -11,6 +11,8 @@ class Node(BaseModel):
     depend_on: list[str]
     parentIds: list[str]
     children: list["Node"] = []
+    confidence: float
+    complexity: float
 
     class Config:
         orm_mode = True
@@ -21,7 +23,7 @@ class BaseStateSchema(TypedDict):
     entities: list
 
 
-class ElementaryTaskDescription(BaseModel):
+class PrimitiveTaskDescription(BaseModel):
     id: str
     label: str
     description: str
@@ -29,7 +31,7 @@ class ElementaryTaskDescription(BaseModel):
     parentIds: list[str]
 
 
-class ElementaryTaskExecution(ElementaryTaskDescription):
+class PrimitiveTaskExecution(PrimitiveTaskDescription):
     state_input_key: str
     doc_input_key: str
     state_output_key: str

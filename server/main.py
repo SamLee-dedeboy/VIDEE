@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import server.custom_types as custom_types
 import server.decomposer as decomposer
 import server.executor as executor
+import random
 
 app = FastAPI()
 origins = ["*"]
@@ -64,6 +65,10 @@ async def goal_decomposition(request: Request) -> list[custom_types.Node]:
         save_json(
             decomposed_steps, relative_path("test_decomposed_steps_w_children.json")
         )
+    for index, task in enumerate(decomposed_steps):
+        task["confidence"] = random.random()
+        task["complexity"] = random.random()
+        decomposed_steps[index] = task
     return decomposed_steps
 
 
@@ -86,31 +91,31 @@ async def task_decomposition(request: Request) -> list[custom_types.Node]:
     return current_steps
 
 
-@app.post("/semantic_task/decomposition_to_elementary_tasks/")
+@app.post("/semantic_task/decomposition_to_primitive_tasks/")
 async def task_decomposition(request: Request) -> list:
     request = await request.body()
     request = json.loads(request)
     task = request["task"]
     current_steps = request["current_steps"]
-    elementary_task_list = json.load(
-        open(relative_path("decomposer/elementary_task_defs.json"))
+    primitive_task_list = json.load(
+        open(relative_path("decomposer/primitive_task_defs.json"))
     )
     if dev:
-        decomposed_elementary_tasks = json.load(
-            open(relative_path("test_elementary_tasks.json"))
+        decomposed_primitive_tasks = json.load(
+            open(relative_path("test_primitive_tasks.json"))
         )
     else:
-        decomposed_elementary_tasks = await decomposer.decomposition_to_elementary_task(
+        decomposed_primitive_tasks = await decomposer.decomposition_to_primitive_task(
             task,
             current_steps,
-            elementary_task_list,
+            primitive_task_list,
             model=default_model,
             api_key=api_key,
         )
         save_json(
-            decomposed_elementary_tasks, relative_path("test_elementary_tasks.json")
+            decomposed_primitive_tasks, relative_path("test_primitive_tasks.json")
         )
-    return decomposed_elementary_tasks
+    return decomposed_primitive_tasks
 
 
 @app.post("/semantic_task/delete_children/")
@@ -126,32 +131,32 @@ async def task_decomposition(request: Request) -> list:
     return current_steps
 
 
-@app.post("/elementary_task/compile/")
-async def compile_elementary_tasks(request: Request) -> dict:
+@app.post("/primitive_task/compile/")
+async def compile_primitive_tasks(request: Request) -> dict:
     request = await request.body()
     request = json.loads(request)
     session_id = request["session_id"]
-    elementary_task_descriptions = request["elementary_tasks"]
+    primitive_task_descriptions = request["primitive_tasks"]
     if dev:
-        elementary_task_execution_plan = test_execution_plan
+        primitive_task_execution_plan = test_execution_plan
     else:
-        elementary_task_execution_plan = executor.execution_plan(
-            elementary_task_descriptions
+        primitive_task_execution_plan = executor.execution_plan(
+            primitive_task_descriptions
         )
-    execution_graph = executor.create_graph(elementary_task_execution_plan)
+    execution_graph = executor.create_graph(primitive_task_execution_plan)
     user_sessions[session_id]["execution_graph"] = execution_graph
     execution_state = executor.init_user_execution_state(
-        execution_graph, elementary_task_execution_plan
+        execution_graph, primitive_task_execution_plan
     )
     user_sessions[session_id]["execution_state"] = execution_state
     return {
-        "elementary_tasks": elementary_task_execution_plan,
+        "primitive_tasks": primitive_task_execution_plan,
         "execution_state": execution_state,
     }
 
 
-@app.post("/elementary_task/execute/")
-async def execute_elementary_tasks(request: Request):
+@app.post("/primitive_task/execute/")
+async def execute_primitive_tasks(request: Request):
     request = await request.body()
     request = json.loads(request)
     session_id = request["session_id"]

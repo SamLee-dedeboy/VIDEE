@@ -1,4 +1,4 @@
-from server.custom_types import Node, ElementaryTaskDescription
+from server.custom_types import Node, PrimitiveTaskDescription
 import server.AutoGenUtils.query as autogen_utils
 
 
@@ -7,8 +7,6 @@ async def goal_decomposition(goal: str, model: str, api_key: str) -> list[Node]:
         goal=goal, model=model, api_key=api_key
     )
     decomposed_semantic_tasks = add_parents(decomposed_semantic_tasks)
-    print(decomposed_semantic_tasks)
-    # decomposed_steps = add_uids(decomposed_steps)
     return decomposed_semantic_tasks
 
 
@@ -25,26 +23,26 @@ async def task_decomposition(
     return current_steps
 
 
-async def decomposition_to_elementary_task(
+async def decomposition_to_primitive_task(
     task: str,
     current_steps: list[Node],
-    elementary_task_list: list[ElementaryTaskDescription],
+    primitive_task_list: list[PrimitiveTaskDescription],
     model: str,
     api_key: str,
 ) -> list:
-    decomposed_elementary_tasks = (
-        await autogen_utils.run_decomposition_to_elementary_task_agent(
+    decomposed_primitive_tasks = (
+        await autogen_utils.run_decomposition_to_primitive_task_agent(
             task=task,
             tree=current_steps,
-            elementary_task_list=elementary_task_list,
+            primitive_task_list=primitive_task_list,
             model=model,
             api_key=api_key,
         )
     )
 
-    decomposed_elementary_tasks = add_parents(decomposed_elementary_tasks)
-    # decomposed_elementary_tasks = add_uids(decomposed_elementary_tasks)
-    return decomposed_elementary_tasks
+    decomposed_primitive_tasks = add_parents(decomposed_primitive_tasks)
+    # decomposed_primitive_tasks = add_uids(decomposed_primitive_tasks)
+    return decomposed_primitive_tasks
 
 
 def find_and_replace(decomposed_steps, task_label, current_steps):

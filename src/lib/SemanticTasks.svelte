@@ -22,7 +22,7 @@
   );
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
   const svgId = "dag-svg";
-  const node_size: [number, number] = [150, 80];
+  const node_size: [number, number] = [150, 100];
   let dag_renderer = new DAG(svgId, node_size);
 
   $effect(() => {
@@ -166,15 +166,17 @@
         </div>
       {/each}
     </div>
-    <div
-      class="py-1 mx-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10"
-      tabindex="0"
-      role="button"
-      onclick={() => handleConvert()}
-      onkeyup={() => {}}
-    >
-      Convert
-    </div>
+    {#if semantic_tasks_flattened.length > 0}
+      <div
+        class="py-1 mx-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10"
+        tabindex="0"
+        role="button"
+        onclick={() => handleConvert()}
+        onkeyup={() => {}}
+      >
+        Convert
+      </div>
+    {/if}
   </div>
 </div>
 

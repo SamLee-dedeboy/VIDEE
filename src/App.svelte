@@ -1,24 +1,24 @@
 <script lang="ts">
   import GoalConversation from "lib/GoalConversation.svelte";
   import SemanticTasks from "lib/SemanticTasks.svelte";
-  import ElementaryTasks from "lib/ElementaryTasks.svelte";
+  import PrimitiveTasks from "lib/PrimitiveTasks.svelte";
   import { server_address } from "constants";
   import { onMount, setContext } from "svelte";
   import type {
-    tElementaryTaskDescription,
-    tElementaryTaskExecution,
+    tPrimitiveTaskDescription,
+    tPrimitiveTaskExecution,
   } from "types";
   let session_id: string | undefined = $state(undefined);
   setContext("session_id", () => session_id);
   let semantic_tasks = $state(undefined);
-  let elementary_tasks:
-    | (tElementaryTaskDescription & Partial<tElementaryTaskExecution>)[]
+  let primitive_tasks:
+    | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)[]
     | undefined = $state(undefined);
-  // let elementary_task_execution_plan = $state(undefined);
+  // let primitive_task_execution_plan = $state(undefined);
 
   /**
    * Stores the state of the dag
-   * @value semantic | elementary
+   * @value semantic | primitive
    */
   let show_dag = $state("semantic");
 
@@ -78,25 +78,22 @@
   }
 
   /**
-   * convert the semantic tasks to elementary tasks
+   * convert the semantic tasks to primitive tasks
    */
   function handleConvert() {
     if (show_dag === "semantic") {
-      show_dag = "elementary";
+      show_dag = "primitive";
     }
-    fetch(
-      `${server_address}/semantic_task/decomposition_to_elementary_tasks/`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ task: {}, current_steps: semantic_tasks }),
-      }
-    )
+    fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ task: {}, current_steps: semantic_tasks }),
+    })
       .then((response) => response.json())
       .then((data) => {
-        elementary_tasks = data;
+        primitive_tasks = data;
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -123,9 +120,9 @@
                 semantic_tasks={semantic_tasks || []}
                 {handleConvert}
               ></SemanticTasks>
-            {:else if show_dag === "elementary"}
-              <ElementaryTasks elementary_tasks={elementary_tasks || []}
-              ></ElementaryTasks>
+            {:else if show_dag === "primitive"}
+              <PrimitiveTasks primitive_tasks={primitive_tasks || []}
+              ></PrimitiveTasks>
             {/if}
           </div>
           <div
@@ -133,7 +130,7 @@
             tabindex="0"
             role="button"
             onclick={() =>
-              (show_dag = show_dag === "semantic" ? "elementary" : "semantic")}
+              (show_dag = show_dag === "semantic" ? "primitive" : "semantic")}
             onkeyup={() => {}}
           >
             Switch
