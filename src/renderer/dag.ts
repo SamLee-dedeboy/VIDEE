@@ -12,20 +12,37 @@ export class DAG {
     svgId: string;
     nodeRadius: [number,number];
     line: any
+    selection_card: string
+    selection_container: string
+    coordinate_as_dict: any
     dag: any
-    constructor(svgId: string, node_radius: [number,number]=[100, 100]) {
+    zoom: any
+    handleClick: Function
+    constructor(svgId: string, node_radius: [number,number]=[100, 100], selection_card: string, selection_container: string) {
         this.svgId = svgId
         this.nodeRadius = node_radius
         this.line = d3.line().curve(d3.curveMonotoneY);
         this.dag = undefined;
+        this.zoom = d3.zoom().scaleExtent([0.5, 32])
+        .on("zoom", (e) => this.zoomed(e, this));
+        this.selection_card = selection_card
+        this.selection_container = selection_container
+        this.coordinate_as_dict = {}
+        this.handleClick = () => {}
     }
-    init () {
+    init (handleClick) {
         const svg = d3.select(`#${this.svgId}`)
         svg.append("g").attr("class", "links");
+        svg.append("g").attr("class", "nodes");
         svg.append("g").attr("class", "bubbles");
+        svg.call(this.zoom).call(this.zoom.transform, d3.zoomIdentity);
+        this.handleClick = handleClick
+
         console.log("init done")
     }
-    update(data: tNode[], expanded_nodes: string[], selection_query: string) {
+
+    update(data: tNode[], expanded_nodes: string[]) {
+        const self = this
         console.log("dag update", data)
         const svg = d3.select(`#${this.svgId}`);
         const svg_bbox = svg.node().getBoundingClientRect();
@@ -36,68 +53,118 @@ export class DAG {
         this.dag = stratify(data);
 
 
+        const rect_size: [number, number] = [320, 250]
         const layout = d3_dag
-        // .sugiyama()
-        .grid()
-        .lane(d3_dag.laneOpt())
+        .sugiyama()
+        // .grid()
+        // .lane(d3_dag.laneOpt())
         // .coord(d3_dag.coordGreedy())
-        .nodeSize(this.nodeRadius)
-        .gap([0, 0])
+        // .nodeSize(this.nodeRadius)
+        .nodeSize(rect_size)
+        .gap([50, 50])
+        // .tweaks([d3_dag.tweakShape(rect_size, d3_dag.shapeRect)])
+        // .tweaks([d3_dag.tweakShape(rect_size, d3_dag.shapeRect), d3_dag.tweakSize({width: max_width, height: max_height})])
 
         const { width, height } = layout(this.dag);
-        console.log()
+        console.log({width, height})
 
         const vertical = true;
-        const coordinate_as_dict: any = Array.from(this.dag.nodes()).reduce((acc: any, d: any) => {
+        this.coordinate_as_dict = Array.from(this.dag.nodes()).reduce((acc: any, d: any) => {
             acc[d.data.id] = d;
             return acc;
         }, {})
 
       // position nodes
-      d3.selectAll(selection_query)
+      d3.selectAll(this.selection_card)
         .style("left", function() {
             const id = this.dataset.id
-            return coordinate_as_dict[id].x * (max_width / width) + "px";
+            const transform = d3.zoomTransform(svg.node())
+            if(this.style.transform !== "") {
+                return self.coordinate_as_dict[id].x - this.getBoundingClientRect().width / 2 / (transform.k === undefined? 1 : transform.k) + "px"
+            } else {
+                return self.coordinate_as_dict[id].x - this.getBoundingClientRect().width / 2 + "px"
+            }
+            // return coordinate_as_dict[id].x * (max_width / width) + "px";
             return vertical?
-            coordinate_as_dict[id].x * (max_width / width) + "px":
-            coordinate_as_dict[id].y * (max_width / height) + "px"
+            self.coordinate_as_dict[id].x * (max_width / width) + "px":
+            self.coordinate_as_dict[id].y * (max_width / height) + "px"
 
         })
         .style("top", function() {
             const id = this.dataset.id
-            return coordinate_as_dict[id].y * (max_height / height) + "px"
+            const transform = d3.zoomTransform(svg.node())
+            if(this.style.transform !== "") {
+                return self.coordinate_as_dict[id].y - this.getBoundingClientRect().height/ 2 / (transform.k === undefined? 1 : transform.k) + "px"
+            } else {
+                return self.coordinate_as_dict[id].y - this.getBoundingClientRect().height / 2 + "px"
+            }
+            return self.coordinate_as_dict[id].y * (max_height / height) + "px"
             return vertical ? 
-            coordinate_as_dict[id].y * (max_height / height) + "px":
-            coordinate_as_dict[id].x * (max_height / width) + "px"
+            self.coordinate_as_dict[id].y * (max_height / height) + "px":
+            self.coordinate_as_dict[id].x * (max_height / width) + "px"
         })
-        const self = this
-        // svg.selectAll("rect.node")
-        //     .data(Object.keys(coordinate_as_dict))
-        //     .join("rect")
-        //     .attr("class", "node")
-        //     .attr("x", function(d) {
-        //         return coordinate_as_dict[d].x * (max_width / width) - self.nodeRadius[0]
-        //     })
-        //     .attr("y", function(d) {
-        //         return coordinate_as_dict[d].y * (max_height / height) - self.nodeRadius[1]
-        //     })
-        //     // .attr("x", ({ x }) => x * (max_width / width) - this.nodeRadius[0])
-        //     // .attr("y", ({ y }) => y * (max_height / height) - this.nodeRadius[1])
-        //     .attr("width",  this.nodeRadius[0] * 2)
-        //     .attr("height",  this.nodeRadius[1] * 2)
-        //     .attr("fill", "none")
-        //     .attr("stroke", "black")
-        //     .attr("stroke-width", 1)
-        //     .attr("rx", 10)
+        .each(function() {
+            applyTransform(this, d3.zoomTransform(svg.node()))
+        })
+        // left: 376px;
+//   top: 635.5px;
+//   transform: translate(-684px, -814.5px) scale(0.5) translate(684px, 814.5px) translate(595px, 126px)
+
+        svg.select("g.nodes")
+        // .selectAll("rect.node")
+            .data(Object.keys(self.coordinate_as_dict))
+            .join(
+                enter => enter.append("rect").attr("class", "node")
+                        .attr("width",  0)
+                        .attr("height",  0)
+                        .attr("fill", "white")
+                        .attr("stroke", "black")
+                        .attr("stroke-width", 1)
+                        .attr("rx", 10)
+                        .attr("cursor", "pointer")
+                        .attr("x", function(d) {
+                            return self.coordinate_as_dict[d].x - rect_size[0]/2
+                            // return coordinate_as_dict[d].x * (max_width / width) - rect_size[0]
+                        })
+                        .attr("y", function(d) {
+                            return self.coordinate_as_dict[d].y - rect_size[1]/2
+                            // return coordinate_as_dict[d].y * (max_height / height) - rect_size[1]
+                        })
+                        // .attr("x", ({ x }) => x * (max_width / width) - this.nodeRadius[0])
+                        // .attr("y", ({ y }) => y * (max_height / height) - this.nodeRadius[1])
+                        .on("click", (_, d) => {
+                            // this.handleClick(d)
+                            d3.selectAll(self.selection_card)
+                            .nodes()
+                            .filter((div_data) => div_data.dataset.id === d)[0].style.visibility = "visible"
+                        })
+                        .transition().duration(300)
+                        .attr("width", rect_size[0])
+                        .attr("height", rect_size[1])
+                        ,
+                update => update.transition().duration(500)
+                        .attr("x", function(d) {
+                            return self.coordinate_as_dict[d].x - rect_size[0]/2
+                            // return coordinate_as_dict[d].x * (max_width / width) - rect_size[0]
+                        })
+                        .attr("y", function(d) {
+                            return self.coordinate_as_dict[d].y - rect_size[1]/2
+                            // return coordinate_as_dict[d].y * (max_height / height) - rect_size[1]
+                        }),
+                exit => exit.transition().duration(300)
+                        .attr("width",  0)
+                        .attr("height",  0)
+                        .remove()
+            )
 
         // plot edges
 
-        this.update_links(selection_query)
+        this.update_links(this.selection_card)
         // plot edges between decomposed tasks
         const expansion_links = data.filter(d => expanded_nodes.includes(d.id)).map(d => {
-            const first_child_coord = coordinate_as_dict[d.children?.[0].id]
+            const first_child_coord = self.coordinate_as_dict[d.children?.[0].id]
             console.log(d, first_child_coord)
-            const this_coord = coordinate_as_dict[d.id]
+            const this_coord = self.coordinate_as_dict[d.id]
             const link_coords = vertical?
             [
                 [this_coord.x * (max_width / width), this_coord.y * (max_height / height)],
@@ -109,16 +176,16 @@ export class DAG {
             ]
             return link_coords
         })
-        svg.select("g.links")
-        .selectAll("path.expansion-link")
-        .data(expansion_links)
-        .join("path")
-        .attr("class", "expansion-link")
-        .attr("d", (d) => this.line(d))
-        .attr("fill", "none")
-        .attr("stroke-width", 3)
-        .attr("stroke", "gray")
-        .attr("stroke-dasharray", "5,5")
+        // svg.select("g.links")
+        // .selectAll("path.expansion-link")
+        // .data(expansion_links)
+        // .join("path")
+        // .attr("class", "expansion-link")
+        // .attr("d", (d) => this.line(d))
+        // .attr("fill", "none")
+        // .attr("stroke-width", 3)
+        // .attr("stroke", "gray")
+        // .attr("stroke-dasharray", "5,5")
 
         // add bubbles
         return
@@ -147,13 +214,15 @@ export class DAG {
             ]
             return acc
         }, {})
+        console.log("links: ", this.dag.links())
         const svg = d3.select(`#${this.svgId}`);
         svg.select("g.links")
             .selectAll("path.link")
             .data(this.dag.links())
             .join("path")
             .attr("class", "link")
-            .attr("d", (d) => this.line([node_positions[d.source.data.id], node_positions[d.target.data.id]]))
+            // .attr("d", (d) => this.line([node_positions[d.source.data.id], node_positions[d.target.data.id]]))
+            .attr("d", ({points}) => this.line(points))
             .attr("fill", "none")
             .attr("stroke-width", 3)
             .attr("stroke", "gray")
@@ -189,6 +258,25 @@ export class DAG {
             .attr("stroke", "black")
 
     }
+
+    zoomed(e, self) {
+        const svg = d3.select(`#${self.svgId}`);
+        svg.select("g.nodes").attr("transform", `translate(${e.transform.x}, ${e.transform.y}) scale(${e.transform.k})`);
+        svg.select("g.links").attr("transform", `translate(${e.transform.x}, ${e.transform.y}) scale(${e.transform.k})`);
+        document.querySelectorAll(self.selection_card).forEach(div => {
+            applyTransform(div, e.transform)
+            // div.style.transform = `scale(${e.transform.k})`
+            // div.style.scale = e.transform.k
+            // const left = parseFloat(div.style.left)
+            // const top = parseFloat(div.style.top)
+            // const width = div.getBoundingClientRect().width
+            // const height = div.getBoundingClientRect().height
+            // const offsetX = left + width / 2 / e.transform.k
+            // const offsetY = top + height / 2 / e.transform.k
+            // const transform = `translate(${-offsetX}px, ${-offsetY}px) scale(${e.transform.k}) translate(${offsetX}px, ${offsetY}px) translate(${e.transform.x / e.transform.k}px, ${e.transform.y / e.transform.k}px)`
+            // div.style.transform = transform
+        })
+      }
 }
 
 function getGroup(node: tNode) {
@@ -241,4 +329,16 @@ function create_bubble_path(points, radius) {
         :
         [p[1] * (max_width / height), p[0] * (max_height / width)]
     )
+  }
+
+  function applyTransform(div, transform) {
+    const left = parseFloat(div.style.left)
+    const top = parseFloat(div.style.top)
+    const width = div.getBoundingClientRect().width * (div.style.transform === ""? transform.k : 1)
+    const height = div.getBoundingClientRect().height * (div.style.transform === ""? transform.k : 1)
+    const offsetX = left + width / 2 / transform.k
+    const offsetY = top + height / 2 / transform.k
+    // console.log(div.dataset.id, div.style.transform, {left, top, width, height, offsetX, offsetY})
+    const new_transform = `translate(${-offsetX}px, ${-offsetY}px) scale(${transform.k}) translate(${offsetX}px, ${offsetY}px) translate(${transform.x / transform.k}px, ${transform.y / transform.k}px)`
+    div.style.transform = new_transform
   }

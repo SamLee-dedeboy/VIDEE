@@ -23,7 +23,12 @@
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
   const svgId = "dag-svg";
   const node_size: [number, number] = [150, 100];
-  let dag_renderer = new DAG(svgId, node_size);
+  let dag_renderer = new DAG(
+    svgId,
+    node_size,
+    ".semantic-task-card-container",
+    ".semantic-tasks"
+  );
 
   $effect(() => {
     update_dag(semantic_tasks_flattened);
@@ -59,7 +64,7 @@
    * by adding the bounding box of each task card
    * @param _semantic_tasks_flattened
    */
-  function update_dag(_semantic_tasks_flattened: tSemanticTask[]) {
+  async function update_dag(_semantic_tasks_flattened: tSemanticTask[]) {
     console.log("updating semantic dag:", _semantic_tasks_flattened);
     // get the bounding box of each task card
     const semantic_task_divs = document.querySelectorAll(
@@ -77,11 +82,7 @@
     });
 
     // call renderer
-    dag_renderer.update(
-      dag_data,
-      semantic_tasks_expanded,
-      ".semantic-task-card-container"
-    );
+    dag_renderer.update(dag_data, semantic_tasks_expanded);
   }
 
   function handleDecompose(task: tSemanticTask) {
@@ -95,6 +96,7 @@
       .then((response) => response.json())
       .then((data) => {
         semantic_tasks = data;
+        console.log("task decomposed: ", { data });
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -119,8 +121,13 @@
       });
   }
 
+  function handleToggle(task_id: string) {
+    semantic_tasks_expanded = semantic_tasks_expanded.includes(task_id)
+      ? semantic_tasks_expanded.filter((id) => id !== task_id)
+      : [...semantic_tasks_expanded, task_id];
+  }
   onMount(() => {
-    dag_renderer.init();
+    dag_renderer.init(handleToggle);
     update_dag(semantic_tasks);
   });
 </script>
@@ -130,19 +137,17 @@
     class="text-[1.5rem] text-slate-600 font-semibold italic bg-[#FFCFB1] w-full flex justify-center"
     >Semantic Tasks</span
   >
-  <div
-    class="relative bg-gray-50 flex flex-col gap-y-1"
-    style:height={Math.max(
+  <!-- style:height={Math.max(
       semantic_tasks_flattened.length * 2 * node_size[1] * 1.5,
       1000
-    ) + "px"}
-  >
+    ) + "px"} -->
+  <div class="relative bg-gray-50 flex flex-col gap-y-1 h-[1000px]">
     <svg id={svgId} class="w-full h-full absolute"></svg>
     <div class="semantic-tasks relative w-full">
       {#each semantic_tasks_flattened as task, index}
         <div
           use:draggable={dag_renderer}
-          class="semantic-task-card-container absolute task-wrapper -translate-x-1/2 -translate-y-1/2 bg-[#FFCFB1] flex gap-x-1 outline outline-1 outline-gray-300 rounded-sm shadow"
+          class="semantic-task-card-container absolute flex task-wrapper bg-[#FFCFB1] gap-x-1 outline outline-1 outline-gray-300 rounded-sm shadow"
           style:z-index={semantic_tasks_flattened.length - index}
           data-id={task.id}
         >
@@ -155,13 +160,7 @@
             {task}
             {handleDecompose}
             {handleDeleteChildren}
-            handleToggle={() => {
-              semantic_tasks_expanded = semantic_tasks_expanded.includes(
-                task.id
-              )
-                ? semantic_tasks_expanded.filter((id) => id !== task.id)
-                : [...semantic_tasks_expanded, task.id];
-            }}
+            handleToggle={() => handleToggle(task.id)}
           ></SemanticTaskCard>
         </div>
       {/each}
