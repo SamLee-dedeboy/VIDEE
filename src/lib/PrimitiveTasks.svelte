@@ -25,7 +25,12 @@
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
   const svgId = "dag-svg";
   const node_size: [number, number] = [150, 80];
-  let dag_renderer = new DAG(svgId, node_size);
+  let dag_renderer = new DAG(
+    svgId,
+    node_size,
+    ".primitive-task-card-container",
+    ".primitive-tasks"
+  );
 
   $effect(() => {
     update_dag(primitive_tasks);
@@ -54,7 +59,7 @@
     });
 
     // call renderer
-    dag_renderer.update(dag_data, [], ".primitive-task-card-container");
+    dag_renderer.update(dag_data, []);
   }
 
   function handleCompile() {
