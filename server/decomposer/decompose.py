@@ -1,25 +1,34 @@
 from server.custom_types import Node, PrimitiveTaskDescription
 import server.AutoGenUtils.query as autogen_utils
+import random
 
 
 async def goal_decomposition(goal: str, model: str, api_key: str) -> list[Node]:
     decomposed_semantic_tasks = await autogen_utils.run_goal_decomposition_agent(
         goal=goal, model=model, api_key=api_key
     )
+    for index, task in enumerate(decomposed_semantic_tasks):
+        task["confidence"] = random.random()
+        task["complexity"] = random.random()
+        decomposed_semantic_tasks[index] = task
     decomposed_semantic_tasks = add_parents(decomposed_semantic_tasks)
     return decomposed_semantic_tasks
 
 
 async def task_decomposition(
-    task: str, current_steps: list[Node], model: str, api_key: str
+    task: Node, current_steps: list[Node], model: str, api_key: str
 ) -> list[Node]:
     decomposed_semantic_tasks = await autogen_utils.run_task_decomposition_agent(
         task=task, model=model, api_key=api_key
     )
     decomposed_semantic_tasks = add_parents(decomposed_semantic_tasks)
+    for index in range(len(decomposed_semantic_tasks)):
+        decomposed_semantic_tasks[index]["confidence"] = random.random()
+        decomposed_semantic_tasks[index]["complexity"] = random.random()
     # decomposed_steps = add_uids(decomposed_steps)
     # modifies current_steps
-    find_and_replace(decomposed_semantic_tasks, task["label"], current_steps)
+    result = find_and_replace(decomposed_semantic_tasks, task["label"], current_steps)
+    print(result)
     return current_steps
 
 
@@ -49,19 +58,21 @@ def find_and_replace(decomposed_steps, task_label, current_steps):
     # find the task label in the current steps using dfs recursively
     # if the task is found, replace it with the decomposed steps
     # if the task is not found, return None
-    # here is the code
     for step in current_steps:
         if step["label"] == task_label:
             step["children"] = decomposed_steps
             decomposed_from_id = step["id"]
             for child in decomposed_steps:
                 child["id"] = f"{decomposed_from_id}-{child['id']}"
-                child["parentIds"] = [
-                    f"{decomposed_from_id}-{parent_id}"
-                    for parent_id in child["parentIds"]
-                ]
+                if child["parentIds"] == []:
+                    child["parentIds"] = [decomposed_from_id]
+                else:
+                    child["parentIds"] = [
+                        f"{decomposed_from_id}-{parent_id}"
+                        for parent_id in child["parentIds"]
+                    ]
             step["children"] = decomposed_steps
-            return
+            return "found and replaced"
         elif "children" in step:
             find_and_replace(decomposed_steps, task_label, step["children"])
         else:

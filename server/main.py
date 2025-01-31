@@ -65,10 +65,6 @@ async def goal_decomposition(request: Request) -> list[custom_types.Node]:
         save_json(
             decomposed_steps, relative_path("test_decomposed_steps_w_children.json")
         )
-    for index, task in enumerate(decomposed_steps):
-        task["confidence"] = random.random()
-        task["complexity"] = random.random()
-        decomposed_steps[index] = task
     return decomposed_steps
 
 

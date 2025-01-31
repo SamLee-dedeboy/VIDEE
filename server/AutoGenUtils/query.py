@@ -10,11 +10,11 @@ async def run_goal_decomposition_agent(goal: str, model: str, api_key: str):
     model_client = OpenAIChatCompletionClient(
         model=model,
         api_key=api_key,
+        temperature=0.0,
     )
     goal_decomposition_agent = AssistantAgent(
         name="goal_decomposition_agent",
         model_client=model_client,
-        temperature=0.0,
         system_message="""You are a text analytics task planner. 
         Users have collected a dataset, and they need help with text analytics tasks.
         Users will describe a goal to you, and you need to help them decompose the goal into subtasks, and then provide a plan to complete each of the subtask.
@@ -50,11 +50,12 @@ async def run_goal_decomposition_agent(goal: str, model: str, api_key: str):
 
 async def run_task_decomposition_agent(task: Node, model: str, api_key: str):
     # Create a countdown agent.
-    model_client = OpenAIChatCompletionClient(model=model, api_key=api_key)
+    model_client = OpenAIChatCompletionClient(
+        model=model, api_key=api_key, temperature=0.0
+    )
     goal_decomposition_agent = AssistantAgent(
         name="task_decomposition_agent",
         model_client=model_client,
-        temperature=0.0,
         system_message="""You are a text analytics task planner. 
         The use will describe a task to you, you need to help them decompose the task into subtasks. 
         Ignore the other practical parts such as data collection, cleaning or visualization.
