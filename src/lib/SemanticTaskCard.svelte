@@ -22,7 +22,6 @@
     show_subtasks = !show_subtasks;
     handleToggleShowChildren();
   }
-  $inspect(expand);
 </script>
 
 <div

@@ -122,7 +122,7 @@
 
 <div class="flex flex-col gap-y-1 grow h-fit">
   <span
-    class="text-[1.5rem] text-slate-500 font-semibold italic bg-[#f2f8fd] w-full flex justify-center"
+    class="text-[1.5rem] text-slate-500 font-semibold italic bg-[#f2f8fd] w-full flex justify-center z-10"
     >Primitive Tasks</span
   >
 

@@ -98,7 +98,7 @@
   </div>
   {#if expand}
     <div
-      class="flex flex-col absolute left-[101%] top-0 bottom-0 bg-[#F2F8FD] border-r-2 border-y-2 border-blue-100"
+      class="flex flex-col absolute left-[100.7%] top-0 bottom-0 bg-[#F2F8FD] border-r-2 border-y-2 border-blue-100"
     >
       <div class="flex divide-x divide-white py-0.5">
         <div in:slide class="flex flex-col text-xs min-w-[15rem] max-w-[20rem]">

@@ -66,11 +66,12 @@ export class DAG {
         // .tweaks([d3_dag.tweakShape(rect_size, d3_dag.shapeRect), d3_dag.tweakSize({width: max_width, height: max_height})])
 
         const { width, height } = layout(this.dag);
-        console.log({width, height})
+        const translation_scaling = [max_width / width, 1.1*max_height / height]
+        console.log({width, height, max_width, max_height})
 
         const vertical = true;
         this.coordinate_as_dict = Array.from(this.dag.nodes()).reduce((acc: any, d: any) => {
-            acc[d.data.id] = d;
+            acc[d.data.id] = {x: d.x * translation_scaling[0], y: d.y * translation_scaling[1]};
             return acc;
         }, {})
 
@@ -159,7 +160,7 @@ export class DAG {
 
         // plot edges
 
-        this.update_links(this.selection_card)
+        this.update_links(translation_scaling)
         // plot edges between decomposed tasks
         const expansion_links = data.filter(d => expanded_nodes.includes(d.id)).map(d => {
             const first_child_coord = self.coordinate_as_dict[d.children?.[0].id]
@@ -206,15 +207,7 @@ export class DAG {
 
     }
 
-    update_links(selection_query) {
-        const node_positions = d3.selectAll(selection_query).nodes().reduce((acc, node) => {
-            acc[node.dataset.id] = [
-                parseFloat(node.style.left),
-                parseFloat(node.style.top)
-            ]
-            return acc
-        }, {})
-        console.log("links: ", this.dag.links())
+    update_links(translation_scaling) {
         const svg = d3.select(`#${this.svgId}`);
         svg.select("g.links")
             .selectAll("path.link")
@@ -222,7 +215,8 @@ export class DAG {
             .join("path")
             .attr("class", "link")
             // .attr("d", (d) => this.line([node_positions[d.source.data.id], node_positions[d.target.data.id]]))
-            .attr("d", ({points}) => this.line(points))
+            // .attr("d", ({points}) => this.line(points.map(p => { return {x: p.x * translation_scaling[0], y: p.y * translation_scaling[1]}})))
+            .attr("d", ({points}) => this.line(points.map(p => [p[0] * translation_scaling[0], p[1] * translation_scaling[1]])))
             .attr("fill", "none")
             .attr("stroke-width", 3)
             .attr("stroke", "gray")
