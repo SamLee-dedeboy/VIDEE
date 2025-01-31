@@ -17,7 +17,7 @@ export class DAG {
     coordinate_as_dict: any
     dag: any
     zoom: any
-    handleClick: Function
+    // handleClick: Function
     constructor(svgId: string, node_radius: [number,number]=[100, 100], selection_card: string, selection_container: string) {
         this.svgId = svgId
         this.nodeRadius = node_radius
@@ -28,9 +28,9 @@ export class DAG {
         this.selection_card = selection_card
         this.selection_container = selection_container
         this.coordinate_as_dict = {}
-        this.handleClick = () => {}
+        // this.handleClick = () => {}
     }
-    init (handleClick) {
+    init (handleClick=() => {}) {
         const svg = d3.select(`#${this.svgId}`)
         svg.append("g").attr("class", "links");
         svg.append("g").attr("class", "nodes");

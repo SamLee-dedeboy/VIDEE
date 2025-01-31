@@ -13,13 +13,14 @@
   /**
    * Stores the id of the expanded tasks
    */
-  let semantic_tasks_expanded: string[] = $state([]);
+  let semantic_tasks_show_children: string[] = $state([]);
   /**
    * Stores the flattened semantic tasks
    */
   let semantic_tasks_flattened: tSemanticTask[] = $derived(
-    flatten(semantic_tasks, semantic_tasks_expanded)
+    flatten(semantic_tasks, semantic_tasks_show_children)
   );
+  let task_card_expanded: string[] = $state([]);
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
   const svgId = "dag-svg";
   const node_size: [number, number] = [150, 100];
@@ -40,7 +41,7 @@
    */
   function flatten(
     _semantic_tasks: tSemanticTask[] | undefined,
-    _semantic_tasks_expanded: string[]
+    _semantic_tasks_show_children: string[]
   ) {
     console.log({ _semantic_tasks });
     // flatten the semantic tasks with bfs
@@ -50,7 +51,7 @@
     while (queue.length) {
       let task = queue.shift()!;
       flattened.push(task);
-      if (task?.children && _semantic_tasks_expanded.includes(task.id)) {
+      if (task?.children && _semantic_tasks_show_children.includes(task.id)) {
         queue.push(...task.children);
       }
     }
@@ -82,7 +83,7 @@
     });
 
     // call renderer
-    dag_renderer.update(dag_data, semantic_tasks_expanded);
+    dag_renderer.update(dag_data, semantic_tasks_show_children);
   }
 
   function handleDecompose(task: tSemanticTask) {
@@ -121,13 +122,21 @@
       });
   }
 
-  function handleToggle(task_id: string) {
-    semantic_tasks_expanded = semantic_tasks_expanded.includes(task_id)
-      ? semantic_tasks_expanded.filter((id) => id !== task_id)
-      : [...semantic_tasks_expanded, task_id];
+  function handleToggleShowChildren(task_id: string) {
+    semantic_tasks_show_children = semantic_tasks_show_children.includes(
+      task_id
+    )
+      ? semantic_tasks_show_children.filter((id) => id !== task_id)
+      : [...semantic_tasks_show_children, task_id];
+  }
+
+  function handleToggleExpand(task_id: string) {
+    task_card_expanded = task_card_expanded.includes(task_id)
+      ? task_card_expanded.filter((id) => id !== task_id)
+      : [...task_card_expanded, task_id];
   }
   onMount(() => {
-    dag_renderer.init(handleToggle);
+    dag_renderer.init();
     update_dag(semantic_tasks);
   });
 </script>
@@ -145,29 +154,39 @@
     <svg id={svgId} class="w-full h-full absolute"></svg>
     <div class="semantic-tasks relative w-full">
       {#each semantic_tasks_flattened as task, index}
+        <!-- use:draggable={dag_renderer} -->
         <div
-          use:draggable={dag_renderer}
-          class="semantic-task-card-container absolute flex task-wrapper bg-[#FFCFB1] gap-x-1 outline outline-1 outline-gray-300 rounded-sm shadow"
+          class="semantic-task-card-container absolute flex task-wrapper bg-[#FFCFB1] outline outline-1 outline-gray-300 rounded-sm shadow"
           style:z-index={semantic_tasks_flattened.length - index}
           data-id={task.id}
         >
-          <img
-            src="handle.svg"
-            class="mt-0.5 w-4 h-4 pointer-events-none"
-            alt="handle"
-          />
           <SemanticTaskCard
             {task}
+            expand={task_card_expanded.includes(task.id)}
             {handleDecompose}
             {handleDeleteChildren}
-            handleToggle={() => handleToggle(task.id)}
+            {handleToggleShowChildren}
+            handleToggleExpand={() => handleToggleExpand(task.id)}
           ></SemanticTaskCard>
+          {#if !task_card_expanded.includes(task.id)}
+            <button
+              class="flex p-0.5 hover:bg-orange-400 justify-center"
+              onclick={() =>
+                (task_card_expanded = [...task_card_expanded, task.id])}
+            >
+              <img
+                src="chevron_right.svg"
+                class="mt-0.5 w-5 h-4 pointer-events-none"
+                alt="handle"
+              />
+            </button>
+          {/if}
         </div>
       {/each}
     </div>
     {#if semantic_tasks_flattened.length > 0}
       <div
-        class="py-1 mx-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10"
+        class="self-end py-1 mx-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10"
         tabindex="0"
         role="button"
         onclick={() => handleConvert()}

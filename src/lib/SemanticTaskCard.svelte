@@ -3,22 +3,26 @@
   import { slide, scale } from "svelte/transition";
   let {
     task,
+    expand = $bindable(false),
     handleDecompose = () => {},
-    handleToggle = () => {},
+    handleToggleExpand = () => {},
+    handleToggleShowChildren = () => {},
     handleDeleteChildren = () => {},
   }: {
     task: tSemanticTask;
+    expand: boolean;
     handleDecompose?: Function;
-    handleToggle?: Function;
+    handleToggleExpand?: Function;
+    handleToggleShowChildren?: Function;
     handleDeleteChildren?: Function;
   } = $props();
-  let expand = $state(false);
   let show_subtasks = $state(false);
   let show_actions = $state(false);
   function showSubTasks() {
     show_subtasks = !show_subtasks;
-    handleToggle();
+    handleToggleShowChildren();
   }
+  $inspect(expand);
 </script>
 
 <div
@@ -29,7 +33,7 @@
       class="border-b border-gray-300 text-[1.2rem] italic flex items-center"
     >
       <span class="card-label mr-2 capitalize">{task.label}</span>
-      <span
+      <!-- <span
         tabindex="0"
         role="button"
         class="ml-auto right-0 mb-0.5 shrink-0 w-7 p-1 self-stretch flex cursor-pointer hover:!bg-gray-200 rounded"
@@ -44,7 +48,7 @@
         {:else}
           <img src="panel_left_open.svg" class="" alt="expand" />
         {/if}
-      </span>
+      </span> -->
     </div>
     <div in:slide class=" border-gray-300 flex flex-col min-w-[15rem]">
       <div class="text-sm text-gray-400 italic">Description</div>
@@ -118,18 +122,28 @@
   </div>
   {#if expand}
     <div
-      class="flex absolute left-[101%] top-0 bottom-1 bg-white px-2 border-y border-r border-gray-200"
+      class="flex absolute left-[100.7%] top-0 bottom-1 bg-white border-y border-r border-gray-200"
     >
-      <div in:slide class=" relative mt-1 mb-2">
+      <div in:slide class="relative mt-1 flex flex-col">
         <img
           src="bot.svg"
           alt="bot"
-          class="w-7 h-7 inline-block p-0.5 border-r border-b border-gray-300 shadow min-w-[15rem]"
+          class="mx-2 w-7 h-7 inline-block p-0.5 border-r border-b border-gray-300 shadow min-w-[15rem]"
         />
-        <div class="text-sm text-gray-400 italic">Explanation</div>
-        <span class="">
+        <div class="text-sm text-gray-400 italic mx-2">Explanation</div>
+        <span class="mx-2">
           {task.explanation}
         </span>
+        <button
+          class="p-0.5 bg-[#FFCFB1] mt-auto hover:bg-orange-400"
+          onclick={() => handleToggleExpand(task.id)}
+        >
+          <img
+            src="chevron_left.svg"
+            class="mt-0.5 w-5 h-4 pointer-events-none"
+            alt="handle"
+          />
+        </button>
       </div>
     </div>
   {/if}

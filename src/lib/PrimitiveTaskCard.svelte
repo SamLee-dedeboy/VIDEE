@@ -6,18 +6,27 @@
   import { slide } from "svelte/transition";
   let {
     task,
+    expand,
     executable,
+    compiling,
     handleExecute,
+    handleToggleExpand = () => {},
   }: {
     task: tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>;
+    expand: boolean;
     executable: boolean;
+    compiling: boolean;
     handleExecute: (
       task: tPrimitiveTaskDescription & tPrimitiveTaskExecution
     ) => void;
+    handleToggleExpand?: Function;
   } = $props();
-  let expand = $state(false);
   let show_actions = $state(false);
-  $inspect(task);
+  $effect(() => {
+    if (compiling) {
+      expand = true;
+    }
+  });
 </script>
 
 <div
@@ -28,7 +37,7 @@
       class="border-b border-gray-300 text-[1.2rem] italic flex items-center"
     >
       <span class="card-label mr-2 capitalize">{task.label}</span>
-      <span
+      <!-- <span
         tabindex="0"
         role="button"
         class="ml-auto right-0 mb-0.5 shrink-0 w-7 p-1 self-stretch flex cursor-pointer hover:!bg-gray-200 rounded"
@@ -43,7 +52,7 @@
         {:else}
           <img src="panel_left_open.svg" class="" alt="expand" />
         {/if}
-      </span>
+      </span> -->
     </div>
     <div in:slide class="border-b border-gray-300 flex flex-col min-w-[15rem]">
       <div class="text-sm text-gray-400 italic">Description</div>
@@ -88,54 +97,86 @@
     </div>
   </div>
   {#if expand}
-    <div in:slide class="flex flex-col text-xs min-w-[15rem] max-w-[20rem]">
-      <div class="flex text-lg justify-center">Input/Output Format</div>
-      <div class="flex flex-col">
-        <div class="option-label">State Input Key:</div>
-        <div class="flex items-center justify-center option-value">
-          {task.state_input_key}
-        </div>
-      </div>
-      <div class="flex flex-col">
-        <div class="option-label">Doc Input Keys:</div>
-        {#if task.doc_input_keys}
-          <div class="flex gap-x-2 items-center justify-around">
-            {#each task.doc_input_keys as input_key}
-              <div class="flex items-center justify-center option-value">
-                {input_key}
-              </div>
-            {/each}
-          </div>
-        {/if}
-      </div>
-      <div class="flex flex-col">
-        <div class="option-label">State Output Key:</div>
-        <div class="flex items-center justify-center option-value">
-          {task.state_output_key}
-        </div>
-      </div>
-    </div>
-    <div in:slide class="flex flex-col min-w-[15rem] text-xs">
-      <div class="flex text-lg justify-center">Execution</div>
-      <div class="flex items-center gap-x-2">
-        <div class="option-label">Tool:</div>
-        <div class="flex items-center justify-center option-value">
-          {task.execution?.tool || "N/A"}
-        </div>
-      </div>
-      <div class="flex flex-col">
-        <div class="option-label">Parameters:</div>
-        {#each Object.keys(task.execution?.parameters || {}) as key}
-          <div class="flex items-center gap-x-2 gap-y-1">
-            <div class="option-label min-w-[3rem]">{key}:</div>
-            <div
-              class="flex items-center justify-center option-value !my-0 max-w-[10rem] overflow-scroll"
-            >
-              {task.execution?.parameters[key]}
+    <div
+      class="flex flex-col absolute left-[101%] top-0 bottom-0 bg-[#F2F8FD] border-r-2 border-y-2 border-blue-100"
+    >
+      <div class="flex divide-x divide-white py-0.5">
+        <div in:slide class="flex flex-col text-xs min-w-[15rem] max-w-[20rem]">
+          <div class="flex text-lg justify-center">Input/Output Format</div>
+          {#if compiling}
+            <div class="self-center h-full flex items-center">Compiling...</div>
+          {:else if task.execution === undefined}
+            <div class="self-center h-full flex items-center">
+              Needs Compilation
             </div>
-          </div>
-        {/each}
+          {:else}
+            <div class="flex flex-col">
+              <div class="option-label">State Input Key:</div>
+              <div class="flex items-center justify-center option-value">
+                {task.state_input_key}
+              </div>
+            </div>
+            <div class="flex flex-col">
+              <div class="option-label">Doc Input Keys:</div>
+              {#if task.doc_input_keys}
+                <div class="flex gap-x-2 items-center justify-around">
+                  {#each task.doc_input_keys as input_key}
+                    <div class="flex items-center justify-center option-value">
+                      {input_key}
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+            <div class="flex flex-col">
+              <div class="option-label">State Output Key:</div>
+              <div class="flex items-center justify-center option-value">
+                {task.state_output_key}
+              </div>
+            </div>
+          {/if}
+        </div>
+        <div in:slide class="flex flex-col min-w-[15rem] text-xs">
+          <div class="flex text-lg justify-center">Execution</div>
+          {#if compiling}
+            <div class="self-center h-full flex items-center">Compiling...</div>
+          {:else if task.execution === undefined}
+            <div class="self-center h-full flex items-center">
+              Needs Compilation
+            </div>
+          {:else}
+            <div class="flex items-center gap-x-2">
+              <div class="option-label">Tool:</div>
+              <div class="flex items-center justify-center option-value">
+                {task.execution?.tool || "N/A"}
+              </div>
+            </div>
+            <div class="flex flex-col">
+              <div class="option-label">Parameters:</div>
+              {#each Object.keys(task.execution?.parameters || {}) as key}
+                <div class="flex items-center gap-x-2 gap-y-1">
+                  <div class="option-label min-w-[3rem]">{key}:</div>
+                  <div
+                    class="flex items-center justify-center option-value !my-0 max-w-[10rem] overflow-scroll"
+                  >
+                    {task.execution?.parameters[key]}
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
       </div>
+      <button
+        class="p-0.5 bg-blue-200 mt-auto hover:bg-blue-400"
+        onclick={() => handleToggleExpand(task.id)}
+      >
+        <img
+          src="chevron_left.svg"
+          class="mt-0.5 w-5 h-4 pointer-events-none"
+          alt="handle"
+        />
+      </button>
     </div>
   {/if}
 </div>

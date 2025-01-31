@@ -19,8 +19,10 @@
     primitive_tasks: (tPrimitiveTaskDescription &
       Partial<tPrimitiveTaskExecution>)[];
   } = $props();
+  let task_card_expanded: string[] = $state([]);
   let execution_states: Record<string, tExecutionState> | undefined =
     $state(undefined);
+  let compiling = $state(false);
   const session_id = (getContext("session_id") as Function)();
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
   const svgId = "dag-svg";
@@ -64,6 +66,7 @@
 
   function handleCompile() {
     console.log("Compiling...", { primitive_tasks, session_id });
+    compiling = true;
     fetch(`${server_address}/primitive_task/compile/`, {
       method: "POST",
       headers: {
@@ -73,6 +76,7 @@
     })
       .then((response) => response.json())
       .then((data) => {
+        compiling = false;
         primitive_tasks = data.primitive_tasks;
         execution_states = data.execution_state;
         console.log({ data });
@@ -101,6 +105,12 @@
       .catch((error) => {
         console.error("Error:", error);
       });
+  }
+
+  function handleToggleExpand(task_id: string) {
+    task_card_expanded = task_card_expanded.includes(task_id)
+      ? task_card_expanded.filter((id) => id !== task_id)
+      : [...task_card_expanded, task_id];
   }
 
   onMount(() => {
@@ -136,21 +146,31 @@
     <div class="primitive-tasks relative w-full flex flex-col-reverse">
       {#each primitive_tasks as task, index}
         <div
-          class="primitive-task-card-container absolute task-wrapper -translate-x-1/2 -translate-y-1/2 bg-blue-200 flex gap-x-1 outline outline-1 outline-gray-300 rounded-sm shadow"
-          use:draggable={dag_renderer}
+          class="primitive-task-card-container absolute task-wrapper bg-blue-200 flex outline outline-1 outline-gray-300 rounded-sm shadow"
           style:z-index={primitive_tasks.length - index}
           data-id={task.id}
         >
-          <img
-            src="handle.svg"
-            class="mt-0.5 w-4 h-4 pointer-events-none"
-            alt="handle"
-          />
           <PrimitiveTaskCard
             {task}
+            expand={task_card_expanded.includes(task.id)}
+            {compiling}
             executable={execution_states?.[task.id].executable || false}
             {handleExecute}
+            handleToggleExpand={() => handleToggleExpand(task.id)}
           ></PrimitiveTaskCard>
+          {#if !task_card_expanded.includes(task.id)}
+            <button
+              class="flex p-0.5 hover:bg-blue-400 justify-center"
+              onclick={() =>
+                (task_card_expanded = [...task_card_expanded, task.id])}
+            >
+              <img
+                src="chevron_right.svg"
+                class="mt-0.5 w-5 h-4 pointer-events-none"
+                alt="handle"
+              />
+            </button>
+          {/if}
         </div>
       {/each}
     </div>
