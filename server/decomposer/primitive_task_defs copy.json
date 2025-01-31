@@ -1,0 +1,275 @@
+[
+    {
+      "label": "Text Processing",
+      "definition": "The task of performing basic transformations and operations on text to prepare it for further analysis or application. This includes tasks such as tokenization, lowercasing, stopword removal, and stemming.",
+      "input": "Sentence/Paragraph",
+      "output": "Processed Text",
+      "example": {
+        "input": "The Quick Brown Fox jumps over the Lazy Dog.",
+        "output": "quick brown fox jump lazy dog"
+      }
+    },
+    {
+      "label": "Data Processing",
+      "definition": "The task of performing transformations and operations on raw data to prepare it for analysis or application. This includes cleaning, normalizing, and structuring data.",
+      "input": "Raw Data",
+      "output": "Processed Data",
+      "example": {
+        "input": "A dataset containing missing values and inconsistent formatting.",
+        "output": "A cleaned and normalized dataset with missing values filled and consistent formatting."
+      }
+    },
+    {
+      "label": "Data Analysis",
+      "definition": "The task of examining processed data to extract insights, identify patterns, and draw conclusions, often using statistical methods, visualization, or machine learning techniques.",
+      "input": "Processed Data",
+      "output": "Insights/Patterns",
+      "example": {
+        "input": "A cleaned dataset of sales records.",
+        "output": {
+          "Trends": "Sales increase in Q4 every year.",
+          "Patterns": "Customers aged 30-40 prefer premium products."
+        }
+      }
+    },
+    {
+      "label": "Text Analysis",
+      "definition": "The task of examining text to extract insights, patterns, or structure, often using methods like statistical analysis, frequency analysis, or advanced linguistic techniques.",
+      "input": "Paragraph/Document",
+      "output": "Insights/Patterns",
+      "example": {
+        "input": "This document contains customer feedback on a product.",
+        "output": {
+          "Word Frequency": {
+            "positive": 5,
+            "negative": 2
+          },
+          "Topics": ["Customer Service", "Product Quality"]
+        }
+      }
+    },
+    {
+      "label": "Text Generation",
+      "definition": "The task of producing coherent, meaningful, and contextually relevant text based on a given input or prompt, often used in applications such as language modeling, story generation, and chatbot responses.",
+      "input": "Sentence/Paragraph",
+      "output": "Generated Text",
+      "example": {
+        "input": "Once upon a time in a distant land,",
+        "output": "there lived a wise old hermit who knew the secrets of the universe."
+      }
+    },
+    {
+      "label": "Information Extraction",
+      "definition": "The task of automatically identifying and extracting structured information such as entities, relationships, and events from unstructured or semi-structured textual data.",
+      "input": "Sentence/Paragraph",
+      "output": "Structured Data",
+      "example": {
+        "input": "Barack Obama was born in Honolulu.",
+        "output": {
+          "Person": "Barack Obama",
+          "Location": "Honolulu",
+          "Event": "Birth"
+        }
+      }
+    },
+    {
+      "label": "Information Retrieval",
+      "definition": "The process of identifying and retrieving relevant documents or information from a large collection based on a specific query, emphasizing precision and ranking.",
+      "input": "Query",
+      "output": "Ranked List of Documents",
+      "example": {
+        "input": "Who wrote Hamlet?",
+        "output": [
+          {
+            "Document Title": "William Shakespeare Biography",
+            "Snippet": "William Shakespeare, author of Hamlet, was..."
+          },
+          {
+            "Document Title": "Hamlet Summary",
+            "Snippet": "Hamlet, written by William Shakespeare, is a tragedy..."
+          }
+        ]
+      }
+    },
+    {
+      "label": "Text Mining",
+      "definition": "The process of analyzing large text corpora to discover patterns, trends, and insights through techniques such as clustering, topic modeling, and sentiment analysis.",
+      "input": "Text Corpus",
+      "output": "Patterns/Insights",
+      "example": {
+        "input": "A dataset of customer reviews.",
+        "output": {
+          "Topics": ["Customer Service", "Product Quality"],
+          "Sentiments": ["Positive", "Negative"]
+        }
+      }
+    },
+    {
+      "label": "Machine Translation",
+      "definition": "The task of automatically converting text or speech from one language to another while preserving meaning and fluency.",
+      "input": "Sentence/Paragraph",
+      "output": "Translated Text",
+      "example": {
+        "input": "Hello, how are you?",
+        "output": "Hola, ¿cómo estás?"
+      }
+    },
+    {
+      "label": "Phonology",
+      "definition": "The study of the systematic organization of sounds in languages, focusing on phonemes and their rules of combination and variation.",
+      "input": "Word",
+      "output": "Phonemic Representation",
+      "example": {
+        "input": "cat",
+        "output": "/kæt/"
+      }
+    },
+    {
+      "label": "Morphology",
+      "definition": "The study of the internal structure and formation of words, including morphemes, affixes, and word formation rules.",
+      "input": "Word",
+      "output": "Morpheme Analysis",
+      "example": {
+        "input": "unhappiness",
+        "output": ["un-", "happy", "-ness"]
+      }
+    },
+    {
+      "label": "Word Segmentation",
+      "definition": "The task of dividing a text into individual words, particularly important for languages without explicit word boundaries, such as Chinese or Thai.",
+      "input": "Raw Text",
+      "output": "Tokenized Text",
+      "example": {
+        "input": "我喜欢编程",
+        "output": ["我", "喜欢", "编程"]
+      }
+    },
+    {
+      "label": "Question Answering",
+      "definition": "The task of generating accurate and contextually relevant answers to user queries based on a given text or corpus.",
+      "input": "Query + Context Paragraph",
+      "output": "Answer",
+      "example": {
+        "input": {
+          "Query": "Who wrote Hamlet?",
+          "Context": "Hamlet is a play by William Shakespeare."
+        },
+        "output": "William Shakespeare"
+      }
+    },
+    {
+      "label": "Lexical Semantics",
+      "definition": "The study of the meanings and relationships of words, including synonyms, antonyms, and word senses.",
+      "input": "Word",
+      "output": "Semantic Relationships",
+      "example": {
+        "input": "run",
+        "output": ["Synonyms: sprint, jog", "Antonyms: walk, halt"]
+      }
+    },
+    {
+      "label": "Sentence-level Semantics",
+      "definition": "The analysis of the meaning of a sentence as a whole, considering word relationships, syntax, and contextual nuances.",
+      "input": "Sentence",
+      "output": "Semantic Representation",
+      "example": {
+        "input": "John gave Mary a book.",
+        "output": {
+          "Agent": "John",
+          "Action": "gave",
+          "Recipient": "Mary",
+          "Object": "book"
+        }
+      }
+    },
+    {
+      "label": "Textual Inference",
+      "definition": "The task of determining whether a given hypothesis logically follows from a given premise, often referred to as natural language inference (NLI).",
+      "input": "Premise + Hypothesis",
+      "output": "Entailment Label",
+      "example": {
+        "input": {
+          "Premise": "All cats are mammals.",
+          "Hypothesis": "Cats are animals."
+        },
+        "output": "Entailment"
+      }
+    },
+    {
+      "label": "Sentiment Analysis",
+      "definition": "The process of identifying and classifying the emotional tone or sentiment expressed in a text, typically as positive, negative, or neutral.",
+      "input": "Sentence/Paragraph",
+      "output": "Sentiment Label",
+      "example": {
+        "input": "The movie was fantastic!",
+        "output": "Positive"
+      }
+    },
+    {
+      "label": "Stylistic Analysis",
+      "definition": "The examination of the style or tone of a text, focusing on aspects such as formality, genre, or authorship attribution.",
+      "input": "Sentence/Paragraph",
+      "output": "Style Label",
+      "example": {
+        "input": "The results suggest a robust methodology.",
+        "output": "Formal"
+      }
+    },
+    {
+      "label": "Argument Mining",
+      "definition": "The task of identifying and extracting arguments from text, including claims, evidence, and their relationships.",
+      "input": "Paragraph/Document",
+      "output": "Arguments (Claims and Evidence)",
+      "example": {
+        "input": "Climate change is real because global temperatures are rising.",
+        "output": {
+          "Claim": "Climate change is real",
+          "Evidence": "Global temperatures are rising"
+        }
+      }
+    },
+    {
+      "label": "Summarization",
+      "definition": "The task of producing a concise and coherent summary of a given text, preserving its main ideas and key information.",
+      "input": "Paragraph/Document",
+      "output": "Summary",
+      "example": {
+        "input": "Artificial intelligence has been growing rapidly over the years, revolutionizing industries from healthcare to finance. It is now a key driver of innovation worldwide.",
+        "output": "AI is transforming industries and driving global innovation."
+      }
+    },
+    {
+      "label": "Syntax Tagging",
+      "definition": "The annotation of words in a sentence with their corresponding syntactic roles, such as parts of speech.",
+      "input": "Sentence",
+      "output": "Tagged Words",
+      "example": {
+        "input": "The cat sleeps.",
+        "output": [
+          { "word": "The", "tag": "DET" },
+          { "word": "cat", "tag": "NOUN" },
+          { "word": "sleeps", "tag": "VERB" }
+        ]
+      }
+    },
+    {
+      "label": "Syntax Chunking",
+      "definition": "The process of dividing a sentence into syntactically correlated word groups, such as noun phrases or verb phrases.",
+      "input": "Sentence",
+      "output": "Chunks",
+      "example": {
+        "input": "The cat sleeps on the mat.",
+        "output": ["The cat", "sleeps", "on the mat"]
+      }
+    },
+    {
+      "label": "Syntax Parsing",
+      "definition": "The task of generating a syntactic structure or tree representation for a sentence, revealing its hierarchical grammatical composition.",
+      "input": "Sentence",
+      "output": "Syntax Tree",
+      "example": {
+        "input": "The cat sleeps on the mat.",
+        "output": "(ROOT (S (NP (DT The) (NN cat)) (VP (VBZ sleeps) (PP (IN on) (NP (DT the) (NN mat))))))"
+      }
+    }
+  ]

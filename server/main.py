@@ -133,16 +133,16 @@ async def compile_primitive_tasks(request: Request) -> dict:
     request = json.loads(request)
     session_id = request["session_id"]
     primitive_task_descriptions = request["primitive_tasks"]
-    if dev:
-        primitive_task_execution_plan = test_execution_plan
-    else:
-        primitive_task_execution_plan = executor.execution_plan(
-            primitive_task_descriptions
-        )
+    primitive_task_execution_plan = await executor.execution_plan(
+        primitive_task_descriptions,
+        model=default_model,
+        api_key=api_key,
+    )
     execution_graph = executor.create_graph(primitive_task_execution_plan)
     user_sessions[session_id]["execution_graph"] = execution_graph
     execution_state = executor.init_user_execution_state(
-        execution_graph, primitive_task_execution_plan
+        execution_graph,
+        primitive_task_execution_plan,
     )
     user_sessions[session_id]["execution_state"] = execution_state
     return {

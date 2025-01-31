@@ -157,5 +157,86 @@ async def run_decomposition_to_primitive_task_agent(
         [TextMessage(content=user_message_content, source="user")],
         cancellation_token=CancellationToken(),
     )
-    print(response.chat_message.content)
     return json.loads(response.chat_message.content)["primitive_tasks"]
+
+
+async def run_prompt_generation_agent(
+    task: Node, existing_keys: str, model: str, api_key: str
+):
+    model_client = OpenAIChatCompletionClient(
+        model=model,
+        api_key=api_key,
+        temperature=0.0,
+    )
+    prompt_generation_agent = AssistantAgent(
+        name="prompt_generation_agent",
+        model_client=model_client,
+        system_message="""
+        ** Context **
+        You are an expert in writing prompts for Large Language Models, especially for generating prompts that analyze a given piece of text.
+        ** Task **
+        The user will describe the task and provide a piece of text. You need to generate a prompt that can be used to analyze the text for the given task.
+        ** Requirements **
+        First, decide what data in each document is needed to complete the task.
+        Here are the data already exist on each document: {existing_keys}
+        Then, generate a prompt that instructs an LLM to analyze the text using the data in each document for the user's task.
+        Organize the prompt into these three sections:
+        1. Input Keys: List the keys that are required from the document to complete the task.
+        2. Context: Give instructions on what the user is trying to do.
+        3. Task: Give instructions on how to analyze the text.
+        4. Requirements: Provide any specific requirements or constraints for the prompt.
+        In addition, give a key name suitable to store the result of the prompt, and define a valid JSON format for the output.
+        Reply with this JSON format:
+            {{
+               "prompt": {{
+                    "Context": str,
+                    "Task": str,
+                    "Requirements": str
+                    "JSON_format": str
+                }}
+            }}
+        """.format(
+            existing_keys=existing_keys
+        ),
+    )
+    task_message = f"""
+        <task_name> {task['label']} </task_name>
+        <description> {task['description']} </description>
+        <explanation> {task['explanation']} </explanation>
+    """
+    response = await prompt_generation_agent.on_messages(
+        [TextMessage(content=task_message, source="user")],
+        cancellation_token=CancellationToken(),
+    )
+    return json.loads(response.chat_message.content)["prompt"]
+
+
+async def run_input_key_generation_agent(
+    task: Node, existing_keys: str, model: str, api_key: str
+):
+    model_client = OpenAIChatCompletionClient(
+        model=model,
+        api_key=api_key,
+        temperature=0.0,
+    )
+    prompt_generation_agent = AssistantAgent(
+        name="input_key_generation_agent",
+        model_client=model_client,
+        system_message="""
+        ** Context **
+        You are an expert in text analytics.
+        ** Task **
+        The user will describe a task for you, and what data is available in the dataset. Your task is to pick the keys that are required from the dataset to complete the task.
+        ** Requirements **
+        Reply with this JSON format:
+            {{
+               "required keys": str[]
+            }}
+        """,
+    )
+    task_message = f"existing keys: {existing_keys}"
+    response = await prompt_generation_agent.on_messages(
+        [TextMessage(content=task_message, source="user")],
+        cancellation_token=CancellationToken(),
+    )
+    return json.loads(response.chat_message.content)["required keys"]

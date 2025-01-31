@@ -4,6 +4,8 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
+import json
+import re
 from typing import Annotated, Literal, TypedDict
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
@@ -28,6 +30,7 @@ from server.custom_types import (
     BaseStateSchema,
 )
 import server.executor.tools as custom_tools
+import server.AutoGenUtils.query as autogen_utils
 
 
 def init_user_execution_state(
@@ -68,22 +71,92 @@ def make_children_executable(execution_graph, user_execution_state, node_id):
     return user_execution_state
 
 
-def execution_plan(
-    steps: list[PrimitiveTaskDescription],
+async def execution_plan(
+    primitive_tasks: list[PrimitiveTaskDescription],
+    model: str,
+    api_key: str,
 ) -> list[PrimitiveTaskExecution]:
     plan = []
-    for step in steps:
+    existing_keys = ["content"]
+    for primitive_task in primitive_tasks:
+        try:
+            input_keys = await autogen_utils.run_input_key_generation_agent(
+                primitive_task, existing_keys, model=model, api_key=api_key
+            )
+            assert all(k in existing_keys for k in input_keys)
+        except AssertionError:
+            input_keys = await autogen_utils.run_input_key_generation_agent(
+                primitive_task, [], model=model, api_key=api_key
+            )
+        prompt_structured = await autogen_utils.run_prompt_generation_agent(
+            primitive_task, input_keys, model=model, api_key=api_key
+        )
+        # extract output key from JSON format
+        try:
+            pattern = r'\{\s*"(\w+)"\s*:\s*\['
+            if isinstance(prompt_structured["JSON_format"], dict):
+                prompt_structured["JSON_format"] = json.dumps(
+                    prompt_structured["JSON_format"]
+                )
+            else:
+                prompt_structured["JSON_format"] = prompt_structured[
+                    "JSON_format"
+                ].replace("'", '"')
+            match = re.search(pattern, prompt_structured["JSON_format"])
+            # Extract and print the result
+            if match:
+                output_key = match.group(1)
+            else:
+                raise ValueError("Output key not found in JSON format")
+
+        except ValueError as e:
+            print(e)
+            output_key = primitive_task["label"] + "_output"
+        existing_keys.append(output_key)
+
+        # replace {} in the JSON format with {{}}
+        prompt_structured["JSON_format"] = (
+            prompt_structured["JSON_format"].replace("{", "{{").replace("}", "}}")
+        )
+        prompt_template = [
+            {
+                "role": "system",
+                "content": """
+                    ** Context **
+                    {prompt_context}
+                    ** Task **
+                    {prompt_task}
+                    ** Requirements **
+                    {prompt_requirements}
+                    {prompt_output_format}
+                    """.format(
+                    prompt_context=prompt_structured["Context"],
+                    prompt_task=prompt_structured["Task"],
+                    prompt_requirements=prompt_structured["Requirements"],
+                    prompt_output_format=prompt_structured["JSON_format"],
+                ),
+            },
+            {
+                "role": "human",
+                "content": "\n".join([f"{key}: {{{key}}}" for key in input_keys]),
+            },
+        ]
         plan.append(
             {
-                "id": step["id"],
-                "label": step["label"],
-                "description": step["definition"],
-                "explanation": step["explanation"],
-                "parentIds": step["parentIds"],
-                "state_input_key": step["state_input_key"],  # to be generated
-                "doc_input_keys": step["doc_input_key"],  # to be generated
-                "state_output_key": step["state_output_key"],  # to be generated
-                "execution": step["execution"],  # to be generated
+                **primitive_task,
+                "state_input_key": "documents",
+                "doc_input_keys": input_keys,
+                "state_output_key": output_key,
+                "execution": {
+                    "tool": "prompt_tool",
+                    "parameters": {
+                        "name": primitive_task["label"],
+                        "model": model,
+                        "api_key": api_key,
+                        "format": "json",
+                        "prompt_template": prompt_template,
+                    },
+                },
             }
         )
     return plan
