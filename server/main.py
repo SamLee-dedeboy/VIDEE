@@ -132,6 +132,7 @@ async def compile_primitive_tasks(request: Request) -> dict:
     request = await request.body()
     request = json.loads(request)
     session_id = request["session_id"]
+    assert session_id in user_sessions
     primitive_task_descriptions = request["primitive_tasks"]
     primitive_task_execution_plan = await executor.execution_plan(
         primitive_task_descriptions,
@@ -156,6 +157,7 @@ async def execute_primitive_tasks(request: Request):
     request = await request.body()
     request = json.loads(request)
     session_id = request["session_id"]
+    assert session_id in user_sessions
     execution_graph = user_sessions[session_id]["execution_graph"]
     execute_node = request["execute_node"]
     parent_version = (
@@ -170,9 +172,8 @@ async def execute_primitive_tasks(request: Request):
         parent_version,
         initial_state=initial_state,
     )
-    # update execution state
-    user_sessions[session_id]["execution_state"] = executor.make_children_executable(
-        execution_graph,
+    # update execution state by adding the executed node as "executed" and updating its children "executable" states
+    user_sessions[session_id]["execution_state"] = executor.update_execution_state(
         user_sessions[session_id]["execution_state"],
         execute_node["id"],
     )

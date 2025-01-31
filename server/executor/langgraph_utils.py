@@ -53,6 +53,7 @@ def init_user_execution_state(
         if node.endswith("_evaluation"):
             continue
         user_execution_state[node] = {
+            "executed": False,
             "executable": first_node,
             "childrenIds": children_dict[node],
             "parentIds": node_dict[node]["parentIds"],
@@ -61,13 +62,19 @@ def init_user_execution_state(
     return user_execution_state
 
 
-def make_children_executable(execution_graph, user_execution_state, node_id):
-    for _node in execution_graph.get_graph().nodes:
-        if _node == node_id:
-            children_ids = user_execution_state[_node]["childrenIds"]
-            for child_id in children_ids:
-                user_execution_state[child_id]["executable"] = True
-            break
+def update_execution_state(user_execution_state, node_id):
+    user_execution_state[node_id]["executed"] = True
+    executed_nodes = list(
+        filter(
+            lambda k: user_execution_state[k]["executed"], user_execution_state.keys()
+        )
+    )
+    for child_node_id in user_execution_state[node_id]["childrenIds"]:
+        if all(
+            parent_id in executed_nodes
+            for parent_id in user_execution_state[child_node_id]["parentIds"]
+        ):
+            user_execution_state[child_node_id]["executable"] = True
     return user_execution_state
 
 
@@ -93,7 +100,7 @@ async def execution_plan(
         )
         # extract output key from JSON format
         try:
-            pattern = r'\{\s*"(\w+)"\s*:\s*\['
+            pattern = r'\{\s*"(\w+)"\s*:\s*'
             if isinstance(prompt_structured["JSON_format"], dict):
                 prompt_structured["JSON_format"] = json.dumps(
                     prompt_structured["JSON_format"]

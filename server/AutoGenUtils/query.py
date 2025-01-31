@@ -6,6 +6,11 @@ from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.messages import TextMessage
 
 
+def save_json(data, filename):
+    with open(filename, "w") as f:
+        json.dump(data, f, indent=4, sort_keys=True, ensure_ascii=False)
+
+
 async def run_goal_decomposition_agent(goal: str, model: str, api_key: str):
     model_client = OpenAIChatCompletionClient(
         model=model,
@@ -186,6 +191,7 @@ async def run_prompt_generation_agent(
         3. Task: Give instructions on how to analyze the text.
         4. Requirements: Provide any specific requirements or constraints for the prompt.
         In addition, give a key name suitable to store the result of the prompt, and define a valid JSON format for the output.
+        The output JSON format should be a dictionary with only one key, and the value can be any structure.
         Reply with this JSON format:
             {{
                "prompt": {{
@@ -208,6 +214,10 @@ async def run_prompt_generation_agent(
         [TextMessage(content=task_message, source="user")],
         cancellation_token=CancellationToken(),
     )
+    # save_json(
+    #     json.loads(response.chat_message.content),
+    #     f"generated_prompt_{task['label']}.json",
+    # )
     return json.loads(response.chat_message.content)["prompt"]
 
 
