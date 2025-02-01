@@ -11,6 +11,8 @@
   import GoalInput from "lib/GoalInput.svelte";
   let session_id: string | undefined = $state(undefined);
   setContext("session_id", () => session_id);
+  let decomposing_goal = $state(false);
+  let converting = $state(false);
   let semantic_tasks = $state(undefined);
   let primitive_tasks:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)[]
@@ -61,6 +63,7 @@
    * Decompose the goal into semantic tasks
    */
   function handleDecomposeGoal(goal: string) {
+    decomposing_goal = true;
     fetch(`${server_address}/goal_decomposition/`, {
       method: "POST",
       headers: {
@@ -72,6 +75,7 @@
       .then((data) => {
         console.log({ data });
         semantic_tasks = data;
+        decomposing_goal = false;
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -82,6 +86,7 @@
    * convert the semantic tasks to primitive tasks
    */
   function handleConvert() {
+    converting = true;
     if (show_dag === "semantic") {
       show_dag = "primitive";
     }
@@ -95,6 +100,7 @@
       .then((response) => response.json())
       .then((data) => {
         primitive_tasks = data;
+        converting = false;
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -117,15 +123,18 @@
       <div class="flex flex-[2_2_0%] gap-x-2">
         <div class="relative grow px-2 py-1 rounded">
           <div
-            class="absolute top-0 left-0 right-0 bottom-0 flex overflow-auto"
+            class="absolute top-0 left-0 right-0 bottom-0 flex overflow-hidden"
           >
             {#if show_dag === "semantic"}
               <SemanticTasks
+                {decomposing_goal}
                 semantic_tasks={semantic_tasks || []}
                 {handleConvert}
               ></SemanticTasks>
             {:else if show_dag === "primitive"}
-              <PrimitiveTasks primitive_tasks={primitive_tasks || []}
+              <PrimitiveTasks
+                primitive_tasks={primitive_tasks || []}
+                {converting}
               ></PrimitiveTasks>
             {/if}
           </div>

@@ -9,8 +9,13 @@
   import { getContext } from "svelte";
   let {
     semantic_tasks = $bindable([]),
+    decomposing_goal,
     handleConvert,
-  }: { semantic_tasks: tSemanticTask[]; handleConvert: Function } = $props();
+  }: {
+    semantic_tasks: tSemanticTask[];
+    decomposing_goal: boolean;
+    handleConvert: Function;
+  } = $props();
   const session_id = (getContext("session_id") as Function)();
   /**
    * Stores the id of the expanded tasks
@@ -211,6 +216,20 @@
       1000
     ) + "px"} -->
   <div class="relative bg-gray-50 flex flex-col gap-y-1 h-[1000px]">
+    {#if decomposing_goal}
+      <div
+        class="absolute top-0 left-0 right-0 flex items-center justify-center"
+      >
+        <div class="flex gap-x-2">
+          <img
+            src="loader_circle.svg"
+            class="w-6 h-6 animate-spin opacity-50"
+            alt="loading"
+          />
+          <span class="animate-pulse">Decomposing...</span>
+        </div>
+      </div>
+    {/if}
     <svg id={svgId} class="w-full h-full absolute"></svg>
     <div class="semantic-tasks relative w-full">
       {#each semantic_tasks_flattened as task, index}

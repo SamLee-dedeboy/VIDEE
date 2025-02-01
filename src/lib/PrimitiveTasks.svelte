@@ -196,15 +196,28 @@
     </div>
   </div>
 
-  <div
-    class="relative grow shrink-0 bg-gray-50 px-2"
-    style:height={Math.max(
+  <!-- style:height={Math.max(
       primitive_tasks.length * 2 * node_size[1] * 1.5,
       800
-    ) + "px"}
-  >
+    ) + "px"} -->
+  <div class="relative bg-gray-50 flex flex-col gap-y-1 h-[1000px]">
+    {#if converting}
+      <div
+        class="absolute top-0 left-0 right-0 flex items-center justify-center"
+      >
+        <div class="flex gap-x-2">
+          <img
+            src="loader_circle.svg"
+            class="w-6 h-6 animate-spin opacity-50"
+            alt="loading"
+          />
+          <span class="animate-pulse">Converting...</span>
+        </div>
+      </div>
+    {/if}
     <div
-      class="py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center mt-2 rounded outline outline-gray-200"
+      class="py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center mt-2 rounded outline outline-gray-200 z-10 mx-2"
+      class:disabled={primitive_tasks === undefined}
       tabindex="0"
       role="button"
       onclick={() => handleCompile()}
@@ -249,4 +262,7 @@
 </div>
 
 <style lang="postcss">
+  .disabled {
+    @apply opacity-50 pointer-events-none;
+  }
 </style>
