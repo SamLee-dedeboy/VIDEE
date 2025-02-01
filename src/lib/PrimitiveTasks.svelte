@@ -15,9 +15,11 @@
   import { getContext } from "svelte";
   let {
     primitive_tasks,
+    converting,
   }: {
     primitive_tasks: (tPrimitiveTaskDescription &
       Partial<tPrimitiveTaskExecution>)[];
+    converting: boolean;
   } = $props();
   let task_card_expanded: string[] = $state([]);
   let execution_states: Record<string, tExecutionState> | undefined =
@@ -64,6 +66,14 @@
     dag_renderer.update(dag_data, []);
   }
 
+  // UI handlers
+  function handleToggleExpand(task_id: string) {
+    task_card_expanded = task_card_expanded.includes(task_id)
+      ? task_card_expanded.filter((id) => id !== task_id)
+      : [...task_card_expanded, task_id];
+  }
+
+  // handlers with server-side updates
   function handleCompile() {
     console.log("Compiling...", { primitive_tasks, session_id });
     compiling = true;
@@ -107,10 +117,61 @@
       });
   }
 
-  function handleToggleExpand(task_id: string) {
-    task_card_expanded = task_card_expanded.includes(task_id)
-      ? task_card_expanded.filter((id) => id !== task_id)
-      : [...task_card_expanded, task_id];
+  function handleAddTask() {
+    primitive_tasks = [
+      ...primitive_tasks,
+      {
+        id: Math.random().toString(),
+        label: "New Task",
+        description: "New Task Description",
+        explanation: "N/A",
+        parentIds: [],
+        children: [],
+        confidence: 0.5,
+        complexity: 0.5,
+      },
+    ];
+    update_with_server();
+  }
+
+  function handleDeleteTask(task: tPrimitiveTaskDescription) {
+    console.log("delete: ", { task });
+    primitive_tasks = primitive_tasks.filter((_task) => _task.id !== task.id);
+    const task_dict = primitive_tasks.reduce((acc, task) => {
+      acc[task.id] = task;
+      return acc;
+    }, {});
+    // update the parentIds of the children
+    task.children.forEach((child_task_id) => {
+      task_dict[child_task_id].parentIds = task_dict[
+        child_task_id
+      ].parentIds.filter((id) => id !== task.id);
+    });
+
+    // update the childrenIds of the parent
+    task.parentIds.forEach((parent_task_id) => {
+      task_dict[parent_task_id].children = task_dict[
+        parent_task_id
+      ].children.filter((id) => id !== task.id);
+    });
+    update_with_server();
+  }
+
+  function update_with_server() {
+    fetch(`${server_address}/primitive_tasks/update/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ primitive_tasks, session_id }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
   }
 
   onMount(() => {
@@ -121,10 +182,19 @@
 </script>
 
 <div class="flex flex-col gap-y-1 grow h-fit">
-  <span
-    class="text-[1.5rem] text-slate-500 font-semibold italic bg-[#f2f8fd] w-full flex justify-center z-10"
-    >Primitive Tasks</span
-  >
+  <div class="relative bg-[#f2f8fd] w-full flex justify-center z-10">
+    <span class="text-[1.5rem] text-slate-600 font-semibold italic">
+      Primitive Tasks
+    </span>
+    <div class="absolute left-3 top-0 bottom-0 flex items-center gap-x-2">
+      <button
+        class="flex items-center justify-center p-0.5 hover:bg-orange-500 rounded-full outline outline-2 outline-gray-800"
+        onclick={handleAddTask}
+      >
+        <img src="plus.svg" alt="add" class="w-4 h-4" />
+      </button>
+    </div>
+  </div>
 
   <div
     class="relative grow shrink-0 bg-gray-50 px-2"
@@ -156,6 +226,7 @@
             {compiling}
             executable={execution_states?.[task.id].executable || false}
             {handleExecute}
+            {handleDeleteTask}
             handleToggleExpand={() => handleToggleExpand(task.id)}
           ></PrimitiveTaskCard>
           {#if !task_card_expanded.includes(task.id)}

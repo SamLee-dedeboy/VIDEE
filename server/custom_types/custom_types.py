@@ -8,9 +8,9 @@ class Node(BaseModel):
     label: str
     description: str
     explanation: str
-    depend_on: list[str]
     parentIds: list[str]
-    children: list["Node"] = []
+    children: list[str]
+    sub_tasks: list["Node"] = []
     confidence: float
     complexity: float
 

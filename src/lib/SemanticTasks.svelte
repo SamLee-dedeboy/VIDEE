@@ -6,19 +6,21 @@
   import SemanticTaskCard from "./SemanticTaskCard.svelte";
   import { fly, fade, blur } from "svelte/transition";
   import { draggable } from "./draggable";
+  import { getContext } from "svelte";
   let {
-    semantic_tasks,
+    semantic_tasks = $bindable([]),
     handleConvert,
   }: { semantic_tasks: tSemanticTask[]; handleConvert: Function } = $props();
+  const session_id = (getContext("session_id") as Function)();
   /**
    * Stores the id of the expanded tasks
    */
-  let semantic_tasks_show_children: string[] = $state([]);
+  let semantic_tasks_show_sub_tasks: string[] = $state([]);
   /**
    * Stores the flattened semantic tasks
    */
   let semantic_tasks_flattened: tSemanticTask[] = $derived(
-    flatten(semantic_tasks, semantic_tasks_show_children)
+    flatten(semantic_tasks, semantic_tasks_show_sub_tasks)
   );
   let task_card_expanded: string[] = $state([]);
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
@@ -41,9 +43,9 @@
    */
   function flatten(
     _semantic_tasks: tSemanticTask[] | undefined,
-    _semantic_tasks_show_children: string[]
+    _semantic_tasks_show_sub_tasks: string[]
   ) {
-    console.log({ _semantic_tasks });
+    console.log({ _semantic_tasks, _semantic_tasks_show_sub_tasks });
     // flatten the semantic tasks with bfs
     if (!_semantic_tasks) return [];
     const queue = [..._semantic_tasks];
@@ -51,8 +53,8 @@
     while (queue.length) {
       let task = queue.shift()!;
       flattened.push(task);
-      if (task?.children && _semantic_tasks_show_children.includes(task.id)) {
-        queue.push(...task.children);
+      if (task?.sub_tasks && _semantic_tasks_show_sub_tasks.includes(task.id)) {
+        queue.push(...task.sub_tasks);
       }
     }
 
@@ -83,7 +85,69 @@
     });
 
     // call renderer
-    dag_renderer.update(dag_data, semantic_tasks_show_children);
+    dag_renderer.update(dag_data, semantic_tasks_show_sub_tasks);
+  }
+
+  // UI handlers
+  function handleToggleShowSubTasks(task_id: string) {
+    semantic_tasks_show_sub_tasks = semantic_tasks_show_sub_tasks.includes(
+      task_id
+    )
+      ? semantic_tasks_show_sub_tasks.filter((id) => id !== task_id)
+      : [...semantic_tasks_show_sub_tasks, task_id];
+  }
+
+  function handleToggleExpand(task_id: string) {
+    task_card_expanded = task_card_expanded.includes(task_id)
+      ? task_card_expanded.filter((id) => id !== task_id)
+      : [...task_card_expanded, task_id];
+  }
+
+  // handlers with server-side updates
+  function handleAddTask() {
+    semantic_tasks.push({
+      id: Math.random().toString(),
+      label: "New Task",
+      description: "New Task Description",
+      explanation: "N/A",
+      parentIds: [],
+      sub_tasks: [],
+      children: [],
+      confidence: 0.0,
+      complexity: 0.0,
+    });
+    update_with_server();
+  }
+
+  function handleDeleteTask(task: tSemanticTask) {
+    semantic_tasks = semantic_tasks.filter((_task) => _task.id !== task.id);
+    const task_dict = semantic_tasks.reduce((acc, task) => {
+      acc[task.id] = task;
+      return acc;
+    }, {});
+    // update the parentIds of the children
+    task.children.forEach((child_task_id) => {
+      task_dict[child_task_id].parentIds = task_dict[
+        child_task_id
+      ].parentIds.filter((id) => id !== task.id);
+    });
+
+    // update the childrenIds of the parent
+    task.parentIds.forEach((parent_task_id) => {
+      task_dict[parent_task_id].children = task_dict[
+        parent_task_id
+      ].children.filter((id) => id !== task.id);
+    });
+    update_with_server();
+  }
+
+  function handleDeleteSubTasks(task: tSemanticTask) {
+    console.log({ task, semantic_tasks });
+    task.sub_tasks = [];
+    semantic_tasks = semantic_tasks.map((_task) =>
+      _task.id === task.id ? task : _task
+    );
+    update_with_server();
   }
 
   function handleDecompose(task: tSemanticTask) {
@@ -104,37 +168,23 @@
       });
   }
 
-  function handleDeleteChildren(task: tSemanticTask) {
-    console.log({ task, semantic_tasks });
-    fetch(`${server_address}/semantic_task/delete_children/`, {
+  function update_with_server() {
+    fetch(`${server_address}/semantic_task/update/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ task, current_steps: semantic_tasks }),
+      body: JSON.stringify({ semantic_tasks, session_id }),
     })
       .then((response) => response.json())
       .then((data) => {
-        semantic_tasks = data;
+        console.log(data);
       })
       .catch((error) => {
         console.error("Error:", error);
       });
   }
 
-  function handleToggleShowChildren(task_id: string) {
-    semantic_tasks_show_children = semantic_tasks_show_children.includes(
-      task_id
-    )
-      ? semantic_tasks_show_children.filter((id) => id !== task_id)
-      : [...semantic_tasks_show_children, task_id];
-  }
-
-  function handleToggleExpand(task_id: string) {
-    task_card_expanded = task_card_expanded.includes(task_id)
-      ? task_card_expanded.filter((id) => id !== task_id)
-      : [...task_card_expanded, task_id];
-  }
   onMount(() => {
     dag_renderer.init();
     update_dag(semantic_tasks);
@@ -142,10 +192,20 @@
 </script>
 
 <div class="flex flex-col gap-y-1 grow h-fit">
-  <span
-    class="text-[1.5rem] text-slate-600 font-semibold italic bg-[#FFCFB1] w-full flex justify-center z-10"
-    >Semantic Tasks</span
-  >
+  <div class="relative bg-[#FFCFB1] w-full flex justify-center z-10">
+    <span class="text-[1.5rem] text-slate-600 font-semibold italic">
+      Semantic Tasks
+    </span>
+    <div class="absolute left-3 top-0 bottom-0 flex items-center gap-x-2">
+      <button
+        class="flex items-center justify-center p-0.5 hover:bg-orange-500 rounded-full outline outline-2 outline-gray-800"
+        onclick={handleAddTask}
+      >
+        <img src="plus.svg" alt="add" class="w-4 h-4" />
+      </button>
+    </div>
+  </div>
+
   <!-- style:height={Math.max(
       semantic_tasks_flattened.length * 2 * node_size[1] * 1.5,
       1000
@@ -164,8 +224,9 @@
             {task}
             expand={task_card_expanded.includes(task.id)}
             {handleDecompose}
-            {handleDeleteChildren}
-            {handleToggleShowChildren}
+            {handleDeleteSubTasks}
+            {handleToggleShowSubTasks}
+            {handleDeleteTask}
             handleToggleExpand={() => handleToggleExpand(task.id)}
           ></SemanticTaskCard>
           {#if !task_card_expanded.includes(task.id)}

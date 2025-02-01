@@ -9,7 +9,8 @@
     expand,
     executable,
     compiling,
-    handleExecute,
+    handleExecute = () => {},
+    handleDeleteTask = () => {},
     handleToggleExpand = () => {},
   }: {
     task: tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>;
@@ -19,6 +20,7 @@
     handleExecute: (
       task: tPrimitiveTaskDescription & tPrimitiveTaskExecution
     ) => void;
+    handleDeleteTask?: Function;
     handleToggleExpand?: Function;
   } = $props();
   let show_actions = $state(false);
@@ -85,6 +87,7 @@
                 >
                 <button
                   class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+                  onclick={() => handleDeleteTask(task)}
                 >
                   <!-- <img src="close.svg" alt="x" /> -->
                   Delete

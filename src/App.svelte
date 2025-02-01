@@ -66,7 +66,7 @@
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ goal }),
+      body: JSON.stringify({ goal, session_id }),
     })
       .then((response) => response.json())
       .then((data) => {
@@ -130,7 +130,8 @@
             {/if}
           </div>
           <div
-            class="absolute top-0.5 right-0.5 py-1 px-2 bg-gray-100 min-w-[10rem] flex justify-center rounded outline outline-gray-200"
+            class="absolute top-0.5 right-0.5 py-1 px-2 bg-gray-100 min-w-[10rem] flex justify-center rounded outline outline-gray-200 z-20"
+            class:disabled={primitive_tasks === undefined}
             tabindex="0"
             role="button"
             onclick={() =>
@@ -153,4 +154,7 @@
 </main>
 
 <style lang="postcss">
+  .disabled {
+    @apply opacity-50 pointer-events-none;
+  }
 </style>

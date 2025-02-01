@@ -44,6 +44,9 @@ async def create_session(request: Request):
     request = json.loads(request)
     session_id = request["session_id"]
     user_sessions[session_id] = {
+        "goal": "",
+        "semantic_tasks": [],
+        "primitive_tasks": [],
         "execution_graph": {},
     }
     return {"session_id": session_id}
@@ -54,6 +57,9 @@ async def goal_decomposition(request: Request) -> list[custom_types.Node]:
     request = await request.body()
     request = json.loads(request)
     goal = request["goal"]
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    user_sessions[session_id]["goal"] = goal
     if dev:
         decomposed_steps = json.load(
             open(relative_path("test_decomposed_steps_w_children.json"))
@@ -65,7 +71,19 @@ async def goal_decomposition(request: Request) -> list[custom_types.Node]:
         save_json(
             decomposed_steps, relative_path("test_decomposed_steps_w_children.json")
         )
+    user_sessions[session_id]["semantic_tasks"] = decomposed_steps
     return decomposed_steps
+
+
+@app.post("/semantic_task/update/")
+async def update_semantic_tasks(request: Request) -> dict:
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    semantic_tasks = request["semantic_tasks"]
+    user_sessions[session_id]["semantic_tasks"] = semantic_tasks
+    return {"status": "success"}
 
 
 @app.post("/semantic_task/task_decomposition/")
@@ -74,7 +92,7 @@ async def task_decomposition(request: Request) -> list[custom_types.Node]:
     request = json.loads(request)
     task = request["task"]
     current_steps = request["current_steps"]
-    if False:
+    if dev:
         current_steps = json.load(
             open(relative_path("test_decomposed_steps_w_children.json"))
         )
@@ -114,17 +132,15 @@ async def task_decomposition(request: Request) -> list:
     return decomposed_primitive_tasks
 
 
-@app.post("/semantic_task/delete_children/")
-async def task_decomposition(request: Request) -> list:
+@app.post("/primitive_task/update/")
+async def update_primitive_tasks(request: Request) -> dict:
     request = await request.body()
     request = json.loads(request)
-    task = request["task"]
-    current_steps = request["current_steps"]
-    dfs_find_and_do(
-        current_steps, task["id"], lambda step: step.update({"children": []})
-    )
-    # save_json(current_steps, "test_decomposed_steps_w_children.json")
-    return current_steps
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    primitive_tasks = request["primitive_tasks"]
+    user_sessions[session_id]["primitive_tasks"] = primitive_tasks
+    return {"status": "success"}
 
 
 @app.post("/primitive_task/compile/")
@@ -193,8 +209,8 @@ def dfs_find_and_do(task_tree: list[custom_types.Node], task_id: str, action: Ca
         if step["id"] == task_id:
             action(step)
             return
-        elif "children" in step:
-            dfs_find_and_do(step["children"], task_id, action)
+        elif "sub_tasks" in step:
+            dfs_find_and_do(step["sub_tasks"], task_id, action)
         else:
             continue
     return None

@@ -6,21 +6,23 @@
     expand = $bindable(false),
     handleDecompose = () => {},
     handleToggleExpand = () => {},
-    handleToggleShowChildren = () => {},
-    handleDeleteChildren = () => {},
+    handleToggleShowSubTasks = () => {},
+    handleDeleteSubTasks = () => {},
+    handleDeleteTask = () => {},
   }: {
     task: tSemanticTask;
     expand: boolean;
     handleDecompose?: Function;
     handleToggleExpand?: Function;
-    handleToggleShowChildren?: Function;
-    handleDeleteChildren?: Function;
+    handleToggleShowSubTasks?: Function;
+    handleDeleteSubTasks?: Function;
+    handleDeleteTask?: Function;
   } = $props();
   let show_subtasks = $state(false);
   let show_actions = $state(false);
   function showSubTasks() {
     show_subtasks = !show_subtasks;
-    handleToggleShowChildren();
+    handleToggleShowSubTasks(task.id);
   }
 </script>
 
@@ -69,8 +71,8 @@
       <div class="flex justify-between flex-wrap">
         <button
           class="action-button outline-gray-200 bg-gray-100 hover:bg-green-100"
-          class:disabled={task.children === undefined ||
-            task.children.length === 0}
+          class:disabled={task.sub_tasks === undefined ||
+            task.sub_tasks.length === 0}
           class:active={show_subtasks}
           onclick={() => showSubTasks()}>SubTasks</button
         >
@@ -100,6 +102,7 @@
                 >
                 <button
                   class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+                  onclick={() => handleDeleteTask(task)}
                 >
                   <!-- <img src="close.svg" alt="x" /> -->
                   Delete
@@ -107,7 +110,7 @@
                 <button
                   class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
                   tabindex="0"
-                  onclick={() => handleDeleteChildren(task)}
+                  onclick={() => handleDeleteSubTasks(task)}
                 >
                   <!-- <img src="close.svg" alt="x" /> -->
                   Delete SubTasks

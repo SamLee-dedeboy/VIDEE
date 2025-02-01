@@ -5,7 +5,8 @@ export type tSemanticTask = {
     explanation: string;
     // depend_on: string[];
     parentIds: string[]
-    children: tSemanticTask[] | undefined; 
+    children: string[];
+    sub_tasks: tSemanticTask[] | undefined; 
     confidence: number;
     complexity: number;
 }
@@ -15,7 +16,10 @@ export type tPrimitiveTaskDescription = {
     label: string;
     description: string;
     explanation: string;
-    parentIds: string[]
+    parentIds: string[];
+    children: string[];
+    confidence: number;
+    complexity: number;
 }
 
 export type tPrimitiveTaskExecution = tPrimitiveTaskDescription & {

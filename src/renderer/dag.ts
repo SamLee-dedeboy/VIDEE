@@ -17,7 +17,7 @@ export class DAG {
     coordinate_as_dict: any
     dag: any
     zoom: any
-    // handleClick: Function
+    handleClick: Function
     constructor(svgId: string, node_radius: [number,number]=[100, 100], selection_card: string, selection_container: string) {
         this.svgId = svgId
         this.nodeRadius = node_radius
@@ -28,7 +28,7 @@ export class DAG {
         this.selection_card = selection_card
         this.selection_container = selection_container
         this.coordinate_as_dict = {}
-        // this.handleClick = () => {}
+        this.handleClick = () => {}
     }
     init (handleClick=() => {}) {
         const svg = d3.select(`#${this.svgId}`)
@@ -163,7 +163,7 @@ export class DAG {
         this.update_links(translation_scaling)
         // plot edges between decomposed tasks
         const expansion_links = data.filter(d => expanded_nodes.includes(d.id)).map(d => {
-            const first_child_coord = self.coordinate_as_dict[d.children?.[0].id]
+            const first_child_coord = self.coordinate_as_dict[d.sub_tasks?.[0].id]
             console.log(d, first_child_coord)
             const this_coord = self.coordinate_as_dict[d.id]
             const link_coords = vertical?
