@@ -62,11 +62,12 @@ export class DAG {
         // .nodeSize(this.nodeRadius)
         .nodeSize(rect_size)
         .gap([50, 50])
+        // .tweaks([d3_dag.tweakSize({width: max_width, height: max_height})])
         // .tweaks([d3_dag.tweakShape(rect_size, d3_dag.shapeRect)])
         // .tweaks([d3_dag.tweakShape(rect_size, d3_dag.shapeRect), d3_dag.tweakSize({width: max_width, height: max_height})])
 
         const { width, height } = layout(this.dag);
-        const translation_scaling = [max_width / width, 1.1*max_height / height]
+        const translation_scaling = [max_width / width, 1.1*Math.max(1, max_height / height)]
         console.log({width, height, max_width, max_height})
 
         const vertical = true;
