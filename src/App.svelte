@@ -9,6 +9,7 @@
     tPrimitiveTaskExecution,
   } from "types";
   import GoalInput from "lib/GoalInput.svelte";
+  import PrimitiveTaskInspection from "lib/PrimitiveTaskInspection.svelte";
   let session_id: string | undefined = $state(undefined);
   setContext("session_id", () => session_id);
   let decomposing_goal = $state(false);
@@ -16,6 +17,9 @@
   let semantic_tasks = $state(undefined);
   let primitive_tasks:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)[]
+    | undefined = $state(undefined);
+  let inspected_primitive_task:
+    | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
     | undefined = $state(undefined);
   // let primitive_task_execution_plan = $state(undefined);
 
@@ -135,6 +139,8 @@
               <PrimitiveTasks
                 primitive_tasks={primitive_tasks || []}
                 {converting}
+                handleInspectPrimitiveTask={(task) =>
+                  (inspected_primitive_task = task)}
               ></PrimitiveTasks>
             {/if}
           </div>
@@ -158,7 +164,14 @@
         </div> -->
       </div>
     </div>
-    <div class="flex-1 px-2 py-1 shrink-0">Observation Panel</div>
+    {#if show_dag == "semantic"}
+      <div class="flex-1 px-2 py-1 shrink-0">Observation Panel</div>
+    {:else if show_dag == "primitive"}
+      <div class="flex-1 shrink-0">
+        <PrimitiveTaskInspection task={inspected_primitive_task}
+        ></PrimitiveTaskInspection>
+      </div>
+    {/if}
   {/if}
 </main>
 

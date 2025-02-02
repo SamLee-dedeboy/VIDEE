@@ -10,6 +10,7 @@
     executable,
     compiling,
     handleExecute = () => {},
+    handleInspectTask = () => {},
     handleDeleteTask = () => {},
     handleToggleExpand = () => {},
   }: {
@@ -20,20 +21,26 @@
     handleExecute: (
       task: tPrimitiveTaskDescription & tPrimitiveTaskExecution
     ) => void;
+    handleInspectTask: Function;
     handleDeleteTask?: Function;
     handleToggleExpand?: Function;
   } = $props();
   let show_actions = $state(false);
-  $effect(() => {
-    if (compiling) {
-      expand = true;
-    }
-  });
 </script>
 
 <div
   class="task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline outline-2 outline-blue-100 bg-[#F2F8FD] shadow rounded relative flex gap-y-1 gap-x-2"
 >
+  {#if compiling}
+    <div
+      class="absolute top-0 bottom-0 left-0 right-0 flex items-center justify-center"
+    >
+      <div
+        class="absolute top-0 bottom-0 left-0 right-0 opacity-50 bg-slate-200"
+      ></div>
+      <img src="loader_circle.svg" class="w-8 h-8 animate-spin" alt="loading" />
+    </div>
+  {/if}
   <div class="flex flex-col grow px-2 gap-y-2">
     <div
       class="border-b border-gray-300 text-[1.2rem] italic flex items-center"
@@ -82,6 +89,10 @@
             >
               <div class="flex gap-x-2">
                 <button
+                  class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"
+                  onclick={() => handleInspectTask(task)}>Inspect</button
+                >
+                <button
                   class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
                   >Edit</button
                 >
@@ -101,6 +112,33 @@
   </div>
   {#if expand}
     <div
+      class="flex absolute left-[100.7%] top-0 bottom-1 bg-white border-y border-r border-gray-200"
+    >
+      <div in:slide class="relative mt-1 flex flex-col">
+        <img
+          src="bot.svg"
+          alt="bot"
+          class="mx-2 w-7 h-7 inline-block p-0.5 border-r border-b border-gray-300 shadow min-w-[15rem]"
+        />
+        <div class="text-sm text-gray-400 italic mx-2">Explanation</div>
+        <span class="mx-2 overflow-auto">
+          {task.explanation}
+        </span>
+        <button
+          class="p-0.5 bg-blue-200 mt-auto hover:bg-blue-400"
+          onclick={() => handleToggleExpand(task.id)}
+        >
+          <img
+            src="chevron_left.svg"
+            class="mt-0.5 w-5 h-4 pointer-events-none"
+            alt="handle"
+          />
+        </button>
+      </div>
+    </div>
+  {/if}
+  {#if false}
+    <div
       class="flex flex-col absolute left-[100.7%] top-0 bottom-0 bg-[#F2F8FD] border-r-2 border-y-2 border-blue-100"
     >
       <div class="flex divide-x divide-white py-0.5">
@@ -113,28 +151,30 @@
               Needs Compilation
             </div>
           {:else}
-            <div class="flex flex-col">
-              <div class="option-label">State Input Key:</div>
+            <div class="flex items-center gap-x-2 px-1">
+              <div class="option-label">State Input Key</div>
               <div class="flex items-center justify-center option-value">
                 {task.state_input_key}
               </div>
             </div>
-            <div class="flex flex-col">
-              <div class="option-label">Doc Input Keys:</div>
+            <div class="flex flex-col px-1">
+              <div class="option-label">Doc Input Keys</div>
               {#if task.doc_input_keys}
-                <div class="flex gap-x-2 items-center justify-around">
+                <div class="flex gap-x-2">
                   {#each task.doc_input_keys as input_key}
-                    <div class="flex items-center justify-center option-value">
+                    <div class="option-value">
                       {input_key}
                     </div>
                   {/each}
                 </div>
               {/if}
             </div>
-            <div class="flex flex-col">
-              <div class="option-label">State Output Key:</div>
-              <div class="flex items-center justify-center option-value">
-                {task.state_output_key}
+            <div class="flex px-1 items-center gap-x-2">
+              <div class="option-label">State Output Key</div>
+              <div class="flex">
+                <div class="option-value">
+                  {task.state_output_key}
+                </div>
               </div>
             </div>
           {/if}
@@ -157,14 +197,16 @@
             <div class="flex flex-col">
               <div class="option-label">Parameters:</div>
               {#each Object.keys(task.execution?.parameters || {}) as key}
-                <div class="flex items-center gap-x-2 gap-y-1">
-                  <div class="option-label min-w-[3rem]">{key}:</div>
-                  <div
-                    class="flex items-center justify-center option-value !my-0 max-w-[10rem] overflow-scroll"
-                  >
-                    {task.execution?.parameters[key]}
+                {#if key !== "api_key"}
+                  <div class="flex items-center gap-x-2 gap-y-1">
+                    <div class="option-label min-w-[3rem]">{key}:</div>
+                    <div
+                      class="flex items-center justify-center option-value !my-0 max-w-[10rem] overflow-scroll"
+                    >
+                      {task.execution?.parameters[key]}
+                    </div>
                   </div>
-                </div>
+                {/if}
               {/each}
             </div>
           {/if}
@@ -186,7 +228,7 @@
 
 <style lang="postcss">
   .option-label {
-    @apply text-sm text-gray-700 italic;
+    @apply text-gray-500 italic;
   }
   .option-value {
     @apply outline outline-1 outline-gray-300 rounded px-2 my-2 hover:bg-gray-200 transition-all cursor-pointer;

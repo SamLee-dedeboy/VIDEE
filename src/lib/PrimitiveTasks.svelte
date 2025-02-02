@@ -16,10 +16,12 @@
   let {
     primitive_tasks,
     converting,
+    handleInspectPrimitiveTask = () => {},
   }: {
     primitive_tasks: (tPrimitiveTaskDescription &
       Partial<tPrimitiveTaskExecution>)[];
     converting: boolean;
+    handleInspectPrimitiveTask: Function;
   } = $props();
   let task_card_expanded: string[] = $state([]);
   let execution_states: Record<string, tExecutionState> | undefined =
@@ -240,6 +242,7 @@
             executable={execution_states?.[task.id].executable || false}
             {handleExecute}
             {handleDeleteTask}
+            handleInspectTask={handleInspectPrimitiveTask}
             handleToggleExpand={() => handleToggleExpand(task.id)}
           ></PrimitiveTaskCard>
           {#if !task_card_expanded.includes(task.id)}

@@ -197,7 +197,7 @@
 </script>
 
 <div class="flex flex-col gap-y-1 grow h-fit">
-  <div class="relative bg-[#FFCFB1] w-full flex justify-center z-10">
+  <div class="relative bg-orange-100 w-full flex justify-center z-10">
     <span class="text-[1.5rem] text-slate-600 font-semibold italic">
       Semantic Tasks
     </span>
