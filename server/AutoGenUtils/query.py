@@ -244,7 +244,12 @@ async def run_input_key_generation_agent(
             }}
         """,
     )
-    task_message = f"existing keys: {existing_keys}"
+    task_message = f"""
+        <task_name> {task['label']} </task_name>
+        <description> {task['description']} </description>
+        <explanation> {task['explanation']} </explanation>
+        <existing_keys> {existing_keys} </existing_keys>
+    """
     response = await prompt_generation_agent.on_messages(
         [TextMessage(content=task_message, source="user")],
         cancellation_token=CancellationToken(),

@@ -103,7 +103,9 @@ async def execution_plan(
             pattern = r'\{\s*"(\w+)"\s*:\s*'
             if isinstance(prompt_structured["JSON_format"], dict):
                 prompt_structured["JSON_format"] = json.dumps(
-                    prompt_structured["JSON_format"]
+                    prompt_structured["JSON_format"],
+                    indent=4,
+                    ensure_ascii=False,
                 )
             else:
                 prompt_structured["JSON_format"] = prompt_structured[
@@ -135,6 +137,7 @@ async def execution_plan(
                     {prompt_task}
                     ** Requirements **
                     {prompt_requirements}
+                    Reply with the following JSON format:
                     {prompt_output_format}
                     """.format(
                     prompt_context=prompt_structured["Context"],
