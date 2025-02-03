@@ -3,17 +3,41 @@
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
   } from "types";
+  import DocumentCard from "./DocumentCard.svelte";
   import { slide } from "svelte/transition";
   import { onMount } from "svelte";
+  import { server_address } from "constants";
+  import { getContext } from "svelte";
   let {
     task,
   }: {
     task: tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>;
   } = $props();
-  let show_description = $state(false);
+  let show_description = $state(true);
   let show_formats = $state(false);
   let show_execution = $state(false);
   let show_result = $state(false);
+  let result = $state(undefined);
+  const session_id = (getContext("session_id") as Function)();
+
+  function handleFetchTaskResult() {
+    fetch(`${server_address}/primitive_task/result/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ task_id: task.id, session_id }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Inspection fetched result:", data);
+        result = data.result;
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
+
   onMount(() => {
     console.log({ task });
   });
@@ -210,19 +234,38 @@
       </div>
       {#if true}
         <div class="flex flex-col">
-          <div
-            role="button"
-            tabindex="0"
-            class="header-2"
-            onclick={() => (show_result = !show_result)}
-          >
-            Result
-            <img
-              src="chevron_down.svg"
-              alt="expand"
-              class="hidden ml-auto w-5 h-5"
-            />
+          <div class="flex flex-col">
+            <div
+              role="button"
+              tabindex="0"
+              class="header-2"
+              onclick={() => {
+                show_result = !show_result;
+                handleFetchTaskResult();
+              }}
+            >
+              Result
+              <img
+                src="chevron_down.svg"
+                alt="expand"
+                class="hidden ml-auto w-5 h-5"
+              />
+            </div>
           </div>
+          {#if show_result && result !== undefined}
+            <div in:slide class="flex flex-col">
+              {#each Object.keys(result) as state_input_key}
+                <div class="flex flex-col">
+                  <div>{state_input_key}</div>
+                  <div class="flex flex-wrap gap-2">
+                    {#each result[state_input_key] as doc}
+                      <DocumentCard document={doc} />
+                    {/each}
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {/if}
         </div>
       {/if}
     </div>
@@ -230,6 +273,7 @@
 </div>
 
 <style lang="postcss">
+  @reference "../app.css";
   .header-2 {
     @apply text-lg font-bold font-mono text-slate-600 bg-blue-100 px-1 cursor-pointer hover:bg-blue-200 flex items-center;
   }
@@ -240,13 +284,13 @@
     @apply text-slate-600 bg-gray-200 w-full flex justify-center font-mono;
   }
   .option-value {
-    @apply outline outline-1 outline-gray-300 rounded px-2 hover:bg-gray-200 transition-all cursor-pointer flex justify-center font-mono;
+    @apply outline-1 outline-gray-300 rounded px-2 hover:bg-gray-200 transition-all cursor-pointer flex justify-center font-mono;
   }
   .option:hover > .delete {
     @apply flex;
   }
   .plus-button {
-    @apply invisible flex rounded-full outline outline-gray-300 outline-2 hover:bg-gray-300 hover:outline-gray-400 p-0.5 cursor-pointer;
+    @apply invisible flex rounded-full  outline-gray-300 outline-2 hover:bg-gray-300 hover:outline-gray-400 p-0.5 cursor-pointer;
   }
   .key-section {
     @apply flex-1 flex flex-col items-center gap-y-2;

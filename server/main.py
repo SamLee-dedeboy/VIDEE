@@ -48,6 +48,8 @@ async def create_session(request: Request):
         "semantic_tasks": [],
         "primitive_tasks": [],
         "execution_graph": {},
+        "execution_state": {},
+        "execution_results": {},
     }
     return {"session_id": session_id}
 
@@ -193,10 +195,28 @@ async def execute_primitive_tasks(request: Request):
         user_sessions[session_id]["execution_state"],
         execute_node["id"],
     )
+    user_sessions[session_id]["execution_results"][execute_node["id"]] = state
+    save_json(state, relative_path("test_execution_result.json"))
     # save_json(current_steps, "test_decomposed_steps_w_children.json")
     return {
-        "result": state,
         "execution_state": user_sessions[session_id]["execution_state"],
+    }
+
+
+@app.post("/primitive_task/result/")
+async def fetch_primitive_task_result(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    task_id = request["task_id"]
+    if dev:
+        result = json.load(open(relative_path("test_execution_result.json")))
+    else:
+        result = user_sessions[session_id]["execution_results"][task_id]
+
+    return {
+        "result": result,
     }
 
 
