@@ -120,7 +120,7 @@
   {#if !session_id}
     <div class="self-center">Loading...</div>
   {:else}
-    <div class="flex flex-[2_2_0%] flex-col gap-y-2">
+    <div class="flex flex-[2_2_0%] shrink-0 flex-col gap-y-2">
       <div class="bg-white">
         <GoalInput {handleDecomposeGoal} />
       </div>
@@ -144,17 +144,16 @@
               ></PrimitiveTasks>
             {/if}
           </div>
-          <div
+          <button
             class="absolute top-0.5 right-0.5 py-1 px-2 bg-gray-100 min-w-[10rem] flex justify-center rounded outline outline-gray-200 z-20"
             class:disabled={primitive_tasks === undefined}
             tabindex="0"
-            role="button"
             onclick={() =>
               (show_dag = show_dag === "semantic" ? "primitive" : "semantic")}
             onkeyup={() => {}}
           >
             Switch
-          </div>
+          </button>
         </div>
         <!-- <div class="max-w-[30vw] min-w-[10rem] flex">
           <GoalConversation
@@ -165,9 +164,9 @@
       </div>
     </div>
     {#if show_dag == "semantic"}
-      <div class="flex-1 px-2 py-1 shrink-0">Observation Panel</div>
+      <div class="flex-1 px-2 py-1">Observation Panel</div>
     {:else if show_dag == "primitive"}
-      <div class="flex-1 shrink-0">
+      <div class="flex-1 overflow-auto">
         <PrimitiveTaskInspection task={inspected_primitive_task}
         ></PrimitiveTaskInspection>
       </div>

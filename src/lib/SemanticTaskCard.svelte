@@ -81,7 +81,7 @@
         <div
           role="button"
           tabindex="0"
-          class={`action-trigger action-button flex justify-center outline outline-gray-200 bg-green-100 hover:bg-green-300 `}
+          class={`action-trigger action-button flex justify-center outline outline-gray-200 bg-green-100 hover:bg-green-300 cursor-pointer`}
           class:showing-actions={show_actions}
           onclick={() => (show_actions = !show_actions)}
           onkeyup={() => {}}
@@ -152,8 +152,9 @@
 </div>
 
 <style lang="postcss">
+  @reference "../app.css";
   .action-button {
-    @apply outline outline-2 rounded px-1 py-0.5 text-sm font-mono;
+    @apply outline-2 rounded px-1 py-0.5 text-sm font-mono;
   }
   .showing-actions {
     @apply bg-green-300 outline-gray-500;

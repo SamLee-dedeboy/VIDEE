@@ -68,16 +68,20 @@
       {task.description}
     </div>
     <div class="flex flex-col justify-between gap-y-2 mt-1">
-      <div class="flex">
+      <div class="flex gap-x-2">
         <button
           class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
           class:disabled={!executable}
           onclick={() => handleExecute(task)}>Execute</button
         >
+        <button
+          class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"
+          onclick={() => handleInspectTask(task)}>Inspect</button
+        >
         <div
           role="button"
           tabindex="0"
-          class={`action-trigger action-button ml-auto flex justify-center outline outline-gray-200 bg-green-100 hover:bg-green-300 relative `}
+          class={`action-trigger action-button ml-auto flex justify-center outline outline-gray-200 bg-green-100 hover:bg-green-300 relative cursor-pointer`}
           class:showing-actions={show_actions}
           onclick={() => (show_actions = !show_actions)}
           onkeyup={() => {}}
@@ -88,10 +92,6 @@
               class="more-actions absolute top-[calc(100%+5px)] left-1/2 -translate-x-1/2"
             >
               <div class="flex gap-x-2">
-                <button
-                  class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"
-                  onclick={() => handleInspectTask(task)}>Inspect</button
-                >
                 <button
                   class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
                   >Edit</button
@@ -227,6 +227,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "../app.css";
+
   .option-label {
     @apply text-gray-500 italic;
   }

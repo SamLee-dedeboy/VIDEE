@@ -190,7 +190,7 @@
     </span>
     <div class="absolute left-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
-        class="flex items-center justify-center p-0.5 hover:bg-orange-500 rounded-full outline outline-2 outline-gray-800"
+        class="flex items-center justify-center p-0.5 hover:bg-orange-500 rounded-full outline-2 outline-gray-800"
         onclick={handleAddTask}
       >
         <img src="plus.svg" alt="add" class="w-4 h-4" />
@@ -218,7 +218,7 @@
       </div>
     {/if}
     <div
-      class="py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center mt-2 rounded outline outline-gray-200 z-10 mx-2"
+      class="py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center mt-2 rounded outline-gray-200 z-10 mx-2"
       class:disabled={primitive_tasks === undefined}
       tabindex="0"
       role="button"
@@ -231,7 +231,7 @@
     <div class="primitive-tasks relative w-full flex flex-col-reverse">
       {#each primitive_tasks as task, index}
         <div
-          class="primitive-task-card-container absolute task-wrapper bg-blue-200 flex outline outline-1 outline-gray-300 rounded-sm shadow"
+          class="primitive-task-card-container absolute task-wrapper bg-blue-200 flex outline-1 outline-gray-300 rounded-sm shadow"
           style:z-index={primitive_tasks.length - index}
           data-id={task.id}
         >

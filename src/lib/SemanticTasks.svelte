@@ -203,7 +203,7 @@
     </span>
     <div class="absolute left-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
-        class="flex items-center justify-center p-0.5 hover:bg-orange-500 rounded-full outline outline-2 outline-gray-800"
+        class="flex items-center justify-center p-0.5 hover:bg-orange-500 rounded-full outline-2 outline-gray-800"
         onclick={handleAddTask}
       >
         <img src="plus.svg" alt="add" class="w-4 h-4" />
@@ -235,7 +235,7 @@
       {#each semantic_tasks_flattened as task, index}
         <!-- use:draggable={dag_renderer} -->
         <div
-          class="semantic-task-card-container absolute flex task-wrapper bg-[#FFCFB1] outline outline-1 outline-gray-300 rounded-sm shadow"
+          class="semantic-task-card-container absolute flex task-wrapper bg-[#FFCFB1] outline-1 outline-gray-300 rounded-sm shadow"
           style:z-index={semantic_tasks_flattened.length - index}
           data-id={task.id}
         >
@@ -265,15 +265,14 @@
       {/each}
     </div>
     {#if semantic_tasks_flattened.length > 0}
-      <div
+      <button
         class="self-end py-1 mx-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10"
         tabindex="0"
-        role="button"
         onclick={() => handleConvert()}
         onkeyup={() => {}}
       >
         Convert
-      </div>
+      </button>
     {/if}
   </div>
 </div>
