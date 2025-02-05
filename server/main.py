@@ -73,7 +73,7 @@ async def goal_decomposition(request: Request) -> list[custom_types.Node]:
     user_sessions[session_id]["goal"] = goal
     if dev:
         decomposed_steps = json.load(
-            open(relative_path("dev/data/test_decomposed_steps_w_children.json"))
+            open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
         )
     else:
         decomposed_steps = await decomposer.goal_decomposition(
@@ -81,7 +81,7 @@ async def goal_decomposition(request: Request) -> list[custom_types.Node]:
         )
         save_json(
             decomposed_steps,
-            relative_path("dev/data/test_decomposed_steps_w_children.json"),
+            relative_path("dev_data/test_decomposed_steps_w_children.json"),
         )
     user_sessions[session_id]["semantic_tasks"] = decomposed_steps
     return decomposed_steps
@@ -106,7 +106,7 @@ async def task_decomposition(request: Request) -> list[custom_types.Node]:
     current_steps = request["current_steps"]
     if False:
         current_steps = json.load(
-            open(relative_path("dev/data/test_decomposed_steps_w_children.json"))
+            open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
         )
     else:
         # modifies current_steps
@@ -115,7 +115,7 @@ async def task_decomposition(request: Request) -> list[custom_types.Node]:
         )
         save_json(
             current_steps,
-            relative_path("dev/data/test_decomposed_steps_w_children.json"),
+            relative_path("dev_data/test_decomposed_steps_w_children.json"),
         )
     return current_steps
 
@@ -131,7 +131,7 @@ async def task_decomposition(request: Request) -> list:
     )
     if dev:
         decomposed_primitive_tasks = json.load(
-            open(relative_path("dev/data/test_primitive_tasks.json"))
+            open(relative_path("dev_data/test_primitive_tasks.json"))
         )
     else:
         decomposed_primitive_tasks = await decomposer.decomposition_to_primitive_task(
@@ -143,7 +143,7 @@ async def task_decomposition(request: Request) -> list:
         )
         save_json(
             decomposed_primitive_tasks,
-            relative_path("dev/data/test_primitive_tasks.json"),
+            relative_path("dev_data/test_primitive_tasks.json"),
         )
     return decomposed_primitive_tasks
 
@@ -210,7 +210,7 @@ async def execute_primitive_tasks(request: Request):
         execute_node["id"],
     )
     user_sessions[session_id]["execution_results"][execute_node["id"]] = state
-    save_json(state, relative_path("dev/data/test_execution_result.json"))
+    save_json(state, relative_path("dev_data/test_execution_result.json"))
     # save_json(current_steps, "test_decomposed_steps_w_children.json")
     return {
         "execution_state": user_sessions[session_id]["execution_state"],
@@ -225,7 +225,7 @@ async def fetch_primitive_task_result(request: Request):
     assert session_id in user_sessions
     task_id = request["task_id"]
     if dev:
-        result = json.load(open(relative_path("dev/data/test_execution_result.json")))
+        result = json.load(open(relative_path("dev_data/test_execution_result.json")))
     else:
         result = user_sessions[session_id]["execution_results"][task_id]
 
