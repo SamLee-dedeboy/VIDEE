@@ -259,7 +259,11 @@
                   <div>{state_input_key}</div>
                   <div class="flex flex-wrap gap-2">
                     {#each result[state_input_key] as doc}
-                      <DocumentCard document={doc} />
+                      <DocumentCard
+                        document={doc}
+                        --bg-color="oklch(0.97 0.014 254.604)"
+                        --bg-hover-color="oklch(0.882 0.059 254.128)"
+                      />
                     {/each}
                   </div>
                 </div>
