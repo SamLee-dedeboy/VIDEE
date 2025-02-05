@@ -10,6 +10,7 @@
   } from "types";
   import GoalInput from "lib/GoalInput.svelte";
   import PrimitiveTaskInspection from "lib/PrimitiveTaskInspection.svelte";
+  import SemanticTaskInspection from "lib/SemanticTaskInspection.svelte";
   let session_id: string | undefined = $state(undefined);
   setContext("session_id", () => session_id);
   let decomposing_goal = $state(false);
@@ -145,14 +146,33 @@
             {/if}
           </div>
           <button
-            class="absolute top-0.5 right-0.5 py-1 px-2 bg-gray-100 min-w-[10rem] flex justify-center rounded outline outline-gray-200 z-20"
+            class="absolute top-0.5 left-0.5 py-1 px-2 min-w-[10rem] flex items-center justify-center rounded outline-2 outline-gray-200 shadow-md z-20 gap-x-2 text-slate-700 italic"
             class:disabled={primitive_tasks === undefined}
+            style:color={show_dag === "semantic"
+              ? "oklch(0.623 0.214 259.815)"
+              : "oklch(0.705 0.213 47.604)"}
             tabindex="0"
             onclick={() =>
               (show_dag = show_dag === "semantic" ? "primitive" : "semantic")}
             onkeyup={() => {}}
           >
-            Switch
+            <div class="flex gap-x-2 items-center">
+              {#if show_dag === "semantic"}
+                <div class="flex items-center justify-center p-1 bg-blue-200">
+                  <img
+                    src="forward.svg"
+                    alt="forward"
+                    class="w-4 h-4 bg-blue-200"
+                  />
+                </div>
+                Primitive Tasks
+              {:else if show_dag === "primitive"}
+                <div class="flex items-center justify-center p-1 bg-orange-200">
+                  <img src="backward.svg" alt="back" class="w-4 h-4" />
+                </div>
+                Semantic Tasks
+              {/if}
+            </div>
           </button>
         </div>
         <!-- <div class="max-w-[30vw] min-w-[10rem] flex">
@@ -164,7 +184,9 @@
       </div>
     </div>
     {#if show_dag == "semantic"}
-      <div class="flex-1 px-2 py-1">Observation Panel</div>
+      <div class="flex-1">
+        <SemanticTaskInspection></SemanticTaskInspection>
+      </div>
     {:else if show_dag == "primitive"}
       <div class="flex-1 overflow-auto">
         <PrimitiveTaskInspection task={inspected_primitive_task}
@@ -176,6 +198,7 @@
 
 <style lang="postcss">
   .disabled {
-    @apply opacity-50 pointer-events-none;
+    /* @apply opacity-50 pointer-events-none; */
+    @apply invisible pointer-events-none;
   }
 </style>
