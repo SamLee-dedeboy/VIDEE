@@ -54,6 +54,15 @@ async def create_session(request: Request):
     return {"session_id": session_id}
 
 
+@app.post("/documents/")
+async def get_documents(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    return json.load(open(relative_path("executor/docs.json")))
+
+
 @app.post("/goal_decomposition/")
 async def goal_decomposition(request: Request) -> list[custom_types.Node]:
     request = await request.body()
@@ -64,14 +73,15 @@ async def goal_decomposition(request: Request) -> list[custom_types.Node]:
     user_sessions[session_id]["goal"] = goal
     if dev:
         decomposed_steps = json.load(
-            open(relative_path("test_decomposed_steps_w_children.json"))
+            open(relative_path("dev/data/test_decomposed_steps_w_children.json"))
         )
     else:
         decomposed_steps = await decomposer.goal_decomposition(
             goal, model=default_model, api_key=api_key
         )
         save_json(
-            decomposed_steps, relative_path("test_decomposed_steps_w_children.json")
+            decomposed_steps,
+            relative_path("dev/data/test_decomposed_steps_w_children.json"),
         )
     user_sessions[session_id]["semantic_tasks"] = decomposed_steps
     return decomposed_steps
@@ -94,16 +104,19 @@ async def task_decomposition(request: Request) -> list[custom_types.Node]:
     request = json.loads(request)
     task = request["task"]
     current_steps = request["current_steps"]
-    if dev:
+    if False:
         current_steps = json.load(
-            open(relative_path("test_decomposed_steps_w_children.json"))
+            open(relative_path("dev/data/test_decomposed_steps_w_children.json"))
         )
     else:
         # modifies current_steps
         current_steps = await decomposer.task_decomposition(
             task, current_steps, model=default_model, api_key=api_key
         )
-        save_json(current_steps, relative_path("test_decomposed_steps_w_children.json"))
+        save_json(
+            current_steps,
+            relative_path("dev/data/test_decomposed_steps_w_children.json"),
+        )
     return current_steps
 
 
@@ -118,7 +131,7 @@ async def task_decomposition(request: Request) -> list:
     )
     if dev:
         decomposed_primitive_tasks = json.load(
-            open(relative_path("test_primitive_tasks.json"))
+            open(relative_path("dev/data/test_primitive_tasks.json"))
         )
     else:
         decomposed_primitive_tasks = await decomposer.decomposition_to_primitive_task(
@@ -129,7 +142,8 @@ async def task_decomposition(request: Request) -> list:
             api_key=api_key,
         )
         save_json(
-            decomposed_primitive_tasks, relative_path("test_primitive_tasks.json")
+            decomposed_primitive_tasks,
+            relative_path("dev/data/test_primitive_tasks.json"),
         )
     return decomposed_primitive_tasks
 
@@ -196,7 +210,7 @@ async def execute_primitive_tasks(request: Request):
         execute_node["id"],
     )
     user_sessions[session_id]["execution_results"][execute_node["id"]] = state
-    save_json(state, relative_path("test_execution_result.json"))
+    save_json(state, relative_path("dev/data/test_execution_result.json"))
     # save_json(current_steps, "test_decomposed_steps_w_children.json")
     return {
         "execution_state": user_sessions[session_id]["execution_state"],
@@ -211,7 +225,7 @@ async def fetch_primitive_task_result(request: Request):
     assert session_id in user_sessions
     task_id = request["task_id"]
     if dev:
-        result = json.load(open(relative_path("test_execution_result.json")))
+        result = json.load(open(relative_path("dev/data/test_execution_result.json")))
     else:
         result = user_sessions[session_id]["execution_results"][task_id]
 
@@ -246,91 +260,3 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run("server.main:app", host="127.0.0.1", port=8000, reload=True)
-
-test_execution_plan = [
-    {
-        "id": "Information Extraction-1",
-        "label": "Information Extraction",
-        "description": "Automatically identify and extract structured information such as entities from the documents.",
-        "explanation": "This task is needed to identify key entities that will form the nodes of the knowledge graph.",
-        "state_input_key": "documents",
-        "doc_input_keys": ["content"],
-        "state_output_key": "entities",
-        "parentIds": [],
-        "execution": {
-            "tool": "prompt_tool",
-            "parameters": {
-                "name": "entity_extraction",
-                "model": "gpt-4o-mini",
-                "api_key": api_key,
-                "format": "json",
-                "prompt_template": [
-                    {
-                        "role": "system",
-                        "content": """
-                            ** Context **
-                            You are an entity extraction system. The user will give you a piece of text.
-                            ** Task **
-                            Your task is to extract the entities from the text. 
-                            ** Requirements **
-                            Reply with the following JSON format: {{ "entities": ["entity1", "entity2", ...] }}
-                        """,
-                    },
-                    {"role": "human", "content": "{content}"},
-                ],
-            },
-        },
-    },
-    {
-        "id": "Information Extraction-2",
-        "label": "Information Extraction",
-        "description": "Determine the relationships between the extracted entities based on the context of the documents.",
-        "explanation": "Understanding the relationships allows us to connect the entities and define the edges of the knowledge graph.",
-        "state_input_key": "documents",
-        "doc_input_keys": ["content", "entities"],
-        "state_output_key": "relationships",
-        "parentIds": ["Information Extraction-1"],
-        "execution": {
-            "tool": "prompt_tool",
-            "parameters": {
-                "name": "relationship_extraction",
-                "model": "gpt-4o-mini",
-                "api_key": api_key,
-                "format": "json",
-                "prompt_template": [
-                    {
-                        "role": "system",
-                        "content": """
-                        ** Context **
-                        You are a relationship extraction system. The user will give you a piece of text and the entities extracted from it.
-                        ** Task **
-                        Your task is to extract the relationships between entities from the text. 
-                        ** Requirements **
-                        Reply with the following JSON format: 
-                            {{ "relationships": [
-                                {{
-                                    "label": (str, label for the relationship), 
-                                    "source": (str, entity1),
-                                    "target": (str, entity2),
-                                    "explanation": (str, explanation of the relationship)
-                                }}, 
-                                {{
-                                    "label": (str, label for the relationship), 
-                                    "source": (str, entity1),
-                                    "target": (str, entity2),
-                                    "explanation": (str, explanation of the relationship)
-                                }}, 
-                                ...
-                                ] 
-                            }}
-                        """,
-                    },
-                    {
-                        "role": "human",
-                        "content": "Content: {content}\n Entities: {entities}",
-                    },
-                ],
-            },
-        },
-    },
-]

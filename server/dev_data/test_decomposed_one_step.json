@@ -1,0 +1,46 @@
+[
+    {
+        "label": "Identify Entities",
+        "description": "Extract the entities present in the documents.",
+        "explanation": "Identifying entities is essential as it sets the foundation for context analysis by highlighting the key components to focus on.",
+        "depend_on": [],
+        "id": "0",
+        "parentIds": []
+    },
+    {
+        "label": "Determine Relevant Contextual Features",
+        "description": "Identify and define the contextual features surrounding the entities.",
+        "explanation": "Understanding the contextual features is important because it helps in analyzing how entities relate to their environment and influences interpretations.",
+        "depend_on": [
+            "Identify Entities"
+        ],
+        "id": "1",
+        "parentIds": [
+            "0"
+        ]
+    },
+    {
+        "label": "Analyze Contextual Relationships",
+        "description": "Examine the relationships between entities and the identified contextual features.",
+        "explanation": "This step is crucial to understand the dynamics of how entities interact with their context, providing insight into their significance within the documents.",
+        "depend_on": [
+            "Determine Relevant Contextual Features"
+        ],
+        "id": "2",
+        "parentIds": [
+            "1"
+        ]
+    },
+    {
+        "label": "Interpret Analysis Results",
+        "description": "Draw conclusions from the context analysis regarding the role and impact of the entities.",
+        "explanation": "Interpretation is needed to make sense of the analysis outcomes and to provide insights that can inform further actions or studies.",
+        "depend_on": [
+            "Analyze Contextual Relationships"
+        ],
+        "id": "3",
+        "parentIds": [
+            "2"
+        ]
+    }
+]

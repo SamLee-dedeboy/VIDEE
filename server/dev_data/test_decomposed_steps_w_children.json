@@ -1,0 +1,154 @@
+[
+    {
+        "id": "1",
+        "label": "Extract Entities",
+        "description": "Identify and extract key entities (e.g., people, places, organizations) from the documents.",
+        "explanation": "This step is crucial as the knowledge graph will be built around these entities, which serve as the nodes in the graph.",
+        "parentIds": [],
+        "children": [
+            "2",
+            "3"
+        ],
+        "sub_tasks": [],
+        "confidence": 0.679441581386419,
+        "complexity": 0.9545483016712507
+    },
+    {
+        "id": "2",
+        "label": "Identify Relationships",
+        "description": "Determine the relationships between the extracted entities based on the context of the documents.",
+        "explanation": "Understanding how entities are related is essential for constructing the edges of the knowledge graph, which represent the connections between nodes.",
+        "parentIds": [
+            "1"
+        ],
+        "children": [
+            "3"
+        ],
+        "sub_tasks": [
+            {
+                "id": "Identify Relationships-sub_tasks-START",
+                "label": "START",
+                "description": "START",
+                "explanation": "N/A",
+                "parentIds": [
+                    "2"
+                ],
+                "children": [
+                    "2-1"
+                ],
+                "sub_tasks": [],
+                "confidence": 0.0,
+                "complexity": 0.0
+            },
+            {
+                "id": "2-1",
+                "label": "Entity Extraction",
+                "description": "Extract entities from the documents.",
+                "explanation": "This step is necessary to identify the key components (entities) within the text that will be analyzed for relationships.",
+                "parentIds": [
+                    "Identify Relationships-sub_tasks-START"
+                ],
+                "children": [
+                    "2",
+                    "3"
+                ],
+                "sub_tasks": [],
+                "confidence": 0.014251910728096395,
+                "complexity": 0.3041601490169573
+            },
+            {
+                "id": "2-2",
+                "label": "Context Analysis",
+                "description": "Analyze the context in which the entities appear.",
+                "explanation": "Understanding the context is crucial for accurately determining how entities relate to one another, as relationships can vary based on context.",
+                "parentIds": [
+                    "2-1"
+                ],
+                "children": [
+                    "3"
+                ],
+                "sub_tasks": [],
+                "confidence": 0.044499037700367006,
+                "complexity": 0.5042778682815078
+            },
+            {
+                "id": "2-3",
+                "label": "Relationship Identification",
+                "description": "Identify potential relationships between the extracted entities.",
+                "explanation": "This step involves determining the nature of the relationships based on the context analyzed, which is the core objective of the task.",
+                "parentIds": [
+                    "2-1",
+                    "2-2"
+                ],
+                "children": [
+                    "4"
+                ],
+                "sub_tasks": [],
+                "confidence": 0.12467290010559517,
+                "complexity": 0.19082716875127337
+            },
+            {
+                "id": "2-4",
+                "label": "Relationship Validation",
+                "description": "Validate the identified relationships for accuracy.",
+                "explanation": "Validation ensures that the identified relationships are correct and meaningful, which is essential for the reliability of the analysis.",
+                "parentIds": [
+                    "2-3"
+                ],
+                "children": [
+                    "Identify Relationships-sub_tasks-END"
+                ],
+                "sub_tasks": [],
+                "confidence": 0.12558192132526025,
+                "complexity": 0.0627443723246387
+            },
+            {
+                "id": "Identify Relationships-sub_tasks-END",
+                "label": "END",
+                "description": "END",
+                "explanation": "N/A",
+                "parentIds": [
+                    "2",
+                    "2-4"
+                ],
+                "children": [
+                    "2"
+                ],
+                "sub_tasks": [],
+                "confidence": 0.0,
+                "complexity": 0.0
+            }
+        ],
+        "confidence": 0.8950171166648101,
+        "complexity": 0.3657728789750081
+    },
+    {
+        "id": "3",
+        "label": "Construct Graph Structure",
+        "description": "Create the graph structure using the extracted entities as nodes and the identified relationships as edges.",
+        "explanation": "This step involves organizing the data into a formal graph structure, which is necessary for the knowledge graph to be usable and queryable.",
+        "parentIds": [
+            "1",
+            "2"
+        ],
+        "children": [
+            "4"
+        ],
+        "sub_tasks": [],
+        "confidence": 0.14801913943153755,
+        "complexity": 0.3073345669909061
+    },
+    {
+        "id": "4",
+        "label": "Refine and Validate Graph",
+        "description": "Review the constructed graph for accuracy and completeness, making adjustments as necessary.",
+        "explanation": "Validation ensures that the knowledge graph accurately represents the information from the documents and is free from errors, which is critical for its reliability.",
+        "parentIds": [
+            "3"
+        ],
+        "children": [],
+        "sub_tasks": [],
+        "confidence": 0.38566532952420196,
+        "complexity": 0.6704450013897569
+    }
+]

@@ -1,0 +1,60 @@
+[
+    {
+        "label": "Entity Extraction",
+        "id": "Entity Extraction-1",
+        "description": "Identify and extract key entities (e.g., people, places, organizations) from the documents.",
+        "explanation": "This step is crucial as the knowledge graph will be built around these entities, which serve as the nodes in the graph.",
+        "confidence": 0.6405742635192566,
+        "complexity": 0.2570603380403461,
+        "parentIds": [],
+        "children": [
+            "Relationship Extraction-1",
+            "Clustering Analysis-1"
+        ],
+        "sub_tasks": []
+    },
+    {
+        "label": "Relationship Extraction",
+        "id": "Relationship Extraction-1",
+        "description": "Determine the relationships between the extracted entities based on the context of the documents.",
+        "explanation": "Understanding how entities are related is essential for constructing the edges of the knowledge graph, which represent the connections between nodes.",
+        "confidence": 0.2772598882722921,
+        "complexity": 0.6099859082415017,
+        "parentIds": [
+            "Entity Extraction-1"
+        ],
+        "children": [
+            "Clustering Analysis-1"
+        ],
+        "sub_tasks": []
+    },
+    {
+        "label": "Clustering Analysis",
+        "id": "Clustering Analysis-1",
+        "description": "Create the graph structure using the extracted entities as nodes and the identified relationships as edges.",
+        "explanation": "This step involves organizing the data into a formal graph structure, which is necessary for the knowledge graph to be usable and queryable.",
+        "confidence": 0.9810169659732724,
+        "complexity": 0.8788483782443134,
+        "parentIds": [
+            "Entity Extraction-1",
+            "Relationship Extraction-1"
+        ],
+        "children": [
+            "Data Transformation-1"
+        ],
+        "sub_tasks": []
+    },
+    {
+        "label": "Data Transformation",
+        "id": "Data Transformation-1",
+        "description": "Review the constructed graph for accuracy and completeness, making adjustments as necessary.",
+        "explanation": "Validation ensures that the knowledge graph accurately represents the information from the documents and is free from errors, which is critical for its reliability.",
+        "confidence": 0.4516357438371239,
+        "complexity": 0.7233783982670324,
+        "parentIds": [
+            "Clustering Analysis-1"
+        ],
+        "children": [],
+        "sub_tasks": []
+    }
+]
