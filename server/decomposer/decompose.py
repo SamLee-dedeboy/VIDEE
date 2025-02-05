@@ -66,15 +66,49 @@ def find_and_replace(decomposed_steps, task_label, current_steps):
         if step["label"] == task_label:
             step["sub_tasks"] = decomposed_steps
             decomposed_from_id = step["id"]
-            for child in decomposed_steps:
+            START_id = task_label + "-sub_tasks-" + "START"
+            END_id = task_label + "-sub_tasks-" + "END"
+            task_START = {
+                "id": START_id,
+                "label": "START",
+                "description": "START",
+                "explanation": "N/A",
+                "parentIds": [decomposed_from_id],
+                "children": [],
+                "sub_tasks": [],
+                "confidence": 0.0,
+                "complexity": 0.0,
+            }
+
+            task_END = {
+                "id": END_id,
+                "label": "END",
+                "description": "END",
+                "explanation": "N/A",
+                "parentIds": [decomposed_from_id],
+                "children": [decomposed_from_id],
+                "sub_tasks": [],
+                "confidence": 0.0,
+                "complexity": 0.0,
+            }
+            for i, child in enumerate(decomposed_steps):
                 child["id"] = f"{decomposed_from_id}-{child['id']}"
                 if child["parentIds"] == []:
-                    child["parentIds"] = [decomposed_from_id]
+                    # child["parentIds"] = [decomposed_from_id]
+                    child["parentIds"] = [START_id]
+                    task_START["children"].append(child["id"])
                 else:
                     child["parentIds"] = [
                         f"{decomposed_from_id}-{parent_id}"
                         for parent_id in child["parentIds"]
                     ]
+
+                if child["children"] == []:
+                    child["children"] = [END_id]
+                    task_END["parentIds"].append(child["id"])
+                decomposed_steps[i] = child
+            decomposed_steps.insert(0, task_START)
+            decomposed_steps.append(task_END)
             step["sub_tasks"] = decomposed_steps
             return "found and replaced"
         elif "sub_tasks" in step:
