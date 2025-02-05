@@ -24,7 +24,9 @@ export class DAG {
         this.line = d3.line().curve(d3.curveMonotoneY);
         this.dag = undefined;
         this.zoom = d3.zoom().scaleExtent([0.5, 32])
-        .on("zoom", (e) => this.zoomed(e, this));
+        .on("zoom", (e) => this.zoomed(e, this))
+        .on("end", () => document.querySelectorAll(this.selection_card).forEach(div => div.style.transitionDuration = "0.5s"))
+
         this.selection_card = selection_card
         this.selection_container = selection_container
         this.coordinate_as_dict = {}
@@ -107,6 +109,7 @@ export class DAG {
         })
         .each(function() {
             applyTransform(this, d3.zoomTransform(svg.node()))
+            this.style.transitionDuration = "0.5s"
         })
         // left: 376px;
 //   top: 635.5px;
@@ -212,8 +215,9 @@ export class DAG {
         const svg = d3.select(`#${this.svgId}`);
         svg.select("g.links")
             .selectAll("path.link")
-            .data(this.dag.links())
+            .data(this.dag.links(), ({source, target}) => `${source.data.id}-${target.data.id}`)
             .join("path")
+            .transition().duration(500)
             .attr("class", "link")
             // .attr("d", (d) => this.line([node_positions[d.source.data.id], node_positions[d.target.data.id]]))
             // .attr("d", ({points}) => this.line(points.map(p => { return {x: p.x * translation_scaling[0], y: p.y * translation_scaling[1]}})))
@@ -335,5 +339,6 @@ function create_bubble_path(points, radius) {
     const offsetY = top + height / 2 / transform.k
     // console.log(div.dataset.id, div.style.transform, {left, top, width, height, offsetX, offsetY})
     const new_transform = `translate(${-offsetX}px, ${-offsetY}px) scale(${transform.k}) translate(${offsetX}px, ${offsetY}px) translate(${transform.x / transform.k}px, ${transform.y / transform.k}px)`
+    div.style.transitionDuration = "0s"
     div.style.transform = new_transform
   }

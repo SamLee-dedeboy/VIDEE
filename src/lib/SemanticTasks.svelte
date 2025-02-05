@@ -196,12 +196,12 @@
   });
 </script>
 
-<div class="flex flex-col gap-y-1 grow h-fit">
+<div class="flex flex-col gap-y-1 grow">
   <div class="relative bg-orange-100 w-full flex justify-center z-10">
     <span class="text-[1.5rem] text-slate-600 font-semibold italic">
       Semantic Tasks
     </span>
-    <div class="absolute left-3 top-0 bottom-0 flex items-center gap-x-2">
+    <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
         class="flex items-center justify-center p-0.5 hover:bg-orange-500 rounded-full outline-2 outline-gray-800"
         onclick={handleAddTask}
@@ -215,7 +215,7 @@
       semantic_tasks_flattened.length * 2 * node_size[1] * 1.5,
       1000
     ) + "px"} -->
-  <div class="relative bg-gray-50 flex flex-col gap-y-1 h-[1000px]">
+  <div class="relative bg-gray-50 flex flex-col gap-y-1 grow">
     {#if decomposing_goal}
       <div
         class="absolute top-0 left-0 right-0 flex items-center justify-center"
@@ -235,7 +235,7 @@
       {#each semantic_tasks_flattened as task, index}
         <!-- use:draggable={dag_renderer} -->
         <div
-          class="semantic-task-card-container absolute flex task-wrapper bg-[#FFCFB1] outline-1 outline-gray-300 rounded-sm shadow"
+          class="semantic-task-card-container absolute flex task-wrapper bg-[#FFCFB1] outline-1 outline-gray-300 rounded-sm shadow transition-all duration-500"
           style:z-index={semantic_tasks_flattened.length - index}
           data-id={task.id}
         >

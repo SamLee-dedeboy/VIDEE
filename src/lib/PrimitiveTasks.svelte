@@ -183,12 +183,12 @@
   });
 </script>
 
-<div class="flex flex-col gap-y-1 grow h-fit">
+<div class="flex flex-col gap-y-1 grow">
   <div class="relative bg-[#f2f8fd] w-full flex justify-center z-10">
     <span class="text-[1.5rem] text-slate-600 font-semibold italic">
       Primitive Tasks
     </span>
-    <div class="absolute left-3 top-0 bottom-0 flex items-center gap-x-2">
+    <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
         class="flex items-center justify-center p-0.5 hover:bg-orange-500 rounded-full outline-2 outline-gray-800"
         onclick={handleAddTask}
@@ -202,7 +202,7 @@
       primitive_tasks.length * 2 * node_size[1] * 1.5,
       800
     ) + "px"} -->
-  <div class="relative bg-gray-50 flex flex-col gap-y-1 h-[1000px]">
+  <div class="relative bg-gray-50 flex flex-col gap-y-1 grow">
     {#if converting}
       <div
         class="absolute top-0 left-0 right-0 flex items-center justify-center"
@@ -217,21 +217,11 @@
         </div>
       </div>
     {/if}
-    <div
-      class="py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center mt-2 rounded outline-gray-200 z-10 mx-2"
-      class:disabled={primitive_tasks === undefined}
-      tabindex="0"
-      role="button"
-      onclick={() => handleCompile()}
-      onkeyup={() => {}}
-    >
-      Compile Graph
-    </div>
     <svg id={svgId} class="w-full h-full absolute"></svg>
     <div class="primitive-tasks relative w-full flex flex-col-reverse">
       {#each primitive_tasks as task, index}
         <div
-          class="primitive-task-card-container absolute task-wrapper bg-blue-200 flex outline-1 outline-gray-300 rounded-sm shadow"
+          class="primitive-task-card-container absolute task-wrapper bg-blue-200 flex outline-1 outline-gray-300 rounded-sm shadow transition-all"
           style:z-index={primitive_tasks.length - index}
           data-id={task.id}
         >
@@ -260,6 +250,16 @@
           {/if}
         </div>
       {/each}
+    </div>
+    <div
+      class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10 mx-2"
+      class:disabled={primitive_tasks === undefined}
+      tabindex="0"
+      role="button"
+      onclick={() => handleCompile()}
+      onkeyup={() => {}}
+    >
+      Compile Graph
     </div>
   </div>
 </div>
