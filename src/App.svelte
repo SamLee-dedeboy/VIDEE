@@ -253,7 +253,10 @@
         />
         <button
           id="stop"
-          class=" outline-2 outline-red-300 p-2 bg-red-100 rounded"
+          class="outline-2 outline-red-300 p-2 bg-red-100 rounded hover:bg-red-200"
+          class:disabled={!(
+            streaming_states.started && !streaming_states.paused
+          )}
           onclick={() => {
             if (stream_controller !== undefined) {
               stream_controller.abort(); // Stop streaming
