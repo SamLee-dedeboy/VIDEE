@@ -251,16 +251,15 @@
         </div>
       {/each}
     </div>
-    <div
+    <button
       class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10 mx-2"
       class:disabled={primitive_tasks === undefined}
       tabindex="0"
-      role="button"
       onclick={() => handleCompile()}
       onkeyup={() => {}}
     >
       Compile Graph
-    </div>
+    </button>
   </div>
 </div>
 

@@ -57,6 +57,7 @@
     const flattened: tSemanticTask[] = [];
     while (queue.length) {
       let task = queue.shift()!;
+      if (task.label === "END") continue;
       flattened.push(task);
       if (task?.sub_tasks && _semantic_tasks_show_sub_tasks.includes(task.id)) {
         queue.push(...task.sub_tasks);
@@ -196,9 +197,11 @@
   });
 </script>
 
-<div class="flex flex-col gap-y-1 grow">
+<div class="flex flex-col grow">
   <div class="relative bg-orange-100 w-full flex justify-center z-10">
-    <span class="text-[1.5rem] text-slate-600 font-semibold italic">
+    <span
+      class="canvas-header text-[1.5rem] text-slate-600 font-semibold italic"
+    >
       Semantic Tasks
     </span>
     <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">

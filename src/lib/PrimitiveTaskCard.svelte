@@ -233,10 +233,10 @@
     @apply text-gray-500 italic;
   }
   .option-value {
-    @apply outline outline-1 outline-gray-300 rounded px-2 my-2 hover:bg-gray-200 transition-all cursor-pointer;
+    @apply outline-1 outline-gray-300 rounded px-2 my-2 hover:bg-gray-200 transition-all cursor-pointer;
   }
   .action-button {
-    @apply outline outline-2 rounded px-1 py-0.5 text-sm font-mono;
+    @apply outline-2 rounded px-1 py-0.5 text-sm font-mono;
   }
   .disabled {
     @apply cursor-not-allowed bg-gray-300 outline-gray-200 opacity-50;

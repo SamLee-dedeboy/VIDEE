@@ -15,6 +15,15 @@
   setContext("session_id", () => session_id);
   let decomposing_goal = $state(false);
   let converting = $state(false);
+
+  // stream states
+  let streaming_states = $state({
+    started: false,
+    paused: false,
+    finished: false,
+  });
+  let stream_controller: any = $state(undefined);
+
   let semantic_tasks = $state(undefined);
   let primitive_tasks:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)[]
@@ -23,6 +32,7 @@
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
     | undefined = $state(undefined);
   // let primitive_task_execution_plan = $state(undefined);
+  // let goal_candidate_steps = $state([]);
 
   /**
    * Stores the state of the dag
@@ -33,6 +43,7 @@
   async function init() {
     await fetchTest();
     await createSession();
+    // await fetchStream();
   }
 
   function fetchTest() {
@@ -44,6 +55,58 @@
       .catch((error) => {
         console.error("Error:", error);
       });
+  }
+
+  async function fetchStream() {
+    stream_controller = new AbortController();
+    const signal = stream_controller.signal;
+    try {
+      const response = await fetch(`${server_address}/test/stream/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          session_id,
+        }),
+
+        signal,
+      });
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete JSON objects line by line
+        let lines = buffer.split("\n");
+        buffer = lines.pop(); // Keep the last incomplete part for the next iteration
+
+        for (let line of lines) {
+          if (line) {
+            const obj = JSON.parse(line);
+            console.log("Received:", obj);
+            // You can update UI here
+          }
+        }
+      }
+    } catch (error) {
+      if (error.name === "AbortError") {
+        streaming_stopped = true;
+        console.log("Stream aborted");
+      } else {
+        console.error("Error:", error);
+      }
+    } finally {
+      stream_controller = null;
+    }
+
+    console.log("Stream finished");
   }
 
   function createSession() {
@@ -87,6 +150,67 @@
       });
   }
 
+  async function handleDecomposeGoalStepped(goal: string) {
+    streaming_states.started = true;
+    streaming_states.paused = false;
+    stream_controller = new AbortController();
+    const signal = stream_controller.signal;
+    try {
+      const response = await fetch(
+        `${server_address}/goal_decomposition/stepped/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            goal,
+            session_id,
+            user_steps:
+              semantic_tasks === undefined ? [] : [[semantic_tasks, 5]],
+          }),
+          signal,
+        }
+      );
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete JSON objects line by line
+        let lines = buffer.split("\n");
+        buffer = lines.pop(); // Keep the last incomplete part for the next iteration
+
+        for (let line of lines) {
+          if (line) {
+            const obj = JSON.parse(line);
+            console.log("Received:", obj);
+            semantic_tasks = obj["semantic_tasks"][0][0];
+          }
+        }
+      }
+      console.log("Stream finished");
+      streaming_states.started = false;
+      streaming_states.paused = false;
+      streaming_states.finished = true;
+    } catch (error) {
+      if (error.name === "AbortError") {
+        streaming_states.paused = true;
+        console.log("Stream aborted");
+      } else {
+        console.error("Error:", error);
+      }
+    } finally {
+      stream_controller = undefined;
+    }
+  }
+
   /**
    * convert the semantic tasks to primitive tasks
    */
@@ -122,11 +246,28 @@
     <div class="self-center">Loading...</div>
   {:else}
     <div class="flex flex-[2_2_0%] shrink-0 flex-col gap-y-2">
-      <div class="bg-white">
-        <GoalInput {handleDecomposeGoal} />
+      <div class="bg-white flex gap-x-2">
+        <GoalInput
+          handleDecomposeGoal={handleDecomposeGoalStepped}
+          {streaming_states}
+        />
+        <button
+          id="stop"
+          class=" outline-2 outline-red-300 p-2 bg-red-100 rounded"
+          onclick={() => {
+            if (stream_controller !== undefined) {
+              stream_controller.abort(); // Stop streaming
+              stream_controller = undefined;
+            }
+          }}>Stop Streaming</button
+        >
       </div>
       <div class="flex flex-[2_2_0%] gap-x-2">
-        <div class="relative grow px-2 py-1 rounded">
+        <div
+          class="relative grow px-2 py-1"
+          class:loading-canvas={streaming_states.started &&
+            !streaming_states.paused}
+        >
           <div
             class="absolute top-0 left-0 right-0 bottom-0 flex overflow-hidden"
           >
@@ -200,5 +341,41 @@
   .disabled {
     /* @apply opacity-50 pointer-events-none; */
     @apply invisible pointer-events-none;
+  }
+
+  /* #fbf2b4 20%,
+      #ffbb80 40%,
+      #ffc155 60%, */
+  .loading-canvas {
+    position: relative;
+    background: linear-gradient(
+      90deg,
+      #c2e2fd 20%,
+      #87f2f7 40%,
+      #86c6ff 60%,
+      transparent 80%
+    );
+    background-size: 200% 200%;
+    animation: dash 3s linear infinite;
+    border: 4px solid transparent;
+  }
+
+  @keyframes dash {
+    0% {
+      background-position: 0% 0%;
+    }
+    100% {
+      background-position: 200% 150%;
+    }
+  }
+  @keyframes ripple {
+    0% {
+      background-size: 0% 0%;
+      opacity: 1;
+    }
+    100% {
+      background-size: 100% 100%;
+      opacity: 0;
+    }
   }
 </style>

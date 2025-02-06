@@ -27,7 +27,7 @@
 </script>
 
 <div
-  class="task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline outline-2 outline-[#FFCFB1] bg-[#fbfaec] shadow rounded relative flex gap-y-1 gap-x-2"
+  class="task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline-2 outline-[#FFCFB1] bg-[#fbfaec] shadow rounded relative flex gap-y-1 gap-x-2"
 >
   <div class="flex flex-col grow px-2 gap-y-2">
     <div
@@ -58,13 +58,13 @@
     <div in:slide class=" border-gray-300 flex gap-x-2 min-w-[15rem]">
       <div class="text-sm text-gray-400 italic">Confidence</div>
       <div class="text-sm">
-        {task.confidence.toFixed(2)}
+        {task.confidence?.toFixed(2)}
       </div>
     </div>
     <div in:slide class=" border-gray-300 flex gap-x-2 min-w-[15rem]">
       <div class="text-sm text-gray-400 italic">Complexity</div>
       <div class="text-sm">
-        {task.complexity.toFixed(2)}
+        {task.complexity?.toFixed(2)}
       </div>
     </div>
     <div class="flex gap-x-2 mt-1">
@@ -126,14 +126,14 @@
     <div
       class="flex absolute left-[100.7%] top-0 bottom-1 bg-white border-y border-r border-gray-200"
     >
-      <div in:slide class="relative mt-1 flex flex-col">
+      <div in:slide class="mt-1 flex flex-col">
         <img
           src="bot.svg"
           alt="bot"
           class="mx-2 w-7 h-7 inline-block p-0.5 border-r border-b border-gray-300 shadow min-w-[15rem]"
         />
         <div class="text-sm text-gray-400 italic mx-2">Explanation</div>
-        <span class="mx-2">
+        <span class="mx-2 overflow-auto">
           {task.explanation}
         </span>
         <button

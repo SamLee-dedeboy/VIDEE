@@ -6,12 +6,16 @@ from collections import defaultdict
 from typing import Callable
 from openai import OpenAI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+
+
+import random
+import asyncio
 
 # local packages
 import server.custom_types as custom_types
 import server.decomposer as decomposer
 import server.executor as executor
-import random
 
 app = FastAPI()
 origins = ["*"]
@@ -36,6 +40,18 @@ dev = True
 @app.get("/test/")
 def test():
     return "Hello Task Decomposition"
+
+
+@app.post("/test/stream/")
+async def test_stream():
+    async def iter_response():  # (1)
+        k = 5
+        for i in range(k):
+            obj = {"id": i, "data": f"Object {i}"}
+            yield json.dumps(obj) + "\n"  # Ensure newline separation
+            await asyncio.sleep(5)
+
+    return StreamingResponse(iter_response(), media_type="application/json")
 
 
 @app.post("/session/create/")
@@ -76,6 +92,51 @@ async def goal_decomposition(request: Request) -> list[custom_types.Node]:
             open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
         )
     else:
+        decomposed_steps = await decomposer.goal_decomposition(
+            goal, model=default_model, api_key=api_key
+        )
+        save_json(
+            decomposed_steps,
+            relative_path("dev_data/test_decomposed_steps_w_children.json"),
+        )
+    user_sessions[session_id]["semantic_tasks"] = decomposed_steps
+    return decomposed_steps
+
+
+@app.post("/goal_decomposition/stepped/")
+async def goal_decomposition_stepped(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    goal = request["goal"]
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    user_sessions[session_id]["goal"] = goal
+    user_steps = request["user_steps"]
+    print("user_steps", user_steps)
+    k, n = 2, 2
+    if dev:
+
+        async def iter_response(candidate_steps):  # (1)
+            if len(candidate_steps) == 0:
+                candidate_steps = await decomposer.goal_decode_n_samples(
+                    goal, [], default_model, api_key, n=n
+                )
+                yield json.dumps({"semantic_tasks": candidate_steps}) + "\n"
+            async for steps in decomposer.stream_goal_beam_search(
+                goal, candidate_steps, default_model, api_key, k=k, n=n
+            ):
+                candidate_steps = steps
+                save_json(
+                    candidate_steps,
+                    relative_path("dev_data/test_beam_search_candidate_steps.json"),
+                )
+                yield json.dumps({"semantic_tasks": candidate_steps}) + "\n"
+
+        return StreamingResponse(
+            iter_response(user_steps), media_type="application/json"
+        )
+    else:
+
         decomposed_steps = await decomposer.goal_decomposition(
             goal, model=default_model, api_key=api_key
         )

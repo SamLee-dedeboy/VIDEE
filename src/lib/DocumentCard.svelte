@@ -51,7 +51,7 @@
           {doc_input_key}
         </div>
         <div class="max-h-[15rem] overflow-auto">
-          {document[doc_input_key]}
+          {JSON.stringify(document[doc_input_key])}
         </div>
       </div>
     {/if}

@@ -4,6 +4,8 @@ from autogen_core import CancellationToken
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.messages import TextMessage
+from tqdm import tqdm
+import asyncio
 
 
 def save_json(data, filename):
@@ -11,11 +13,37 @@ def save_json(data, filename):
         json.dump(data, f, indent=4, sort_keys=True, ensure_ascii=False)
 
 
+async def call_agent(agent, user_message):
+    response = await agent.on_messages(
+        [TextMessage(content=user_message, source="user")],
+        cancellation_token=CancellationToken(),
+    )
+    return response
+
+
+async def parallel_call_agents(n, agent, user_message):
+    tasks = [call_agent(agent, user_message) for _ in range(n)]
+
+    results = []
+    with tqdm(total=n) as pbar:
+        for coro in asyncio.as_completed(tasks):
+            result = await coro
+            results.append(result)
+            pbar.update(1)
+
+    return results
+
+
 async def run_goal_decomposition_agent(goal: str, model: str, api_key: str):
     model_client = OpenAIChatCompletionClient(
         model=model,
         api_key=api_key,
         temperature=0.0,
+        model_capabilities={
+            "vision": False,
+            "function_calling": False,
+            "json_output": True,
+        },
     )
     goal_decomposition_agent = AssistantAgent(
         name="goal_decomposition_agent",
@@ -53,10 +81,154 @@ async def run_goal_decomposition_agent(goal: str, model: str, api_key: str):
     return json.loads(response.chat_message.content)["steps"]
 
 
+async def run_goal_decomposition_agent_stepped(
+    goal: str, previous_steps: list, model: str, api_key: str, n=1
+):
+    model_client = OpenAIChatCompletionClient(
+        model=model,
+        api_key=api_key,
+        temperature=0.0,
+        model_capabilities={
+            "vision": False,
+            "function_calling": False,
+            "json_output": True,
+        },
+    )
+    goal_decomposition_agent = AssistantAgent(
+        name="goal_decomposition_agent",
+        model_client=model_client,
+        system_message="""
+        ** Context **
+        You are a text analytics task planner. 
+        Users have collected a dataset of documents. The user will describe a goal to achieve through some text analytics, and what they have done already.
+        ** Task **
+        Your task is to provide a single next step based on what the user have done so far.
+        ** Requirements **
+        Please specify the logical next step to take.
+        Ignore the practical steps such as data collection, cleaning or visualization.
+        Focus on the conceptual next step. If no further steps are needed, label the next step with "END".
+        For the parentIds, provide the ids of the steps that this step **directly** depends on in terms of input-output data.
+        Reply with this JSON format:
+            {
+                "next_step": {
+                        "id": (int),
+                        "label": (string) or "END"
+                        "description": (string)
+                        "explanation": (string, explain why this step is needed)
+                        "parentIds": (int[], ids of the steps that this step **directly** depends on)
+                    },
+            }  """,
+    )
+    user_message = "My goal is: {goal}".format(goal=goal) + "\n"
+    if len(previous_steps) > 0:
+        previous_steps_str = "\n".join(
+            list(
+                map(
+                    lambda s: f"""
+                    <step>
+                        <id> {s['id']} </id>
+                        <label> {s['label']} </label>
+                        <description> {s['description']} </description>
+                    </step>""",
+                    previous_steps,
+                )
+            )
+        )
+        user_message += (
+            "Here are the steps that I have done so far: \n{previous_steps}".format(
+                previous_steps=previous_steps_str
+            )
+        )
+    if n == 1:
+        response = await goal_decomposition_agent.on_messages(
+            [TextMessage(content=user_message, source="user")],
+            cancellation_token=CancellationToken(),
+        )
+        return json.loads(response.chat_message.content)["next_step"]
+    else:
+        responses = await parallel_call_agents(
+            n, goal_decomposition_agent, user_message
+        )
+        responses = [
+            json.loads(response.chat_message.content)["next_step"]
+            for response in responses
+        ]
+        return responses
+
+
+async def run_decomposition_self_evaluation_agent(
+    goal: str, previous_steps: list, next_step: str, model: str, api_key: str, n=1
+):
+    model_client = OpenAIChatCompletionClient(
+        model=model,
+        api_key=api_key,
+        temperature=0.0,
+        model_capabilities={
+            "vision": False,
+            "function_calling": False,
+            "json_output": True,
+        },
+    )
+    decomposition_self_evaluation_agent = AssistantAgent(
+        name="decomposition_self_evaluation_agent",
+        model_client=model_client,
+        system_message="""
+        ** Context **
+        You are a text analytics expert.
+        Users will describe a text analytics goal and the steps they have taken to achieve it.
+        ** Task **
+        Your task is to evaluate the correctness of the next step provided by the user.
+        ** Requirements **
+        Give a score from 0 to 5, where 0 is completely incorrect and 5 is perfect.
+        Reply with this JSON format:
+            {
+                "evaluation_score": (int) 0-5
+            }  """,
+    )
+    user_message = "My goal is: {goal}".format(goal=goal) + "\n"
+    if len(previous_steps) > 0:
+        previous_steps_str = "\n".join(
+            list(map(lambda s: f"{s['label']}: {s['description']}", previous_steps))
+        )
+        user_message += (
+            "Here are the steps that I have done so far: \n{previous_steps}".format(
+                previous_steps=previous_steps_str
+            )
+        )
+    user_message += (
+        "\nHere is the next step that I think I should take: {next_step}".format(
+            next_step=next_step
+        )
+    )
+
+    if n == 1:
+        response = await decomposition_self_evaluation_agent.on_messages(
+            [TextMessage(content=user_message, source="user")],
+            cancellation_token=CancellationToken(),
+        )
+        return json.loads(response.chat_message.content)["evaluation_score"]
+    else:
+        responses = await parallel_call_agents(
+            n, decomposition_self_evaluation_agent, user_message
+        )
+        responses = [
+            json.loads(response.chat_message.content)["evaluation_score"]
+            for response in responses
+        ]
+        return responses
+
+
 async def run_task_decomposition_agent(task: Node, model: str, api_key: str):
     # Create a countdown agent.
     model_client = OpenAIChatCompletionClient(
-        model=model, api_key=api_key, temperature=0.0
+        model=model,
+        api_key=api_key,
+        temperature=0.0,
+        model_capabilities={
+            "vision": False,
+            "function_calling": False,
+            "json_output": True,
+        },
     )
     goal_decomposition_agent = AssistantAgent(
         name="task_decomposition_agent",
@@ -172,6 +344,11 @@ async def run_prompt_generation_agent(
         model=model,
         api_key=api_key,
         temperature=0.0,
+        model_capabilities={
+            "vision": False,
+            "function_calling": False,
+            "json_output": True,
+        },
     )
     prompt_generation_agent = AssistantAgent(
         name="prompt_generation_agent",
@@ -228,6 +405,11 @@ async def run_input_key_generation_agent(
         model=model,
         api_key=api_key,
         temperature=0.0,
+        model_capabilities={
+            "vision": False,
+            "function_calling": False,
+            "json_output": True,
+        },
     )
     prompt_generation_agent = AssistantAgent(
         name="input_key_generation_agent",
