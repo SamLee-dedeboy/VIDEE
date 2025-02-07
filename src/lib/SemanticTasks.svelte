@@ -206,7 +206,7 @@
     </span>
     <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
-        class="flex items-center justify-center p-0.5 hover:bg-orange-500 rounded-full outline-2 outline-gray-800"
+        class="flex items-center justify-center p-0.5 hover:bg-orange-300 rounded-full outline-2 outline-gray-800"
         onclick={handleAddTask}
       >
         <img src="plus.svg" alt="add" class="w-4 h-4" />

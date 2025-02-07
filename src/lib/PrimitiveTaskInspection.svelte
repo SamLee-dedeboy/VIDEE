@@ -52,8 +52,7 @@
   {#if task}
     <div class="flex flex-col px-2 gap-y-1">
       <div class="flex flex-col">
-        <div
-          role="button"
+        <button
           tabindex="0"
           class="header-2"
           onclick={() => {
@@ -66,7 +65,7 @@
             alt="expand"
             class="hidden ml-auto w-5 h-5"
           />
-        </div>
+        </button>
         {#if show_description}
           <div in:slide class="flex flex-col divide-y">
             <div class="flex">
@@ -89,9 +88,8 @@
       </div>
       <div class="flex flex-col gap-y-1">
         <div class="flex flex-col">
-          <div
+          <button
             class="header-2"
-            role="button"
             tabindex="0"
             onclick={() => {
               show_formats = !show_formats;
@@ -103,7 +101,7 @@
               alt="expand"
               class="hidden ml-auto w-5 h-5"
             />
-          </div>
+          </button>
           {#if task.doc_input_keys}
             {#if show_formats}
               <div in:slide class="flex justify-around divide-x">
@@ -147,8 +145,7 @@
             <div>Needs Compilation...</div>
           {/if}
         </div>
-        <div
-          role="button"
+        <button
           tabindex="0"
           class="header-2"
           onclick={() => (show_execution = !show_execution)}
@@ -159,7 +156,7 @@
             alt="expand"
             class="hidden ml-auto w-5 h-5"
           />
-        </div>
+        </button>
         {#if task.execution}
           {#if show_execution}
             <div
@@ -198,7 +195,7 @@
                               <div
                                 class="bg-blue-50 px-1 whitespace-pre-line max-h-[20rem] overflow-y-auto"
                               >
-                                {prompt_template_message.content}
+                                {prompt_template_message.content.trim()}
                               </div>
                             </div>
                           {:else if prompt_template_message.role === "human"}
@@ -211,7 +208,7 @@
                               <div
                                 class="bg-orange-50 grow px-1 whitespace-pre-line"
                               >
-                                {prompt_template_message.content}
+                                {prompt_template_message.content.trim()}
                               </div>
                             </div>
                           {/if}
@@ -235,8 +232,7 @@
       {#if true}
         <div class="flex flex-col">
           <div class="flex flex-col">
-            <div
-              role="button"
+            <button
               tabindex="0"
               class="header-2"
               onclick={() => {
@@ -250,7 +246,7 @@
                 alt="expand"
                 class="hidden ml-auto w-5 h-5"
               />
-            </div>
+            </button>
           </div>
           {#if show_result && result !== undefined}
             <div in:slide class="flex flex-col">

@@ -38,7 +38,7 @@
   <div
     class="text-[1.5rem] text-slate-600 font-semibold italic bg-orange-100 flex justify-center"
   >
-    Inspection
+    Dataset Inspection
   </div>
   <div class="flex flex-col px-1 gap-y-1">
     <div
@@ -48,6 +48,7 @@
       onclick={() => {
         show_documents = !show_documents;
       }}
+      onkeyup={() => {}}
     >
       Documents
       <img src="chevron_down.svg" alt="expand" class="hidden ml-auto w-5 h-5" />
