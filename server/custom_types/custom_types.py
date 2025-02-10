@@ -1,14 +1,17 @@
 from pydantic import BaseModel
 from typing import TypedDict, Annotated
-import operator
+from typing import Optional
 
 
-class Node(BaseModel):
+class SemanticTaskResponse(BaseModel):
     id: str
     label: str
     description: str
     explanation: str
     parentIds: list[str]
+
+
+class Node(SemanticTaskResponse):
     children: list[str]
     sub_tasks: list["Node"] = []
     confidence: float
@@ -16,6 +19,16 @@ class Node(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class MCT_Node(SemanticTaskResponse):
+    print_label: str = "N/A"
+    MCT_id: str
+    MCT_parent_id: Optional[str]
+    MCT_children_ids: list[str] = []
+    visits: int = 0
+    value: float = 0.0
+    children_all_ends: bool = False
 
 
 class BaseStateSchema(TypedDict):

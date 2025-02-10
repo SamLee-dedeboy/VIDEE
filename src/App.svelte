@@ -1,12 +1,14 @@
 <script lang="ts">
   import GoalConversation from "lib/GoalConversation.svelte";
   import SemanticTasks from "lib/SemanticTasks.svelte";
+  import SemanticTasksTree from "lib/SemanticTasksTree.svelte";
   import PrimitiveTasks from "lib/PrimitiveTasks.svelte";
   import { server_address } from "constants";
   import { onMount, setContext } from "svelte";
   import type {
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
+    tSemanticTask,
   } from "types";
   import GoalInput from "lib/GoalInput.svelte";
   import PrimitiveTaskInspection from "lib/PrimitiveTaskInspection.svelte";
@@ -24,7 +26,7 @@
   });
   let stream_controller: any = $state(undefined);
 
-  let semantic_tasks = $state(undefined);
+  let semantic_tasks: tSemanticTask[] | undefined = $state(undefined);
   let primitive_tasks:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)[]
     | undefined = $state(undefined);
@@ -150,14 +152,75 @@
       });
   }
 
-  async function handleDecomposeGoalStepped(goal: string) {
+  async function handleDecomposeGoalStepped_MCTS(goal: string) {
     streaming_states.started = true;
     streaming_states.paused = false;
     stream_controller = new AbortController();
     const signal = stream_controller.signal;
     try {
       const response = await fetch(
-        `${server_address}/goal_decomposition/stepped/`,
+        `${server_address}/goal_decomposition/mcts/stepped/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            goal,
+            session_id,
+            semantic_tasks,
+          }),
+          signal,
+        }
+      );
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete JSON objects line by line
+        let lines = buffer.split("\n");
+        buffer = lines.pop(); // Keep the last incomplete part for the next iteration
+
+        for (let line of lines) {
+          if (line) {
+            const obj = JSON.parse(line);
+            console.log("Received:", obj);
+            semantic_tasks = Object.values(obj["node_dict"]) as any[];
+            // semantic_tasks = obj["semantic_tasks"][0][0];
+          }
+        }
+      }
+      console.log("Stream finished");
+      streaming_states.started = false;
+      streaming_states.paused = false;
+      streaming_states.finished = true;
+    } catch (error) {
+      if (error.name === "AbortError") {
+        streaming_states.paused = true;
+        console.log("Stream aborted");
+      } else {
+        console.error("Error:", error);
+      }
+    } finally {
+      stream_controller = undefined;
+    }
+  }
+
+  async function handleDecomposeGoalStepped_BeamSearch(goal: string) {
+    streaming_states.started = true;
+    streaming_states.paused = false;
+    stream_controller = new AbortController();
+    const signal = stream_controller.signal;
+    try {
+      const response = await fetch(
+        `${server_address}/goal_decomposition/beam_search/stepped/`,
         {
           method: "POST",
           headers: {
@@ -248,7 +311,7 @@
     <div class="flex flex-[2_2_0%] shrink-0 flex-col gap-y-2">
       <div class="bg-white flex gap-x-2">
         <GoalInput
-          handleDecomposeGoal={handleDecomposeGoalStepped}
+          handleDecomposeGoal={handleDecomposeGoalStepped_MCTS}
           {streaming_states}
         />
         <button
@@ -275,11 +338,16 @@
             class="absolute top-0 left-0 right-0 bottom-0 flex overflow-hidden"
           >
             {#if show_dag === "semantic"}
-              <SemanticTasks
+              <SemanticTasksTree
                 {decomposing_goal}
                 semantic_tasks={semantic_tasks || []}
                 {handleConvert}
-              ></SemanticTasks>
+              ></SemanticTasksTree>
+              <!-- <SemanticTasks
+                {decomposing_goal}
+                semantic_tasks={semantic_tasks || []}
+                {handleConvert}
+              ></SemanticTasks> -->
             {:else if show_dag === "primitive"}
               <PrimitiveTasks
                 primitive_tasks={primitive_tasks || []}

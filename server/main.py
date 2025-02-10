@@ -103,8 +103,52 @@ async def goal_decomposition(request: Request) -> list[custom_types.Node]:
     return decomposed_steps
 
 
-@app.post("/goal_decomposition/stepped/")
-async def goal_decomposition_stepped(request: Request):
+@app.post("/goal_decomposition/mcts/stepped/")
+async def goal_decomposition_MCTS_stepped(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    goal = request["goal"]
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    user_sessions[session_id]["goal"] = goal
+    semantic_tasks = request["semantic_tasks"] if "semantic_tasks" in request else None
+    if semantic_tasks is None or semantic_tasks == []:
+        user_root = decomposer.init_MCTS()
+        node_dict = {user_root.MCT_id: user_root}
+    else:
+        node_dict = {
+            t["MCT_id"]: custom_types.MCT_Node.model_validate(t) for t in semantic_tasks
+        }
+        user_root = node_dict["-1"]
+
+    # node_dict = decomposer.collect_MCT_node_dict(user_root)
+
+    async def iter_response(root):  # (1)
+        async for new_root in decomposer.stream_MCTS(
+            root, node_dict, goal, model=default_model, api_key=api_key
+        ):
+            root = new_root
+            save_json(
+                {
+                    "node_dict": {
+                        k: v.model_dump(mode="json") for k, v in node_dict.items()
+                    },
+                },
+                relative_path("dev_data/test_mcts_root.json"),
+            )
+            yield json.dumps(
+                {
+                    "node_dict": {
+                        k: v.model_dump(mode="json") for k, v in node_dict.items()
+                    },
+                }
+            ) + "\n"
+
+    return StreamingResponse(iter_response(user_root), media_type="application/json")
+
+
+@app.post("/goal_decomposition/beam_search/stepped/")
+async def goal_decomposition_beam_search_stepped(request: Request):
     request = await request.body()
     request = json.loads(request)
     goal = request["goal"]
@@ -114,7 +158,13 @@ async def goal_decomposition_stepped(request: Request):
     user_steps = request["user_steps"]
     print("user_steps", user_steps)
     k, n = 2, 2
-    if dev:
+    if False:
+        decomposed_steps = json.load(
+            open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
+        )
+        user_sessions[session_id]["semantic_tasks"] = decomposed_steps
+        return decomposed_steps
+    else:
 
         async def iter_response(candidate_steps):  # (1)
             if len(candidate_steps) == 0:
@@ -135,17 +185,6 @@ async def goal_decomposition_stepped(request: Request):
         return StreamingResponse(
             iter_response(user_steps), media_type="application/json"
         )
-    else:
-
-        decomposed_steps = await decomposer.goal_decomposition(
-            goal, model=default_model, api_key=api_key
-        )
-        save_json(
-            decomposed_steps,
-            relative_path("dev_data/test_decomposed_steps_w_children.json"),
-        )
-    user_sessions[session_id]["semantic_tasks"] = decomposed_steps
-    return decomposed_steps
 
 
 @app.post("/semantic_task/update/")
@@ -227,11 +266,21 @@ async def compile_primitive_tasks(request: Request) -> dict:
     session_id = request["session_id"]
     assert session_id in user_sessions
     primitive_task_descriptions = request["primitive_tasks"]
-    primitive_task_execution_plan = await executor.execution_plan(
-        primitive_task_descriptions,
-        model=default_model,
-        api_key=api_key,
-    )
+    if dev:
+        primitive_task_execution_plan = json.load(
+            open(relative_path("dev_data/test_execution_plan.json"))
+        )
+    else:
+        primitive_task_execution_plan = await executor.execution_plan(
+            primitive_task_descriptions,
+            model=default_model,
+            api_key=api_key,
+        )
+        save_json(
+            primitive_task_execution_plan,
+            relative_path("dev_data/test_execution_plan.json"),
+        )
+
     execution_graph = executor.create_graph(primitive_task_execution_plan)
     user_sessions[session_id]["execution_graph"] = execution_graph
     execution_state = executor.init_user_execution_state(

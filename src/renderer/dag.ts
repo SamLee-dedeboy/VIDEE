@@ -23,7 +23,7 @@ export class DAG {
         this.nodeRadius = node_radius
         this.line = d3.line().curve(d3.curveMonotoneY);
         this.dag = undefined;
-        this.zoom = d3.zoom().scaleExtent([0.5, 32])
+        this.zoom = d3.zoom().scaleExtent([0.1, 32])
         .on("zoom", (e) => this.zoomed(e, this))
         .on("end", () => document.querySelectorAll(this.selection_card).forEach(div => div.style.transitionDuration = "0.5s"))
 
@@ -55,7 +55,8 @@ export class DAG {
         this.dag = stratify(data);
 
 
-        const rect_size: [number, number] = [320, 250]
+        // const rect_size: [number, number] = [320, 250]
+        const rect_size: [number, number] = this.nodeRadius
         const layout = d3_dag
         .sugiyama()
         // .grid()
@@ -69,7 +70,7 @@ export class DAG {
         // .tweaks([d3_dag.tweakShape(rect_size, d3_dag.shapeRect), d3_dag.tweakSize({width: max_width, height: max_height})])
 
         const { width, height } = layout(this.dag);
-        const translation_scaling = [max_width / width, 1.1*Math.max(1, max_height / height)]
+        const translation_scaling = [Math.max(1, max_width / width), 1.1*Math.max(1, max_height / height)]
         console.log({width, height, max_width, max_height})
 
         const vertical = true;
@@ -225,37 +226,6 @@ export class DAG {
             .attr("fill", "none")
             .attr("stroke-width", 3)
             .attr("stroke", "gray")
-    }
-
-    _update(data) {
-        console.log({data})
-        const svg = d3.select(`#${this.svgId}`)
-        const svg_bbox = svg.node().getBoundingClientRect();
-        svg.attr("viewBox", `0 0 ${svg_bbox.width} ${svg_bbox.height}`);
-        const link_group = svg.select("g.links");
-        const path_data = data.map((d) => {
-            const to = d
-            const dependencies = data.filter((d) => to.depend_on.includes(d.label));
-            return dependencies.map((from) => {
-                const x1 = from.bbox.x + from.bbox.width  - svg_bbox.x
-                const y1 = from.bbox.y + from.bbox.height / 2 - svg_bbox.y
-                const x2 = to.bbox.x - svg_bbox.x
-                const y2 = to.bbox.y + to.bbox.height / 2 - svg_bbox.y
-                let path = d3.path()
-                path.moveTo(x1, y1);
-                // path.bezierCurveTo(x1, y1 * 1.3, x2, y2 * 1.3, x2, y2);
-                path.bezierCurveTo(x2, y1, x1, y2, x2, y2);
-                // path.lineTo(x2, y2);
-                return path.toString();
-            })
-        }).flat()
-        link_group.selectAll("path")
-            .data(path_data)
-            .join("path")
-            .attr("d", (d) => d)
-            .attr("fill", "none")
-            .attr("stroke", "black")
-
     }
 
     zoomed(e, self) {

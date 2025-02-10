@@ -1,3 +1,9 @@
+export type tNode = {
+    id: string;
+    parentIds: string[];
+    data: any;
+    bbox?: DOMRect;
+}
 export type tSemanticTask = {
     id: string;
     label: string;
@@ -37,4 +43,3 @@ export type tExecutionState = {
 }
 
 export type tTask = tSemanticTask | tPrimitiveTaskDescription | tPrimitiveTaskExecution
-export type tNode = { bbox?:DOMRect } & tTask

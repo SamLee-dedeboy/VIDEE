@@ -3,6 +3,7 @@
   import { slide, scale } from "svelte/transition";
   let {
     task,
+    id_key,
     expand = $bindable(false),
     handleDecompose = () => {},
     handleToggleExpand = () => {},
@@ -11,6 +12,7 @@
     handleDeleteTask = () => {},
   }: {
     task: tSemanticTask;
+    id_key: string;
     expand: boolean;
     handleDecompose?: Function;
     handleToggleExpand?: Function;
@@ -22,7 +24,7 @@
   let show_actions = $state(false);
   function showSubTasks() {
     show_subtasks = !show_subtasks;
-    handleToggleShowSubTasks(task.id);
+    handleToggleShowSubTasks(task[id_key]);
   }
 </script>
 
@@ -137,8 +139,8 @@
           {task.explanation}
         </span>
         <button
-          class="p-0.5 bg-[#FFCFB1] mt-auto hover:bg-orange-400"
-          onclick={() => handleToggleExpand(task.id)}
+          class="p-0.5 shrink-0 bg-[#FFCFB1] mt-auto hover:bg-orange-400"
+          onclick={() => handleToggleExpand(task[id_key])}
         >
           <img
             src="chevron_left.svg"
