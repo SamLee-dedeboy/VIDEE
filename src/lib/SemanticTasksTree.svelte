@@ -10,10 +10,12 @@
   import { getContext } from "svelte";
   let {
     semantic_tasks = $bindable([]),
+    next_expansion,
     decomposing_goal,
     handleConvert,
   }: {
     semantic_tasks: tSemanticTask[];
+    next_expansion: tSemanticTask | undefined;
     decomposing_goal: boolean;
     handleConvert: Function;
   } = $props();
@@ -97,7 +99,11 @@
    * @param _semantic_tasks_flattened
    */
   async function update_dag(_semantic_tasks_flattened: tSemanticTask[]) {
-    console.log("updating semantic dag:", _semantic_tasks_flattened);
+    console.log(
+      "updating semantic dag:",
+      _semantic_tasks_flattened,
+      next_expansion
+    );
     // get the bounding box of each task card
     const semantic_task_divs: NodeListOf<HTMLElement> =
       document.querySelectorAll(".semantic-task-card-container");
@@ -125,7 +131,11 @@
     });
 
     // call renderer
-    dag_renderer.update(dag_data, semantic_tasks_show_sub_tasks);
+    dag_renderer.update(
+      dag_data,
+      semantic_tasks_show_sub_tasks,
+      next_expansion?.[id_key]
+    );
   }
 
   // UI handlers
@@ -230,6 +240,8 @@
       });
   }
 
+  function navigateToNextExpansion() {}
+
   onMount(() => {
     dag_renderer.init();
     update_dag(semantic_tasks);
@@ -272,8 +284,20 @@
         </div>
       </div>
     {/if}
-    <svg id={svgId} class="w-full h-full absolute"></svg>
+    <svg id={svgId} class="dag-svg w-full h-full absolute"></svg>
     <div class="semantic-tasks relative w-full">
+      <button
+        class="next-expansion-button absolute left-1/2 top-1 -translate-x-1/2 px-2 py-1 rounded outline-3 outline-orange-500 outline-dashed bg-[#fbfaec]"
+        onclick={() => navigateToNextExpansion()}
+      >
+        Next Expansion
+      </button>
+      <div
+        class="new-node-legend absolute left-[calc(50%+10rem)] top-1 -translate-x-1/2 px-2 py-1 rounded bg-orange-200"
+      >
+        New Nodes
+      </div>
+
       {#each semantic_tasks_flattened as task, index}
         <!-- use:draggable={dag_renderer} -->
         <div
@@ -284,6 +308,9 @@
           <SemanticTaskCard
             {task}
             {id_key}
+            next_expansion={(next_expansion &&
+              next_expansion[id_key] === task[id_key]) ||
+              false}
             expand={task_card_expanded.includes(task[id_key])}
             show_explanation={task_card_show_explanation.includes(task[id_key])}
             {handleDecompose}
@@ -326,4 +353,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "../app.css";
+  :global(.new-node) {
+    & .task-card {
+      @apply bg-orange-200;
+    }
+  }
 </style>

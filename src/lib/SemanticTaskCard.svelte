@@ -4,6 +4,7 @@
   let {
     task,
     id_key,
+    next_expansion,
     show_explanation = $bindable(false),
     expand,
     handleDecompose = () => {},
@@ -15,6 +16,7 @@
   }: {
     task: tSemanticTask;
     id_key: string;
+    next_expansion: boolean;
     show_explanation: boolean;
     expand: boolean;
     handleDecompose?: Function;
@@ -30,32 +32,30 @@
     show_subtasks = !show_subtasks;
     handleToggleShowSubTasks(task[id_key]);
   }
+  let isEnd = $derived(task.label === "END");
 </script>
 
 <div class="container flex flex-col w-min rounded-sm">
-  <!-- <button
-    class="action-button-trigger flex p-0.5 hover:bg-orange-400"
-    onclick={() => (show_actions = !show_actions)}
-  >
-    <img
-      src="ellipsis_vertical.svg"
-      class="mt-0.5 w-5 h-6 pointer-events-none"
-      alt="handle"
-    />
-  </button> -->
   <div
-    class="task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline-2 outline-[#FFCFB1] bg-[#fbfaec] shadow rounded relative flex gap-y-1 gap-x-2"
+    class="task-card text-slate-600 w-min min-w-[18rem] transition-all outline-2 outline-[#FFCFB1] bg-[#fbfaec] shadow rounded relative flex gap-y-1 gap-x-2"
+    class:next-expansion={next_expansion}
+    class:bounce={next_expansion && !expand}
+    class:end={isEnd}
   >
     <div class="flex flex-col grow px-2 gap-y-2">
       <div class="text-[1.3rem] font-mono text-orange-900 flex items-center">
-        <span class="card-label mr-2 capitalize">{task.label}</span>
-        <button
-          class="shrink-0 ml-auto cursor-pointer hover:bg-orange-300 p-0.5 rounded"
-          onclick={() => handleToggleExpand(task[id_key])}
-          ><img src="panel_top_open.svg" alt="more" class="w-6 h-6" /></button
+        <span class="card-label mr-2 capitalize" class:end={isEnd}
+          >{task.label}</span
         >
+        {#if !isEnd}
+          <button
+            class="shrink-0 ml-auto cursor-pointer hover:bg-orange-300 p-0.5 rounded"
+            onclick={() => handleToggleExpand(task[id_key])}
+            ><img src="panel_top_open.svg" alt="more" class="w-6 h-6" /></button
+          >
+        {/if}
       </div>
-      {#if expand}
+      {#if !isEnd && expand}
         <div
           in:slide
           class="border-t border-gray-300 flex flex-col min-w-[15rem]"
@@ -86,7 +86,7 @@
             >
           </div>
         </div>
-        <div in:slide class="more-actions flex flex-wrap">
+        <div in:slide class="more-actions flex flex-wrap mb-2">
           <div class="flex gap-x-2">
             <button
               class="action-button rounded outline-2 outline-orange-200 bg-orange-100 hover:bg-orange-200"
@@ -133,6 +133,7 @@
     <div
       in:slide
       class="more-actions hidden flex-wrap absolute top-[calc(100%+1px)] left-1/2 -translate-x-1/2"
+      class:bounce={next_expansion && !expand}
     >
       <div class="flex gap-x-0">
         <button
@@ -163,14 +164,28 @@
 
 <style lang="postcss">
   @reference "../app.css";
+  .card-label.end {
+    @apply flex justify-center items-center;
+  }
+  .end {
+    @apply min-w-[5rem] flex items-center justify-center;
+  }
+  .next-expansion {
+    @apply outline-3 outline-orange-500 outline-dashed shadow-none;
+  }
+  .bounce {
+    @apply animate-bounce;
+  }
+  .container:hover .next-expansion,
+  .container:hover .more-actions {
+    animation-play-state: paused;
+  }
+
   .container:hover > .more-actions {
     @apply flex flex-wrap;
   }
   .action-button {
     @apply px-1 py-0.5 text-sm font-mono;
-  }
-  .showing-actions {
-    @apply bg-green-300 outline-gray-500;
   }
   .disabled {
     @apply cursor-not-allowed bg-gray-300 outline-gray-200 opacity-50;
@@ -182,10 +197,5 @@
     transition:
       width 0.3s ease,
       height 0.3s ease;
-  }
-  .task-card:hover {
-    & .close-button {
-      @apply block;
-    }
   }
 </style>

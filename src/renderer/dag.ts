@@ -18,6 +18,7 @@ export class DAG {
     dag: any
     zoom: any
     handleClick: Function
+    next_expansion_id: string | undefined
     constructor(svgId: string, node_radius: [number,number]=[100, 100], selection_card: string, selection_container: string) {
         this.svgId = svgId
         this.nodeRadius = node_radius
@@ -34,6 +35,7 @@ export class DAG {
     }
     init (handleClick=() => {}) {
         const svg = d3.select(`#${this.svgId}`)
+        svg.append("g").attr("class", "next_expansion_link");
         svg.append("g").attr("class", "links");
         svg.append("g").attr("class", "nodes");
         svg.append("g").attr("class", "bubbles");
@@ -44,8 +46,9 @@ export class DAG {
         console.log("init done")
     }
 
-    update(data: tNode[], expanded_nodes: string[]) {
+    update(data: tNode[], expanded_nodes: string[], next_expansion_id: string | undefined) {
         const self = this
+        this.next_expansion_id = next_expansion_id
         console.log("dag update", data)
         const svg = d3.select(`#${this.svgId}`);
         const svg_bbox = svg.node().getBoundingClientRect();
@@ -77,7 +80,6 @@ export class DAG {
         const { width, height } = layout(this.dag);
         // const translation_scaling = [Math.max(1, max_width / width), 1.1*Math.max(1, max_height / height)]
         const translation_scaling = [1, 1]
-        console.log({width, height, max_width, max_height})
 
         this.bbox_dict = Array.from(this.dag.nodes()).reduce((acc: any, d: any) => {
             acc[d.data.id] = {x: d.x * translation_scaling[0], y: d.y * translation_scaling[1], width: d.data.bbox?.width || rect_size[0], height: d.data.bbox?.height || rect_size[1]};
@@ -163,9 +165,38 @@ export class DAG {
                 d3.mean(new_nodes_bboxes.map(d => d.y))
             ]
             // move the current zoom to the center of the new nodes
-            svg.transition().duration(500).delay(0).call(this.zoom.translateTo, new_nodes_center[0], new_nodes_center[1])
-
+            svg.transition().duration(500).delay(0).call(this.zoom.translateTo, new_nodes_center[0], new_nodes_center[1]).on("end", () => {
+                if(next_expansion_id) {
+                    const current_transform = d3.zoomTransform(svg.node())
+                    const next_expansion_group = svg.select("g.next_expansion_link")
+                    next_expansion_group.selectAll("*").remove()
+                    const next_expansion_node = self.bbox_dict[next_expansion_id]
+                    // link from the next expansion node to the button with a line
+                    const next_expansion_node_position = current_transform.apply([next_expansion_node.x, next_expansion_node.y])
+                    const line_generator = d3.line().curve(d3.curveMonotoneY)
+                     next_expansion_group.append("line").attr("class", "next_expansion_link")
+                        .attr("x1", next_expansion_node_position[0])
+                        .attr("y1", next_expansion_node_position[1])
+                        .attr("x2", max_width/2)
+                        .attr("y2", 10)
+                        .attr("fill", "none")
+                        .attr("stroke-width", 3)
+                        .attr("stroke", "oklch(0.705 0.213 47.604)")
+                        .attr("stroke-dasharray", "8,8")
+                }
+            })
         }
+
+        // add new node class to the divs
+        document.querySelectorAll(this.selection_card).forEach((div) => {
+            const id = (div as HTMLElement).dataset.id
+            if(id === "-1") return;
+            if(new_nodes.includes(id)) {
+                div.classList.add("new-node")
+            } else {
+                div.classList.remove("new-node")
+            }
+        })
 
         // plot edges between decomposed tasks
         // const expansion_links = data.filter(d => expanded_nodes.includes(d.id)).map(d => {
@@ -204,13 +235,17 @@ export class DAG {
     }
 
     zoomed(e, self) {
-        console.log("zoomed", e.transform)
         const svg = d3.select(`#${self.svgId}`);
         svg.select("g.nodes").attr("transform", `translate(${e.transform.x}, ${e.transform.y}) scale(${e.transform.k})`);
         svg.select("g.links").attr("transform", `translate(${e.transform.x}, ${e.transform.y}) scale(${e.transform.k})`);
+        // svg.select("g.next_expansion_link").attr("transform", `translate(${e.transform.x}, ${e.transform.y}) scale(${e.transform.k})`);
         document.querySelectorAll(self.selection_card).forEach(div => {
             applyTransform(div, e.transform)
         })
+        const next_expansion_node = self.bbox_dict[self.next_expansion_id]
+        svg.select("g.next_expansion_link").select("line.next_expansion_link")
+            .attr("x1", e.transform.apply([next_expansion_node.x, next_expansion_node.y])[0])
+            .attr("y1", e.transform.apply([next_expansion_node.x, next_expansion_node.y])[1])
       }
 }
 

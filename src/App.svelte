@@ -27,6 +27,7 @@
   let stream_controller: any = $state(undefined);
 
   let semantic_tasks: tSemanticTask[] | undefined = $state(undefined);
+  let next_expansion: tSemanticTask | undefined = $state(undefined);
   let primitive_tasks:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)[]
     | undefined = $state(undefined);
@@ -193,6 +194,7 @@
             const obj = JSON.parse(line);
             console.log("Received:", obj);
             semantic_tasks = Object.values(obj["node_dict"]) as any[];
+            next_expansion = obj["next_node"];
             // semantic_tasks = obj["semantic_tasks"][0][0];
           }
         }
@@ -341,6 +343,7 @@
               <SemanticTasksTree
                 {decomposing_goal}
                 semantic_tasks={semantic_tasks || []}
+                {next_expansion}
                 {handleConvert}
               ></SemanticTasksTree>
               <!-- <SemanticTasks
