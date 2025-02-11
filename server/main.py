@@ -124,7 +124,7 @@ async def goal_decomposition_MCTS_stepped(request: Request):
     # node_dict = decomposer.collect_MCT_node_dict(user_root)
 
     async def iter_response(root):  # (1)
-        async for new_root in decomposer.stream_MCTS(
+        async for new_root, next_selection in decomposer.stream_MCTS(
             root, node_dict, goal, model=default_model, api_key=api_key
         ):
             root = new_root
@@ -133,6 +133,7 @@ async def goal_decomposition_MCTS_stepped(request: Request):
                     "node_dict": {
                         k: v.model_dump(mode="json") for k, v in node_dict.items()
                     },
+                    "next_node": next_selection.model_dump(mode="json"),
                 },
                 relative_path("dev_data/test_mcts_root.json"),
             )
@@ -141,6 +142,7 @@ async def goal_decomposition_MCTS_stepped(request: Request):
                     "node_dict": {
                         k: v.model_dump(mode="json") for k, v in node_dict.items()
                     },
+                    "next_node": next_selection.model_dump(mode="json"),
                 }
             ) + "\n"
 

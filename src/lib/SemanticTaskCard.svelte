@@ -7,6 +7,7 @@
     next_expansion,
     show_explanation = $bindable(false),
     expand,
+    handleSetAsNextExpansion = () => {},
     handleDecompose = () => {},
     handleToggleExplain = () => {},
     handleToggleExpand = () => {},
@@ -19,6 +20,7 @@
     next_expansion: boolean;
     show_explanation: boolean;
     expand: boolean;
+    handleSetAsNextExpansion?: Function;
     handleDecompose?: Function;
     handleToggleExplain?: Function;
     handleToggleExpand?: Function;
@@ -44,7 +46,7 @@
   >
     <div class="flex flex-col grow px-2 gap-y-2">
       <div class="text-[1.3rem] font-mono text-orange-900 flex items-center">
-        <span class="card-label mr-2 capitalize" class:end={isEnd}
+        <span class="card-label mr-2 capitalize select-none" class:end={isEnd}
           >{task.label}</span
         >
         {#if !isEnd}
@@ -132,10 +134,17 @@
   {#if !expand}
     <div
       in:slide
-      class="more-actions hidden flex-wrap absolute top-[calc(100%+1px)] left-1/2 -translate-x-1/2"
+      class="more-actions hidden flex-wrap absolute top-[100%] left-1/2 -translate-x-1/2"
       class:bounce={next_expansion && !expand}
     >
       <div class="flex gap-x-0">
+        <button
+          class="action-button border-y-2 border-l-2 border-r-2 border-dashed border-orange-500 bg-[#fbfaec] hover:bg-orange-200 ml-auto right-0"
+          tabindex="0"
+          onclick={() => handleSetAsNextExpansion(task)}
+        >
+          Next Expansion
+        </button>
         <button
           class="action-button border-y-2 border-l-2 border-r-1 border-orange-200 bg-orange-100 hover:bg-orange-200"
           onclick={() => handleDecompose(task)}>Decompose</button

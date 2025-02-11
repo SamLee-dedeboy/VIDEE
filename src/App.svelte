@@ -343,7 +343,7 @@
               <SemanticTasksTree
                 {decomposing_goal}
                 semantic_tasks={semantic_tasks || []}
-                {next_expansion}
+                bind:next_expansion
                 {handleConvert}
               ></SemanticTasksTree>
               <!-- <SemanticTasks

@@ -10,7 +10,7 @@
   import { getContext } from "svelte";
   let {
     semantic_tasks = $bindable([]),
-    next_expansion,
+    next_expansion = $bindable(undefined),
     decomposing_goal,
     handleConvert,
   }: {
@@ -32,6 +32,13 @@
   let semantic_tasks_flattened: tSemanticTask[] = $derived(
     flatten(semantic_tasks, semantic_tasks_show_sub_tasks)
   );
+
+  $effect(() => {
+    update_dag(semantic_tasks_flattened);
+  });
+  $effect(() => {
+    dag_renderer.update_next_expansion_link(next_expansion?.[id_key]);
+  });
   /**
    * Stores the id of the tasks with explanation shown
    */
@@ -50,19 +57,6 @@
     ".semantic-task-card-container",
     ".semantic-tasks"
   );
-
-  $effect(() => {
-    setTimeout(() => {
-      update_dag(semantic_tasks_flattened);
-    }, 600);
-    // update_dag(semantic_tasks_flattened);
-  });
-
-  $effect(() => {
-    if (task_card_expanded) {
-      update_dag(semantic_tasks_flattened);
-    }
-  });
 
   /**
    * Flatten the semantic tasks
@@ -99,11 +93,7 @@
    * @param _semantic_tasks_flattened
    */
   async function update_dag(_semantic_tasks_flattened: tSemanticTask[]) {
-    console.log(
-      "updating semantic dag:",
-      _semantic_tasks_flattened,
-      next_expansion
-    );
+    console.log("updating semantic dag:", _semantic_tasks_flattened);
     // get the bounding box of each task card
     const semantic_task_divs: NodeListOf<HTMLElement> =
       document.querySelectorAll(".semantic-task-card-container");
@@ -131,11 +121,7 @@
     });
 
     // call renderer
-    dag_renderer.update(
-      dag_data,
-      semantic_tasks_show_sub_tasks,
-      next_expansion?.[id_key]
-    );
+    dag_renderer.update(dag_data, semantic_tasks_show_sub_tasks);
   }
 
   // UI handlers
@@ -147,10 +133,14 @@
       : [...semantic_tasks_show_sub_tasks, task_id];
   }
 
-  function handleToggleExpand(task_id: string) {
+  async function handleToggleExpand(task_id: string) {
     task_card_expanded = task_card_expanded.includes(task_id)
       ? task_card_expanded.filter((id) => id !== task_id)
       : [...task_card_expanded, task_id];
+
+    // trigger re-render
+    await tick();
+    update_dag(semantic_tasks_flattened);
   }
 
   function handleToggleExplain(task_id: string) {
@@ -221,6 +211,11 @@
       .catch((error) => {
         console.error("Error:", error);
       });
+  }
+
+  function handleSetAsNextExpansion(task: tSemanticTask) {
+    next_expansion = task;
+    // dag_renderer.update_next_expansion_link(next_expansion[id_key]);
   }
 
   function update_with_server() {
@@ -313,6 +308,7 @@
               false}
             expand={task_card_expanded.includes(task[id_key])}
             show_explanation={task_card_show_explanation.includes(task[id_key])}
+            handleSetAsNextExpansion={() => handleSetAsNextExpansion(task)}
             {handleDecompose}
             {handleDeleteSubTasks}
             {handleToggleShowSubTasks}

@@ -10,6 +10,7 @@ import {
 
 export class DAG {
     svgId: string;
+    svgSize: [number, number];
     nodeRadius: [number,number];
     line: any
     selection_card: string
@@ -19,12 +20,14 @@ export class DAG {
     zoom: any
     handleClick: Function
     next_expansion_id: string | undefined
+    new_nodes: string[] = []
     constructor(svgId: string, node_radius: [number,number]=[100, 100], selection_card: string, selection_container: string) {
         this.svgId = svgId
+        this.svgSize = [1000, 1000]
         this.nodeRadius = node_radius
         this.line = d3.line().curve(d3.curveMonotoneY);
         this.dag = undefined;
-        this.zoom = d3.zoom().scaleExtent([0.1, 32])
+        this.zoom = d3.zoom().scaleExtent([0.5, 32])
         .on("zoom", (e) => this.zoomed(e, this))
         .on("end", () => document.querySelectorAll(this.selection_card).forEach((div: any) => div.style.transitionDuration = "0.5s"))
 
@@ -46,15 +49,15 @@ export class DAG {
         console.log("init done")
     }
 
-    update(data: tNode[], expanded_nodes: string[], next_expansion_id: string | undefined) {
+    update(data: tNode[], expanded_nodes: string[]) {
         const self = this
-        this.next_expansion_id = next_expansion_id
         console.log("dag update", data)
         const svg = d3.select(`#${this.svgId}`);
         const svg_bbox = svg.node().getBoundingClientRect();
         svg.attr("viewBox", `0 0 ${svg_bbox.width} ${svg_bbox.height}`);
         const max_width = 1 * svg_bbox.width;
         const max_height = 1 * svg_bbox.height;
+        this.svgSize = [max_width, max_height]
         const stratify = d3_dag.graphStratify();
         this.dag = stratify(data);
 
@@ -101,7 +104,7 @@ export class DAG {
             this.style.transitionDuration = "0.5s"
         })
 
-        let new_nodes: any[] = []
+        let enter_nodes: string[] = []
         svg.select("g.nodes")
         .selectAll("rect.node")
             .data(Object.keys(self.bbox_dict), (d) => d)
@@ -130,7 +133,7 @@ export class DAG {
                         // .attr("width", (d) => self.bbox_dict[d].width)
                         // .attr("height", (d) => self.bbox_dict[d].height)
                         .each(function(d) {
-                            new_nodes.push(d)
+                            enter_nodes.push(d)
                         })
                         // .attr("width", rect_size[0])
                         // .attr("height", rect_size[1])
@@ -158,40 +161,24 @@ export class DAG {
         this.update_links(translation_scaling)
 
         // translate to make new nodes in the center
-        if(new_nodes.length !== 0) {
-            const new_nodes_bboxes = new_nodes.map(d => self.bbox_dict[d])
+        if(enter_nodes.length !== 0) {
+            const new_nodes_bboxes = enter_nodes.map(d => self.bbox_dict[d])
             const new_nodes_center = [
                 d3.mean(new_nodes_bboxes.map(d => d.x)),
                 d3.mean(new_nodes_bboxes.map(d => d.y))
             ]
             // move the current zoom to the center of the new nodes
             svg.transition().duration(500).delay(0).call(this.zoom.translateTo, new_nodes_center[0], new_nodes_center[1]).on("end", () => {
-                if(next_expansion_id) {
-                    const current_transform = d3.zoomTransform(svg.node())
-                    const next_expansion_group = svg.select("g.next_expansion_link")
-                    next_expansion_group.selectAll("*").remove()
-                    const next_expansion_node = self.bbox_dict[next_expansion_id]
-                    // link from the next expansion node to the button with a line
-                    const next_expansion_node_position = current_transform.apply([next_expansion_node.x, next_expansion_node.y])
-                    const line_generator = d3.line().curve(d3.curveMonotoneY)
-                     next_expansion_group.append("line").attr("class", "next_expansion_link")
-                        .attr("x1", next_expansion_node_position[0])
-                        .attr("y1", next_expansion_node_position[1])
-                        .attr("x2", max_width/2)
-                        .attr("y2", 10)
-                        .attr("fill", "none")
-                        .attr("stroke-width", 3)
-                        .attr("stroke", "oklch(0.705 0.213 47.604)")
-                        .attr("stroke-dasharray", "8,8")
-                }
             })
+            this.new_nodes = enter_nodes
         }
 
+        console.log("new nodes", this.new_nodes)
         // add new node class to the divs
         document.querySelectorAll(this.selection_card).forEach((div) => {
             const id = (div as HTMLElement).dataset.id
-            if(id === "-1") return;
-            if(new_nodes.includes(id)) {
+            if(id === undefined || id === "-1") return;
+            if(this.new_nodes.includes(id)) {
                 div.classList.add("new-node")
             } else {
                 div.classList.remove("new-node")
@@ -214,6 +201,30 @@ export class DAG {
         //     ]
         //     return link_coords
         // })
+    }
+
+    update_next_expansion_link(next_expansion_id: string | undefined) {
+        this.next_expansion_id = next_expansion_id
+        const svg = d3.select(`#${this.svgId}`);
+        if(next_expansion_id) {
+            const current_transform = d3.zoomTransform(svg.node())
+            const next_expansion_group = svg.select("g.next_expansion_link")
+            next_expansion_group.selectAll("*").remove()
+            const next_expansion_node = this.bbox_dict[next_expansion_id]
+            // link from the next expansion node to the button with a line
+            const next_expansion_node_position = current_transform.apply([next_expansion_node.x, next_expansion_node.y])
+            const line_generator = d3.line().curve(d3.curveMonotoneY)
+                next_expansion_group.append("line").attr("class", "next_expansion_link")
+                .attr("x1", next_expansion_node_position[0])
+                .attr("y1", next_expansion_node_position[1])
+                .attr("x2", this.svgSize[0]/2)
+                .attr("y2", 10)
+                .attr("fill", "none")
+                .attr("stroke-width", 3)
+                .attr("stroke", "oklch(0.705 0.213 47.604)")
+                .attr("stroke-dasharray", "8,8")
+        }
+
     }
 
     update_links(translation_scaling) {
@@ -243,9 +254,11 @@ export class DAG {
             applyTransform(div, e.transform)
         })
         const next_expansion_node = self.bbox_dict[self.next_expansion_id]
-        svg.select("g.next_expansion_link").select("line.next_expansion_link")
-            .attr("x1", e.transform.apply([next_expansion_node.x, next_expansion_node.y])[0])
-            .attr("y1", e.transform.apply([next_expansion_node.x, next_expansion_node.y])[1])
+        if(next_expansion_node) {
+            svg.select("g.next_expansion_link").select("line.next_expansion_link")
+                .attr("x1", e.transform.apply([next_expansion_node.x, next_expansion_node.y])[0])
+                .attr("y1", e.transform.apply([next_expansion_node.x, next_expansion_node.y])[1])
+        }
       }
 }
 

@@ -33,7 +33,8 @@ def init_MCTS():
 async def stream_MCTS(root, node_dict, goal: str, model: str, api_key: str):
     while True:
         root = await MCTS_step(root, node_dict, goal, model, api_key)
-        yield root
+        next_selection = select(root, node_dict)
+        yield root, next_selection
         if all_END(root, node_dict):
             break
     pass
