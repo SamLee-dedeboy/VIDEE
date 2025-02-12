@@ -299,7 +299,7 @@
     <svg id={svgId} class="dag-svg w-full h-full absolute"></svg>
     <div class="semantic-tasks relative w-full">
       <button
-        class="next-expansion-button absolute left-1/2 top-1 -translate-x-1/2 px-2 py-1 rounded outline-3 outline-orange-500 outline-dashed bg-[#fbfaec]"
+        class="next-expansion-legend text-orange-900 font-mono absolute left-1/2 top-1 -translate-x-1/2 px-2 py-1 rounded outline-3 outline-orange-500 outline-dashed bg-[#fbfaec]"
         class:inactive={!controllers.show_next_expansion}
         onclick={() => {
           controllers.show_next_expansion = !controllers.show_next_expansion;
@@ -311,7 +311,7 @@
         Next Expansion
       </button>
       <button
-        class="new-node-legend absolute text-xs left-[calc(50%+7.5rem)] top-2 -translate-x-1/2 px-2 py-1 rounded bg-orange-200"
+        class="new-node-legend text-orange-900 font-mono absolute text-xs left-[calc(50%+8rem)] top-2 -translate-x-1/2 px-2 py-1 rounded bg-orange-200"
         class:inactive={!controllers.show_new_nodes}
         onclick={() => {
           controllers.show_new_nodes = !controllers.show_new_nodes;
@@ -320,12 +320,12 @@
         New Nodes
       </button>
       <button
-        class="new-node-legend absolute text-xs left-[calc(50%-8.5rem)] top-1.5 -translate-x-1/2 px-2 py-1 rounded bg-[#fbfaec] border-3 border-black"
+        class="best-path-legend text-orange-900 font-mono font-bold absolute text-xs left-[calc(50%-8.1rem)] top-1.5 -translate-x-1/2 px-2 py-1 rounded bg-[#fbfaec] border-3 border-black"
         class:inactive={!controllers.show_max_value_path}
         onclick={() =>
           (controllers.show_max_value_path = !controllers.show_max_value_path)}
       >
-        Max Value Path
+        Best Path
       </button>
 
       {#each semantic_tasks_flattened as task, index}

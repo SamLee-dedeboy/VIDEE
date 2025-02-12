@@ -27,7 +27,7 @@ export class DAG {
         this.nodeRadius = node_radius
         this.line = d3.line().curve(d3.curveMonotoneY);
         this.dag = undefined;
-        this.zoom = d3.zoom().scaleExtent([0.5, 32])
+        this.zoom = d3.zoom().scaleExtent([0.5, 2])
         .on("zoom", (e) => this.zoomed(e, this))
         .on("end", () => document.querySelectorAll(this.selection_card).forEach((div: any) => div.style.transitionDuration = "0.5s"))
 
@@ -237,27 +237,22 @@ export class DAG {
 
     update_links(translation_scaling, max_value_path_ids: string[] = [], show_max_value_path: boolean = false) {
         const svg = d3.select(`#${this.svgId}`);
-        // const transform_scaling = transform === undefined? 1 : transform.k
-        const transform_scaling = 1;
         svg.select("g.links")
             .selectAll("path.link")
             .data(this.dag.links(), ({source, target}) => `${source.data.id}-${target.data.id}`)
             .join("path")
             .transition().duration(500)
             .attr("class", "link")
-            // .attr("d", (d) => this.line([node_positions[d.source.data.id], node_positions[d.target.data.id]]))
-            // .attr("d", ({points}) => this.line(points.map(p => { return {x: p.x * translation_scaling[0], y: p.y * translation_scaling[1]}})))
-            .attr("d", ({points}) => this.line(points.map(p => [p[0] * translation_scaling[0] / transform_scaling, p[1] * translation_scaling[1] / transform_scaling])))
+            .attr("d", ({points}) => this.line(points.map(p => [p[0] * translation_scaling[0], p[1] * translation_scaling[1]])))
             .attr("fill", "none")
-            .attr("stroke-width", 3)
-            .attr("stroke", ({source, target}) => {
-                if(show_max_value_path && max_value_path_ids.includes(source.data.id) && max_value_path_ids.includes(target.data.id)) {
-                    // return "oklch(0.705 0.213 47.604)"
-                    return "black"
-                } else {
-                    return "gray"
-                }
-            })
+            .attr("stroke-width", 2)
+            .attr("stroke", "gray")
+            .attr("stroke-dasharray", "8,8")
+            .filter(({source, target}) => show_max_value_path && max_value_path_ids.includes(source.data.id) && max_value_path_ids.includes(target.data.id))
+            .attr("stroke", "black")
+            .attr("stroke-width", 4)
+            .attr("stroke-dasharray", "unset")
+
     }
 
     zoomed(e, self) {
