@@ -2,7 +2,7 @@
   import { server_address } from "constants";
   import * as d3 from "d3";
   import { onMount, tick } from "svelte";
-  import type { tSemanticTask, tNode } from "types";
+  import type { tSemanticTask, tNode, tControllers } from "types";
   import { DAG } from "renderer/dag";
   import SemanticTaskCard from "./SemanticTaskCard.svelte";
   import { fly, fade, blur } from "svelte/transition";
@@ -11,14 +11,17 @@
   let {
     semantic_tasks = $bindable([]),
     next_expansion = $bindable(undefined),
+    max_value_path,
     decomposing_goal,
     handleConvert,
   }: {
     semantic_tasks: tSemanticTask[];
     next_expansion: tSemanticTask | undefined;
+    max_value_path: [string[], number];
     decomposing_goal: boolean;
     handleConvert: Function;
   } = $props();
+  $inspect(max_value_path);
   const session_id = (getContext("session_id") as Function)();
   const id_key = "MCT_id"; // id key for the semantic task
   // const id_key = "id"; // id key for the semantic task
@@ -32,9 +35,14 @@
   let semantic_tasks_flattened: tSemanticTask[] = $derived(
     flatten(semantic_tasks, semantic_tasks_show_sub_tasks)
   );
+  let controllers: tControllers = $state({
+    show_max_value_path: false,
+    show_next_expansion: true,
+    show_new_nodes: true,
+  });
 
   $effect(() => {
-    update_dag(semantic_tasks_flattened);
+    update_dag(semantic_tasks_flattened, max_value_path, controllers);
   });
   $effect(() => {
     dag_renderer.update_next_expansion_link(next_expansion?.[id_key]);
@@ -92,7 +100,11 @@
    * by adding the bounding box of each task card
    * @param _semantic_tasks_flattened
    */
-  async function update_dag(_semantic_tasks_flattened: tSemanticTask[]) {
+  async function update_dag(
+    _semantic_tasks_flattened: tSemanticTask[],
+    _max_value_path: [string[], number],
+    _controllers: tControllers
+  ) {
     console.log("updating semantic dag:", _semantic_tasks_flattened);
     // get the bounding box of each task card
     const semantic_task_divs: NodeListOf<HTMLElement> =
@@ -121,7 +133,12 @@
     });
 
     // call renderer
-    dag_renderer.update(dag_data, semantic_tasks_show_sub_tasks);
+    dag_renderer.update(
+      dag_data,
+      semantic_tasks_show_sub_tasks,
+      _max_value_path[0],
+      _controllers
+    );
   }
 
   // UI handlers
@@ -140,7 +157,7 @@
 
     // trigger re-render
     await tick();
-    update_dag(semantic_tasks_flattened);
+    update_dag(semantic_tasks_flattened, max_value_path, controllers);
   }
 
   function handleToggleExplain(task_id: string) {
@@ -239,7 +256,7 @@
 
   onMount(() => {
     dag_renderer.init();
-    update_dag(semantic_tasks);
+    update_dag(semantic_tasks, max_value_path, controllers);
   });
 </script>
 
@@ -283,15 +300,33 @@
     <div class="semantic-tasks relative w-full">
       <button
         class="next-expansion-button absolute left-1/2 top-1 -translate-x-1/2 px-2 py-1 rounded outline-3 outline-orange-500 outline-dashed bg-[#fbfaec]"
-        onclick={() => navigateToNextExpansion()}
+        class:inactive={!controllers.show_next_expansion}
+        onclick={() => {
+          controllers.show_next_expansion = !controllers.show_next_expansion;
+          d3.select(`#${svgId}`)
+            .select(".next_expansion_link")
+            .attr("opacity", controllers.show_next_expansion ? 1 : 0);
+        }}
       >
         Next Expansion
       </button>
-      <div
-        class="new-node-legend absolute left-[calc(50%+10rem)] top-1 -translate-x-1/2 px-2 py-1 rounded bg-orange-200"
+      <button
+        class="new-node-legend absolute text-xs left-[calc(50%+7.5rem)] top-2 -translate-x-1/2 px-2 py-1 rounded bg-orange-200"
+        class:inactive={!controllers.show_new_nodes}
+        onclick={() => {
+          controllers.show_new_nodes = !controllers.show_new_nodes;
+        }}
       >
         New Nodes
-      </div>
+      </button>
+      <button
+        class="new-node-legend absolute text-xs left-[calc(50%-8.5rem)] top-1.5 -translate-x-1/2 px-2 py-1 rounded bg-[#fbfaec] border-3 border-black"
+        class:inactive={!controllers.show_max_value_path}
+        onclick={() =>
+          (controllers.show_max_value_path = !controllers.show_max_value_path)}
+      >
+        Max Value Path
+      </button>
 
       {#each semantic_tasks_flattened as task, index}
         <!-- use:draggable={dag_renderer} -->
@@ -303,9 +338,11 @@
           <SemanticTaskCard
             {task}
             {id_key}
+            {controllers}
             next_expansion={(next_expansion &&
               next_expansion[id_key] === task[id_key]) ||
               false}
+            on_max_value_path={max_value_path[0].includes(task[id_key])}
             expand={task_card_expanded.includes(task[id_key])}
             show_explanation={task_card_show_explanation.includes(task[id_key])}
             handleSetAsNextExpansion={() => handleSetAsNextExpansion(task)}
@@ -350,9 +387,10 @@
 
 <style lang="postcss">
   @reference "../app.css";
-  :global(.semantic-task-card-container.new-node) {
-    & .task-card {
-      @apply bg-orange-200;
-    }
+  .inactive {
+    @apply opacity-50;
+  }
+  .inactive:hover {
+    @apply opacity-100 scale-110 transition-all;
   }
 </style>

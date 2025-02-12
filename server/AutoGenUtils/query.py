@@ -145,11 +145,29 @@ async def run_goal_decomposition_agent_stepped(
                 previous_steps=previous_steps_str
             )
         )
+
     response = await goal_decomposition_agent.on_messages(
         [TextMessage(content=user_message, source="user")],
         cancellation_token=CancellationToken(),
     )
-    return json.loads(response.chat_message.content)["next_steps"]
+
+    retries, max_retries = 0, 5
+    while True:
+        try:
+            response = json.loads(response.chat_message.content)["next_steps"]
+            break
+        except json.JSONDecodeError:
+            print(f"Retrying... {retries}/{max_retries}-{retries > max_retries}")
+            print(response.chat_message.content)
+            if retries > max_retries:
+                break
+            response = await goal_decomposition_agent.on_messages(
+                [TextMessage(content=user_message, source="user")],
+                cancellation_token=CancellationToken(),
+            )
+            retries += 1
+    return response
+    # return json.loads(response.chat_message.content)["next_steps"]
     # if n == 1:
     #     response = await goal_decomposition_agent.on_messages(
     #         [TextMessage(content=user_message, source="user")],

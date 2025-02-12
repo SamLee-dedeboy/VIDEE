@@ -5,6 +5,8 @@
     task,
     id_key,
     next_expansion,
+    on_max_value_path = false,
+    controllers,
     show_explanation = $bindable(false),
     expand,
     handleSetAsNextExpansion = () => {},
@@ -18,6 +20,12 @@
     task: tSemanticTask;
     id_key: string;
     next_expansion: boolean;
+    on_max_value_path: boolean;
+    controllers: {
+      show_max_value_path: boolean;
+      show_next_expansion: boolean;
+      show_new_nodes: boolean;
+    };
     show_explanation: boolean;
     expand: boolean;
     handleSetAsNextExpansion?: Function;
@@ -35,14 +43,17 @@
     handleToggleShowSubTasks(task[id_key]);
   }
   let isEnd = $derived(task.label === "END");
+  $inspect(on_max_value_path);
 </script>
 
 <div class="container flex flex-col w-min rounded-sm">
   <div
     class="task-card text-slate-600 w-min min-w-[18rem] transition-all outline-2 outline-[#FFCFB1] bg-[#fbfaec] shadow rounded relative flex gap-y-1 gap-x-2"
-    class:next-expansion={next_expansion}
-    class:bounce={next_expansion && !expand}
+    class:next-expansion={next_expansion && controllers.show_next_expansion}
+    class:bounce={next_expansion && !expand && controllers.show_next_expansion}
     class:end={isEnd}
+    class:on-max-value-path={on_max_value_path &&
+      controllers.show_max_value_path}
   >
     <div class="flex flex-col grow px-2 gap-y-2">
       <div class="text-[1.3rem] font-mono text-orange-900 flex items-center">
@@ -173,6 +184,9 @@
 
 <style lang="postcss">
   @reference "../app.css";
+  .on-max-value-path {
+    @apply border-black border-3 outline-none;
+  }
   .card-label.end {
     @apply flex justify-center items-center;
   }
@@ -206,5 +220,10 @@
     transition:
       width 0.3s ease,
       height 0.3s ease;
+  }
+  :global(.new-node) {
+    & .task-card {
+      @apply bg-orange-200;
+    }
   }
 </style>
