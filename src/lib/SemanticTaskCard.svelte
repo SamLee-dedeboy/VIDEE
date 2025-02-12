@@ -185,7 +185,10 @@
 <style lang="postcss">
   @reference "../app.css";
   .on-max-value-path {
-    @apply border-black border-3 outline-none;
+    @apply border-black border-4 outline-none rounded-none shadow-md;
+    & .card-label {
+      @apply font-bold;
+    }
   }
   .card-label.end {
     @apply flex justify-center items-center;
