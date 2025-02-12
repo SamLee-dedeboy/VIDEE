@@ -108,16 +108,22 @@ async def run_goal_decomposition_agent_stepped(
         Ignore the practical steps such as data collection, cleaning or visualization.
         Focus on the conceptual next step. If no further steps are needed, label the next step with "END".
         For the parentIds, provide the ids of the steps that this step **directly** depends on in terms of input-output data.
+        You should reply with {n} different next steps, so the user can have more choices.
         Reply with this JSON format. Do not wrap the json codes in JSON markers.
-            {
-                "next_step": {
+            {{
+                "next_steps": [
+                    {{
                         "id": (string),
                         "label": (string) or "END"
                         "description": (string)
                         "explanation": (string, explain why this step is needed)
                         "parentIds": (string[], ids of the steps that this step **directly** depends on)
-                    },
-            }  """,
+                    }}
+                    ... ({n} different next steps)
+                    ],
+            }}""".format(
+            n=n
+        ),
     )
     user_message = "My goal is: {goal}".format(goal=goal) + "\n"
     if len(previous_steps) > 0:
@@ -139,38 +145,43 @@ async def run_goal_decomposition_agent_stepped(
                 previous_steps=previous_steps_str
             )
         )
-    if n == 1:
-        response = await goal_decomposition_agent.on_messages(
-            [TextMessage(content=user_message, source="user")],
-            cancellation_token=CancellationToken(),
-        )
-        return json.loads(response.chat_message.content)["next_step"]
-    else:
-        responses = await parallel_call_agents(
-            n, goal_decomposition_agent, user_message
-        )
-        for index, response in enumerate(responses):
-            retries, max_retries = 0, 5
-            while True:
-                try:
-                    # print("Valid JSON:")
-                    # print(response.chat_message.content)
-                    response = json.loads(response.chat_message.content)["next_step"]
-                    break
-                except json.JSONDecodeError:
-                    print(
-                        f"Retrying... {retries}/{max_retries}-{retries > max_retries}"
-                    )
-                    print(response.chat_message.content)
-                    if retries > max_retries:
-                        break
-                    response = await goal_decomposition_agent.on_messages(
-                        [TextMessage(content=user_message, source="user")],
-                        cancellation_token=CancellationToken(),
-                    )
-                    retries += 1
-            responses[index] = response
-        return responses
+    response = await goal_decomposition_agent.on_messages(
+        [TextMessage(content=user_message, source="user")],
+        cancellation_token=CancellationToken(),
+    )
+    return json.loads(response.chat_message.content)["next_steps"]
+    # if n == 1:
+    #     response = await goal_decomposition_agent.on_messages(
+    #         [TextMessage(content=user_message, source="user")],
+    #         cancellation_token=CancellationToken(),
+    #     )
+    #     return json.loads(response.chat_message.content)["next_step"]
+    # else:
+    #     responses = await parallel_call_agents(
+    #         n, goal_decomposition_agent, user_message
+    #     )
+    #     for index, response in enumerate(responses):
+    #         retries, max_retries = 0, 5
+    #         while True:
+    #             try:
+    #                 # print("Valid JSON:")
+    #                 # print(response.chat_message.content)
+    #                 response = json.loads(response.chat_message.content)["next_step"]
+    #                 break
+    #             except json.JSONDecodeError:
+    #                 print(
+    #                     f"Retrying... {retries}/{max_retries}-{retries > max_retries}"
+    #                 )
+    #                 print(response.chat_message.content)
+    #                 if retries > max_retries:
+    #                     break
+    #                 response = await goal_decomposition_agent.on_messages(
+    #                     [TextMessage(content=user_message, source="user")],
+    #                     cancellation_token=CancellationToken(),
+    #                 )
+    #                 retries += 1
+    #         responses[index] = response
+    #     return responses
 
 
 async def run_decomposition_self_evaluation_agent(
