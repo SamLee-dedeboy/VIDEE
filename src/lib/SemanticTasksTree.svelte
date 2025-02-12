@@ -350,7 +350,7 @@
 
 <style lang="postcss">
   @reference "../app.css";
-  :global(.new-node) {
+  :global(.semantic-task-card-container.new-node) {
     & .task-card {
       @apply bg-orange-200;
     }

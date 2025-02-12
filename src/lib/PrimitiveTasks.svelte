@@ -8,6 +8,7 @@
     tNode,
     tTask,
   } from "types";
+  import * as d3 from "d3";
   import { DAG } from "renderer/dag";
   import PrimitiveTaskCard from "./PrimitiveTaskCard.svelte";
   import { fly, fade, blur } from "svelte/transition";
@@ -50,17 +51,25 @@
   function update_dag(_primitive_tasks: tPrimitiveTaskDescription[]) {
     console.log("updating primitive dag:", _primitive_tasks);
     // get the bounding box of each task card
-    const primitive_task_divs = document.querySelectorAll(
-      ".primitive-task-card-container"
-    );
+    const primitive_task_divs: NodeListOf<HTMLElement> =
+      document.querySelectorAll(".primitive-task-card-container");
     const dag_data: tNode[] = Array.from(primitive_task_divs).map((div) => {
       const id = (div as HTMLElement).dataset.id;
       const node_data: tPrimitiveTaskDescription = _primitive_tasks.find(
         (task) => task.id === id
       )!;
+      const transform_scale =
+        div.style.transform === ""
+          ? 1
+          : d3.zoomTransform(d3.select(`#${svgId}`).node()).k;
       return {
         ...node_data,
-        bbox: div.getBoundingClientRect(),
+        data: node_data,
+        bbox: {
+          ...div.getBoundingClientRect(),
+          width: div.getBoundingClientRect().width / transform_scale,
+          height: div.getBoundingClientRect().height / transform_scale,
+        },
       };
     });
 
