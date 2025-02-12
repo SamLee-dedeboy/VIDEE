@@ -18,7 +18,7 @@
 
 <div class="flex gap-x-2">
   <div
-    class="goal-input outline-1 outline-gray-400 rounded shadow-md min-h-[5rem] max-h-[8rem] overflow-y-auto px-1 py-0.5"
+    class="goal-input outline-1 outline-gray-400 rounded shadow-md w-[30rem] h-[5rem] overflow-y-auto px-1 py-0.5"
     contenteditable
   >
     I need to construct a knowledge graph from a collection of documents from
