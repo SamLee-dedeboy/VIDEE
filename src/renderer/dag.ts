@@ -184,6 +184,7 @@ export class DAG {
                 div.classList.remove("new-node")
             }
         })
+        this.update_next_expansion_link(this.next_expansion_id)
 
         // plot edges between decomposed tasks
         // const expansion_links = data.filter(d => expanded_nodes.includes(d.id)).map(d => {
@@ -209,12 +210,15 @@ export class DAG {
         if(next_expansion_id) {
             const current_transform = d3.zoomTransform(svg.node())
             const next_expansion_group = svg.select("g.next_expansion_link")
-            next_expansion_group.selectAll("*").remove()
+            // next_expansion_group.selectAll("*").remove()
             const next_expansion_node = this.bbox_dict[next_expansion_id]
             // link from the next expansion node to the button with a line
             const next_expansion_node_position = current_transform.apply([next_expansion_node.x, next_expansion_node.y])
-            const line_generator = d3.line().curve(d3.curveMonotoneY)
-                next_expansion_group.append("line").attr("class", "next_expansion_link")
+            next_expansion_group.selectAll("line.next_expansion_link")
+                .data([0])
+                .join("line")
+                .attr("class", "next_expansion_link")
+                // .transition().delay(500).duration(0)
                 .attr("x1", next_expansion_node_position[0])
                 .attr("y1", next_expansion_node_position[1])
                 .attr("x2", this.svgSize[0]/2)
