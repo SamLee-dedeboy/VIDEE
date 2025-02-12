@@ -28,6 +28,7 @@
 
   let semantic_tasks: tSemanticTask[] | undefined = $state(undefined);
   let next_expansion: tSemanticTask | undefined = $state(undefined);
+  let max_value_path: [string[], number] = $state([[], 0]);
   let primitive_tasks:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)[]
     | undefined = $state(undefined);
@@ -195,6 +196,7 @@
             console.log("Received:", obj);
             semantic_tasks = Object.values(obj["node_dict"]) as any[];
             next_expansion = obj["next_node"];
+            max_value_path = obj["max_value_path"];
             // semantic_tasks = obj["semantic_tasks"][0][0];
           }
         }
@@ -344,6 +346,7 @@
                 {decomposing_goal}
                 semantic_tasks={semantic_tasks || []}
                 bind:next_expansion
+                {max_value_path}
                 {handleConvert}
               ></SemanticTasksTree>
               <!-- <SemanticTasks

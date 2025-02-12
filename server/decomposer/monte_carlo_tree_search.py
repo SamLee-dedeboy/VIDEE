@@ -34,7 +34,8 @@ async def stream_MCTS(root, node_dict, goal: str, model: str, api_key: str):
     while True:
         root = await MCTS_step(root, node_dict, goal, model, api_key)
         next_selection = select(root, node_dict)
-        yield root, next_selection
+        max_value_path = get_max_value_path(root, node_dict)
+        yield root, next_selection, max_value_path
         if all_END(root, node_dict):
             break
     pass
@@ -134,6 +135,27 @@ def backpropagate(node: MCT_Node, reward: float, node_dict: dict) -> None:
 
 # def best_child(node: MCT_Node, node_dict: dict) -> MCT_Node:
 #     return max(list(map(lambda id: node_dict[id], node.MCT_children_ids)), key=lambda c: c.visits) # most visits or highest value?
+
+
+def get_max_value_path(root: MCT_Node, node_dict: dict):
+    # dfs recursively to get all the leaf paths with accumulated values
+    paths = []
+    stack = [(root, 1)]
+    while stack:
+        node, accumulated_value = stack.pop()
+        if not node.MCT_children_ids:
+            path_ids = list(
+                map(
+                    lambda parent: parent["MCT_id"], get_previous_steps(node, node_dict)
+                )
+            )
+            paths.append((path_ids + ["-1"], accumulated_value))
+        for child_id in node.MCT_children_ids:
+            stack.append(
+                (node_dict[child_id], accumulated_value * node_dict[child_id].value)
+            )
+    max_value_path = max(paths, key=lambda x: x[1])
+    return max_value_path
 
 
 def get_previous_steps(node: MCT_Node, node_dict: dict) -> list[dict]:

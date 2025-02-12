@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import * as d3_dag from 'd3-dag';
-import type { tNode } from 'types';
+import type { tControllers, tNode } from 'types';
 import {
     BSplineShapeGenerator,
     ShapeSimplifier,
@@ -49,7 +49,7 @@ export class DAG {
         console.log("init done")
     }
 
-    update(data: tNode[], expanded_nodes: string[]) {
+    update(data: tNode[], expanded_nodes: string[], max_value_path_ids: string[] = [], controllers: tControllers ) {
         const self = this
         console.log("dag update", data)
         const svg = d3.select(`#${this.svgId}`);
@@ -158,7 +158,7 @@ export class DAG {
                 )
 
         // plot edges
-        this.update_links(translation_scaling)
+        this.update_links(translation_scaling, max_value_path_ids, controllers.show_max_value_path)
 
         // translate to make new nodes in the center
         if(enter_nodes.length !== 0) {
@@ -178,6 +178,10 @@ export class DAG {
         document.querySelectorAll(this.selection_card).forEach((div) => {
             const id = (div as HTMLElement).dataset.id
             if(id === undefined || id === "-1") return;
+            if(!controllers.show_new_nodes) {
+                div.classList.remove("new-node")
+                return
+            }
             if(this.new_nodes.includes(id)) {
                 div.classList.add("new-node")
             } else {
@@ -231,7 +235,7 @@ export class DAG {
 
     }
 
-    update_links(translation_scaling) {
+    update_links(translation_scaling, max_value_path_ids: string[] = [], show_max_value_path: boolean = false) {
         const svg = d3.select(`#${this.svgId}`);
         // const transform_scaling = transform === undefined? 1 : transform.k
         const transform_scaling = 1;
@@ -246,7 +250,14 @@ export class DAG {
             .attr("d", ({points}) => this.line(points.map(p => [p[0] * translation_scaling[0] / transform_scaling, p[1] * translation_scaling[1] / transform_scaling])))
             .attr("fill", "none")
             .attr("stroke-width", 3)
-            .attr("stroke", "gray")
+            .attr("stroke", ({source, target}) => {
+                if(show_max_value_path && max_value_path_ids.includes(source.data.id) && max_value_path_ids.includes(target.data.id)) {
+                    // return "oklch(0.705 0.213 47.604)"
+                    return "black"
+                } else {
+                    return "gray"
+                }
+            })
     }
 
     zoomed(e, self) {
