@@ -40,6 +40,7 @@
     show_next_expansion: true,
     show_new_nodes: true,
   });
+  let hovered_task_id: string = $state("");
 
   $effect(() => {
     update_dag(semantic_tasks_flattened, max_value_path, controllers);
@@ -235,6 +236,46 @@
     // dag_renderer.update_next_expansion_link(next_expansion[id_key]);
   }
 
+  function handleTaskHovered(task_id: string, hovered: boolean) {
+    const hovered_path_ids = hovered ? trace_path(semantic_tasks, task_id) : [];
+    update_hovered_path(hovered_path_ids);
+    dag_renderer.update_links(
+      controllers.show_max_value_path
+        ? hovered_path_ids.concat(max_value_path[0])
+        : hovered_path_ids,
+      true
+    );
+  }
+
+  function update_hovered_path(path_ids: string[]) {
+    document
+      .querySelectorAll(".semantic-task-card-container")
+      .forEach((div) => {
+        const id = (div as HTMLElement).dataset.id || "";
+        div.classList.remove("on-hovered-path");
+        if (path_ids.includes(id)) {
+          div.classList.add("on-hovered-path");
+        }
+      });
+  }
+  function trace_path(
+    _semantic_tasks: tSemanticTask[],
+    task_id: string
+  ): string[] {
+    const path: string[] = [];
+    const task_dict = _semantic_tasks.reduce((acc, task) => {
+      acc[task[id_key]] = task;
+      return acc;
+    }, {});
+    let task = task_dict[task_id];
+    while (task) {
+      path.push(task[id_key]);
+      const parent_id = task["MCT_parent_id"];
+      task = parent_id ? task_dict[parent_id] : null;
+    }
+    return path;
+  }
+
   function update_with_server() {
     fetch(`${server_address}/semantic_task/update/`, {
       method: "POST",
@@ -346,6 +387,7 @@
             expand={task_card_expanded.includes(task[id_key])}
             show_explanation={task_card_show_explanation.includes(task[id_key])}
             handleSetAsNextExpansion={() => handleSetAsNextExpansion(task)}
+            {handleTaskHovered}
             {handleDecompose}
             {handleDeleteSubTasks}
             {handleToggleShowSubTasks}

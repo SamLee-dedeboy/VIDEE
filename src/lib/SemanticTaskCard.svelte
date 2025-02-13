@@ -9,6 +9,7 @@
     controllers,
     show_explanation = $bindable(false),
     expand,
+    handleTaskHovered = () => {},
     handleSetAsNextExpansion = () => {},
     handleDecompose = () => {},
     handleToggleExplain = () => {},
@@ -28,6 +29,7 @@
     };
     show_explanation: boolean;
     expand: boolean;
+    handleTaskHovered: Function;
     handleSetAsNextExpansion?: Function;
     handleDecompose?: Function;
     handleToggleExplain?: Function;
@@ -46,7 +48,14 @@
   $inspect(on_max_value_path);
 </script>
 
-<div class="container flex flex-col w-min rounded-sm">
+<div
+  role="tooltip"
+  class="container flex flex-col w-min rounded-sm"
+  onmouseover={() => handleTaskHovered(task[id_key], true)}
+  onmouseout={() => handleTaskHovered(task[id_key], false)}
+  onfocus={() => handleTaskHovered(task[id_key], true)}
+  onblur={() => handleTaskHovered(task[id_key], false)}
+>
   <div
     class="task-card text-slate-600 w-min min-w-[18rem] transition-all outline-2 outline-[#FFCFB1] bg-[#fbfaec] shadow rounded relative flex gap-y-1 gap-x-2"
     class:next-expansion={next_expansion && controllers.show_next_expansion}
@@ -227,6 +236,14 @@
   :global(.new-node) {
     & .task-card {
       @apply bg-orange-200;
+    }
+  }
+  :global(.on-hovered-path) {
+    & .task-card {
+      @apply border-black border-4 outline-none rounded-none shadow-md;
+      & .card-label {
+        @apply font-bold;
+      }
     }
   }
 </style>

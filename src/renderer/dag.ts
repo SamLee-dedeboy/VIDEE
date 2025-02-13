@@ -81,11 +81,9 @@ export class DAG {
         // .tweaks([d3_dag.tweakShape(rect_size, d3_dag.shapeRect), d3_dag.tweakSize({width: max_width, height: max_height})])
 
         const { width, height } = layout(this.dag);
-        // const translation_scaling = [Math.max(1, max_width / width), 1.1*Math.max(1, max_height / height)]
-        const translation_scaling = [1, 1]
 
         this.bbox_dict = Array.from(this.dag.nodes()).reduce((acc: any, d: any) => {
-            acc[d.data.id] = {x: d.x * translation_scaling[0], y: d.y * translation_scaling[1], width: d.data.bbox?.width || rect_size[0], height: d.data.bbox?.height || rect_size[1]};
+            acc[d.data.id] = {x: d.x, y: d.y, width: d.data.bbox?.width || rect_size[0], height: d.data.bbox?.height || rect_size[1]};
             return acc;
         }, {})
 
@@ -158,7 +156,7 @@ export class DAG {
                 )
 
         // plot edges
-        this.update_links(translation_scaling, max_value_path_ids, controllers.show_max_value_path)
+        this.update_links(max_value_path_ids, controllers.show_max_value_path)
 
         // translate to make new nodes in the center
         if(enter_nodes.length !== 0) {
@@ -235,7 +233,7 @@ export class DAG {
 
     }
 
-    update_links(translation_scaling, max_value_path_ids: string[] = [], show_max_value_path: boolean = false) {
+    update_links(max_value_path_ids: string[] = [], show_max_value_path: boolean = false) {
         const svg = d3.select(`#${this.svgId}`);
         svg.select("g.links")
             .selectAll("path.link")
@@ -243,7 +241,7 @@ export class DAG {
             .join("path")
             .transition().duration(500)
             .attr("class", "link")
-            .attr("d", ({points}) => this.line(points.map(p => [p[0] * translation_scaling[0], p[1] * translation_scaling[1]])))
+            .attr("d", ({points}) => this.line(points.map(p => [p[0], p[1]])))
             .attr("fill", "none")
             .attr("stroke-width", 2)
             .attr("stroke", "gray")
@@ -254,6 +252,7 @@ export class DAG {
             .attr("stroke-dasharray", "unset")
 
     }
+
 
     zoomed(e, self) {
         const svg = d3.select(`#${self.svgId}`);
