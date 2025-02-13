@@ -115,12 +115,6 @@ export class DAG {
                         .attr("stroke-width", 1)
                         .attr("rx", 10)
                         .attr("cursor", "pointer")
-                        .attr("x", function(d) {
-                            return (self.bbox_dict[d].x - self.bbox_dict[d].width/2) 
-                        })
-                        .attr("y", function(d) {
-                            return (self.bbox_dict[d].y - self.bbox_dict[d].height/2)
-                        })
                         .on("click", (_, d) => {
                             // this.handleClick(d)
                             d3.selectAll(self.selection_card)
@@ -132,6 +126,13 @@ export class DAG {
                         // .attr("height", (d) => self.bbox_dict[d].height)
                         .each(function(d) {
                             enter_nodes.push(d)
+                        })
+                        .transition().duration(500)
+                        .attr("x", function(d) {
+                            return (self.bbox_dict[d].x - self.bbox_dict[d].width/2) 
+                        })
+                        .attr("y", function(d) {
+                            return (self.bbox_dict[d].y - self.bbox_dict[d].height/2)
                         })
                         // .attr("width", rect_size[0])
                         // .attr("height", rect_size[1])
