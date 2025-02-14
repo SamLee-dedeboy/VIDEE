@@ -119,6 +119,9 @@ def update_end_paths(node: MCT_Node, node_dict: dict):
 
 
 async def reward(node: MCT_Node) -> float:
+    node.complexity = random.randint(0, 1)
+    node.coherence = random.randint(0, 1)
+    node.importance = random.randint(0, 1)
     return random.random()
     # evaluation_score = await run_decomposition_self_evaluation_agent(goal, all_steps, node, model, api_key)
     return evaluation_score

@@ -21,7 +21,6 @@
     decomposing_goal: boolean;
     handleConvert: Function;
   } = $props();
-  $inspect(max_value_path);
   const session_id = (getContext("session_id") as Function)();
   const id_key = "MCT_id"; // id key for the semantic task
   // const id_key = "id"; // id key for the semantic task
@@ -39,6 +38,9 @@
     show_max_value_path: false,
     show_next_expansion: true,
     show_new_nodes: true,
+    show_complexity: true,
+    show_coherence: true,
+    show_importance: true,
   });
   let hovered_task_id: string = $state("");
 
@@ -177,8 +179,9 @@
       parentIds: [],
       sub_tasks: [],
       children: [],
-      confidence: 0.0,
-      complexity: 0.0,
+      complexity: false,
+      coherence: false,
+      importance: false,
     });
     update_with_server();
   }
@@ -301,6 +304,18 @@
   });
 </script>
 
+{#snippet complexity_icon()}
+  <img src="network.svg" alt="complexity" class="w-6 h-6 pointer-events-none" />
+{/snippet}
+
+{#snippet coherence_icon()}
+  <img src="waveform.svg" alt="coherence" class="w-6 h-6 pointer-events-none" />
+{/snippet}
+
+{#snippet importance_icon()}
+  <img src="cpu.svg" alt="importance" class="w-6 h-6 pointer-events-none" />
+{/snippet}
+
 <div class="flex flex-col grow">
   <div class="relative bg-orange-100 w-full flex justify-center z-10">
     <span
@@ -368,9 +383,57 @@
       >
         Best Path
       </button>
+      <div
+        class="evaluation-legends-container absolute left-2 top-2 px-2 py-1 rouned flex flex-col gap-y-2"
+      >
+        <div class="flex justify-around gap-x-1 italic">
+          <div
+            class="flex text-xs items-center gap-x-1 text-slate-600 select-none"
+          >
+            <svg class="w-6 h-6" viewBox="0 0 10 10">
+              <circle cx="5" cy="5" r="5" fill="lightgreen" />
+            </svg>
+            <span>Good</span>
+          </div>
+          <div
+            class="flex text-xs items-center gap-x-1 text-slate-600 select-none"
+          >
+            <svg class="w-6 h-6" viewBox="0 0 10 10">
+              <circle cx="5" cy="5" r="5" fill="#ffa2a2" />
+            </svg>
+            <span>Bad</span>
+          </div>
+        </div>
+        <button
+          class="evaluation-legend complexity"
+          class:inactive={!controllers.show_complexity}
+          onclick={() =>
+            (controllers.show_complexity = !controllers.show_complexity)}
+        >
+          {@render complexity_icon()}
+          <span> Complexity </span>
+        </button>
+        <button
+          class="evaluation-legend coherence"
+          class:inactive={!controllers.show_coherence}
+          onclick={() =>
+            (controllers.show_coherence = !controllers.show_coherence)}
+        >
+          {@render coherence_icon()}
+          <span> Coherence </span>
+        </button>
+        <button
+          class="evaluation-legend importance"
+          class:inactive={!controllers.show_importance}
+          onclick={() =>
+            (controllers.show_importance = !controllers.show_importance)}
+        >
+          {@render importance_icon()}
+          <span> Importance </span>
+        </button>
+      </div>
 
       {#each semantic_tasks_flattened as task, index}
-        <!-- use:draggable={dag_renderer} -->
         <div
           class="semantic-task-card-container w-max absolute flex task-wrapper transition-all duration-500"
           style:z-index={semantic_tasks_flattened.length - index}
@@ -394,23 +457,10 @@
             {handleDeleteTask}
             handleToggleExpand={() => handleToggleExpand(task[id_key])}
             handleToggleExplain={() => handleToggleExplain(task[id_key])}
+            {complexity_icon}
+            {coherence_icon}
+            {importance_icon}
           ></SemanticTaskCard>
-          <!-- {#if task_card_expanded.includes(task[id_key]) && !task_card_show_explanation.includes(task[id_key])}
-            <button
-              class="flex p-0.5 hover:bg-orange-400 justify-center"
-              onclick={() =>
-                (task_card_show_explanation = [
-                  ...task_card_show_explanation,
-                  task[id_key],
-                ])}
-            >
-              <img
-                src="chevron_right.svg"
-                class="mt-0.5 w-5 h-4 pointer-events-none"
-                alt="handle"
-              />
-            </button>
-          {/if} -->
         </div>
       {/each}
     </div>
@@ -429,10 +479,16 @@
 
 <style lang="postcss">
   @reference "../app.css";
-  .inactive {
-    @apply opacity-50;
+  .evaluation-legend {
+    @apply flex items-center px-2 py-1 rounded bg-white outline-2 outline-slate-700 text-xs text-slate-700 gap-x-1;
   }
-  .inactive:hover {
-    @apply opacity-100 scale-110 transition-all;
+  .inactive {
+    @apply opacity-40;
+  }
+  .best-path-legend:hover,
+  .new-node-legend:hover,
+  .next-expansion-legend:hover,
+  .evaluation-legend:hover {
+    @apply scale-110 transition-all;
   }
 </style>

@@ -1,6 +1,8 @@
 <script lang="ts">
-  import type { tSemanticTask } from "types";
+  import type { tControllers, tSemanticTask } from "types";
+  import type { Snippet } from "svelte";
   import { slide, scale } from "svelte/transition";
+  import EvaluationIndicator from "./EvaluationIndicator.svelte";
   let {
     task,
     id_key,
@@ -17,16 +19,15 @@
     handleToggleShowSubTasks = () => {},
     handleDeleteSubTasks = () => {},
     handleDeleteTask = () => {},
+    complexity_icon,
+    coherence_icon,
+    importance_icon,
   }: {
     task: tSemanticTask;
     id_key: string;
     next_expansion: boolean;
     on_max_value_path: boolean;
-    controllers: {
-      show_max_value_path: boolean;
-      show_next_expansion: boolean;
-      show_new_nodes: boolean;
-    };
+    controllers: tControllers;
     show_explanation: boolean;
     expand: boolean;
     handleTaskHovered: Function;
@@ -37,6 +38,9 @@
     handleToggleShowSubTasks?: Function;
     handleDeleteSubTasks?: Function;
     handleDeleteTask?: Function;
+    complexity_icon: Snippet;
+    coherence_icon: Snippet;
+    importance_icon: Snippet;
   } = $props();
   let show_subtasks = $state(false);
   let show_actions = $state(false);
@@ -50,7 +54,7 @@
 
 <div
   role="tooltip"
-  class="container flex flex-col w-min rounded-sm"
+  class="container flex flex-col w-min rounded-sm items-center gap-y-0.5"
   onmouseover={() => handleTaskHovered(task[id_key], true)}
   onmouseout={() => handleTaskHovered(task[id_key], false)}
   onfocus={() => handleTaskHovered(task[id_key], true)}
@@ -63,12 +67,41 @@
     class:end={isEnd}
     class:on-max-value-path={on_max_value_path &&
       controllers.show_max_value_path}
+    class:not-expand={!expand}
   >
-    <div class="flex flex-col grow px-2 gap-y-2">
-      <div class="text-[1.3rem] font-mono text-orange-900 flex items-center">
+    <div class="flex flex-col grow">
+      <div
+        class="header-container relateive text-[1.3rem] font-mono text-orange-900 flex items-center px-2 border-gray-300"
+        style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
+      >
         <span class="card-label mr-2 capitalize select-none" class:end={isEnd}
           >{task.label}</span
         >
+        {#if !expand}
+          <div class="absolute left-0 bottom-[calc(100%+5px)] flex gap-x-1">
+            {#if controllers.show_complexity}
+              <EvaluationIndicator
+                value={task.complexity}
+                label="Complexity"
+                icon={complexity_icon}
+              />
+            {/if}
+            {#if controllers.show_coherence}
+              <EvaluationIndicator
+                value={task.coherence}
+                label="Coherence"
+                icon={coherence_icon}
+              />
+            {/if}
+            {#if controllers.show_importance}
+              <EvaluationIndicator
+                value={task.importance}
+                label="Importance"
+                icon={importance_icon}
+              />
+            {/if}
+          </div>
+        {/if}
         {#if !isEnd}
           <button
             class="shrink-0 ml-auto cursor-pointer hover:bg-orange-300 p-0.5 rounded"
@@ -77,63 +110,62 @@
           >
         {/if}
       </div>
-      {#if !isEnd && expand}
-        <div
-          in:slide
-          class="border-t border-gray-300 flex flex-col min-w-[15rem]"
-        >
-          <div class="text-sm text-gray-400 italic">Description</div>
-          {task.description}
-        </div>
-        <div in:slide class=" border-gray-300 flex gap-x-2 min-w-[15rem]">
-          <div class="text-sm text-gray-400 italic">Confidence</div>
-          <div class="text-sm">
-            {task.confidence?.toFixed(2)}
+      <div class="flex flex-col px-2 gap-y-2">
+        {#if !isEnd && expand}
+          <div in:slide class=" flex flex-col min-w-[15rem]">
+            <div class="text-sm text-gray-400 italic">Description</div>
+            {task.description}
           </div>
-        </div>
-        <div in:slide class=" border-gray-300 flex gap-x-2 min-w-[15rem]">
-          <div class="text-sm text-gray-400 italic">Complexity</div>
-          <div class="text-sm">
-            {task.complexity?.toFixed(2)}
+          <div in:slide class="  flex gap-x-2 min-w-[15rem]">
+            <div class="text-sm text-gray-400 italic">Complexity</div>
+            <div class="text-sm">
+              {task.complexity}
+            </div>
           </div>
-        </div>
-        <div class="flex gap-x-2 mt-1">
-          <div class="flex justify-between flex-wrap">
-            <button
-              class="action-button outline-gray-200 bg-gray-100 hover:bg-green-100"
-              class:disabled={task.sub_tasks === undefined ||
-                task.sub_tasks.length === 0}
-              class:active={show_subtasks}
-              onclick={() => showSubTasks()}>SubTasks</button
-            >
+          <div in:slide class="  flex gap-x-2 min-w-[15rem]">
+            <div class="text-sm text-gray-400 italic">Coherence</div>
+            <div class="text-sm">
+              {task.coherence}
+            </div>
           </div>
-        </div>
-        <div in:slide class="more-actions flex flex-wrap mb-2">
-          <div class="flex gap-x-2">
-            <button
-              class="action-button rounded outline-2 outline-orange-200 bg-orange-100 hover:bg-orange-200"
-              onclick={() => handleDecompose(task)}>Decompose</button
-            >
-            <button
-              class="action-button rounded outline-2 outline-gray-200 bg-gray-100 hover:bg-gray-200"
-              >Edit</button
-            >
-            <button
-              class="action-button rounded outline-2 outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
-              onclick={() => handleDeleteTask(task)}
-            >
-              Delete
-            </button>
-            <button
-              class="action-button rounded outline-2 outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
-              tabindex="0"
-              onclick={() => handleDeleteSubTasks(task)}
-            >
-              Delete SubTasks
-            </button>
+          <div class="flex gap-x-2 mt-1">
+            <div class="flex justify-between flex-wrap">
+              <button
+                class="action-button outline-gray-200 bg-gray-100 hover:bg-green-100"
+                class:disabled={task.sub_tasks === undefined ||
+                  task.sub_tasks.length === 0}
+                class:active={show_subtasks}
+                onclick={() => showSubTasks()}>SubTasks</button
+              >
+            </div>
           </div>
-        </div>
-      {/if}
+          <div in:slide class="more-actions flex flex-wrap mb-2">
+            <div class="flex gap-x-2">
+              <button
+                class="action-button rounded outline-2 outline-orange-200 bg-orange-100 hover:bg-orange-200"
+                onclick={() => handleDecompose(task)}>Decompose</button
+              >
+              <button
+                class="action-button rounded outline-2 outline-gray-200 bg-gray-100 hover:bg-gray-200"
+                >Edit</button
+              >
+              <button
+                class="action-button rounded outline-2 outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
+                onclick={() => handleDeleteTask(task)}
+              >
+                Delete
+              </button>
+              <button
+                class="action-button rounded outline-2 outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
+                tabindex="0"
+                onclick={() => handleDeleteSubTasks(task)}
+              >
+                Delete SubTasks
+              </button>
+            </div>
+          </div>
+        {/if}
+      </div>
     </div>
     {#if expand}
       <div class="flex bg-[#fbfaec] border-y border-r border-gray-200">
@@ -154,7 +186,7 @@
   {#if !expand}
     <div
       in:slide
-      class="more-actions hidden flex-wrap absolute top-[100%] left-1/2 -translate-x-1/2"
+      class="more-actions hidden flex-wrap absolute top-[calc(100%+3px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
       class:bounce={next_expansion && !expand}
     >
       <div class="flex gap-x-0">
@@ -193,20 +225,12 @@
 
 <style lang="postcss">
   @reference "../app.css";
-  .on-max-value-path {
-    @apply border-black border-4 outline-none rounded-none shadow-md;
-    & .card-label {
-      @apply font-bold;
-    }
-  }
+
   .card-label.end {
     @apply flex justify-center items-center;
   }
   .end {
     @apply min-w-[5rem] flex items-center justify-center;
-  }
-  .next-expansion {
-    @apply outline-3 outline-orange-500 outline-dashed shadow-none;
   }
   .bounce {
     @apply animate-bounce;
@@ -234,16 +258,29 @@
       height 0.3s ease;
   }
   :global(.new-node) {
-    & .task-card {
+    & .task-card.not-expand {
+      @apply bg-orange-200;
+    }
+    & .header-container {
       @apply bg-orange-200;
     }
   }
   :global(.on-hovered-path) {
     & .task-card {
-      @apply border-black border-4 outline-none rounded-none shadow-md;
+      @apply outline-black outline-4 border-none rounded-none shadow-md;
       & .card-label {
         @apply font-bold;
       }
     }
+  }
+  .on-max-value-path {
+    @apply outline-black outline-4 border-none rounded-none shadow-md;
+    & .card-label {
+      @apply font-bold;
+    }
+  }
+
+  .next-expansion {
+    @apply outline-3 outline-orange-500 outline-dashed shadow-none;
   }
 </style>
