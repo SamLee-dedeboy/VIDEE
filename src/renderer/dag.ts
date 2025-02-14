@@ -172,7 +172,7 @@ export class DAG {
             this.new_nodes = enter_nodes
         }
 
-        console.log("new nodes", this.new_nodes)
+        // console.log("new nodes", this.new_nodes)
         // add new node class to the divs
         document.querySelectorAll(this.selection_card).forEach((div) => {
             const id = (div as HTMLElement).dataset.id

@@ -14,8 +14,6 @@ class SemanticTaskResponse(BaseModel):
 class Node(SemanticTaskResponse):
     children: list[str]
     sub_tasks: list["Node"] = []
-    confidence: float
-    complexity: float
 
     class Config:
         orm_mode = True
@@ -29,6 +27,9 @@ class MCT_Node(SemanticTaskResponse):
     visits: int = 0
     value: float = 0.0
     children_all_ends: bool = False
+    complexity: bool = False
+    coherence: bool = False
+    importance: bool = False
 
 
 class BaseStateSchema(TypedDict):

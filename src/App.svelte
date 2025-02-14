@@ -76,6 +76,9 @@
 
         signal,
       });
+      if (!response.body) {
+        throw new Error("Stream error");
+      }
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
@@ -89,7 +92,7 @@
 
         // Process complete JSON objects line by line
         let lines = buffer.split("\n");
-        buffer = lines.pop(); // Keep the last incomplete part for the next iteration
+        buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
 
         for (let line of lines) {
           if (line) {
@@ -99,9 +102,9 @@
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === "AbortError") {
-        streaming_stopped = true;
+        streaming_states.paused = true;
         console.log("Stream aborted");
       } else {
         console.error("Error:", error);
@@ -175,6 +178,9 @@
           signal,
         }
       );
+      if (!response.body) {
+        throw new Error("Stream error");
+      }
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
@@ -188,7 +194,7 @@
 
         // Process complete JSON objects line by line
         let lines = buffer.split("\n");
-        buffer = lines.pop(); // Keep the last incomplete part for the next iteration
+        buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
 
         for (let line of lines) {
           if (line) {
@@ -205,7 +211,7 @@
       streaming_states.started = false;
       streaming_states.paused = false;
       streaming_states.finished = true;
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === "AbortError") {
         streaming_states.paused = true;
         console.log("Stream aborted");
@@ -239,6 +245,9 @@
           signal,
         }
       );
+      if (!response.body) {
+        throw new Error("Stream error");
+      }
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
@@ -252,7 +261,7 @@
 
         // Process complete JSON objects line by line
         let lines = buffer.split("\n");
-        buffer = lines.pop(); // Keep the last incomplete part for the next iteration
+        buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
 
         for (let line of lines) {
           if (line) {
@@ -266,7 +275,7 @@
       streaming_states.started = false;
       streaming_states.paused = false;
       streaming_states.finished = true;
-    } catch (error) {
+    } catch (error: any) {
       if (error.name === "AbortError") {
         streaming_states.paused = true;
         console.log("Stream aborted");

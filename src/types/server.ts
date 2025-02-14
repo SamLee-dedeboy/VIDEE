@@ -13,8 +13,9 @@ export type tSemanticTask = {
     parentIds: string[]
     children: string[];
     sub_tasks: tSemanticTask[] | undefined; 
-    confidence: number;
-    complexity: number;
+    complexity: boolean;
+    coherence: boolean
+    importance: boolean
 }
 
 export type tPrimitiveTaskDescription = {
