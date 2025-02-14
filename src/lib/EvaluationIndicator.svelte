@@ -7,8 +7,14 @@
     label,
     streaming,
     icon,
-  }: { value: boolean; label: string; streaming: boolean; icon: Snippet } =
-    $props();
+    handleToggle = () => {},
+  }: {
+    value: boolean;
+    label: string;
+    streaming: boolean;
+    icon: Snippet;
+    handleToggle: Function;
+  } = $props();
   let component;
   let active_color = "lightgreen";
   let inactive_color = "#ffa2a2";
@@ -21,7 +27,10 @@
   class="p-1 rounded-full outline-gray-500 hover:outline-2 hover:scale-110 transition-all duration-100"
   class:disabled={streaming}
   style="background-color: {value ? active_color : inactive_color}"
-  onclick={() => (value = !value)}
+  onclick={() => {
+    value = !value;
+    handleToggle(value);
+  }}
 >
   {@render icon()}
 </button>

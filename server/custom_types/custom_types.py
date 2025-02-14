@@ -19,6 +19,12 @@ class Node(SemanticTaskResponse):
         orm_mode = True
 
 
+class Evaluation(BaseModel):
+    complexity: bool = False
+    coherence: bool = False
+    importance: bool = False
+
+
 class MCT_Node(SemanticTaskResponse):
     print_label: str = "N/A"
     MCT_id: str
@@ -27,9 +33,8 @@ class MCT_Node(SemanticTaskResponse):
     visits: int = 0
     value: float = 0.0
     children_all_ends: bool = False
-    complexity: bool = False
-    coherence: bool = False
-    importance: bool = False
+    llm_evaluation: Evaluation = Evaluation()
+    user_evaluation: Evaluation = Evaluation()
 
 
 class BaseStateSchema(TypedDict):

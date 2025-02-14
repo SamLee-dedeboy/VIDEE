@@ -27,15 +27,36 @@
   let stream_controller: any = $state(undefined);
   let mode = $state("step");
 
-  let semantic_tasks: tSemanticTask[] | undefined = $state(undefined);
+  let semantic_tasks: tSemanticTask[] = $state([]);
   let next_expansion: tSemanticTask | undefined = $state(undefined);
   let max_value_path: [string[], number] = $state([[], 0]);
+  let few_shot_examples_semantic_tasks = $derived.by(() => {
+    const evaluations = ["complexity", "coherence", "importance"];
+    const examples: Record<string, any> = {};
+    semantic_tasks.forEach((task) => {
+      evaluations.forEach((evaluation) => {
+        if (
+          task.user_evaluation[evaluation] !== task.llm_evaluation[evaluation]
+        ) {
+          if (!examples[evaluation]) examples[evaluation] = [];
+          examples[evaluation].push({
+            task_label: task.label,
+            user_evaluation: task.user_evaluation[evaluation],
+            llm_evaluation: task.llm_evaluation[evaluation],
+          });
+        }
+      });
+    });
+    console.log({ examples });
+    return examples;
+  });
   let primitive_tasks:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)[]
     | undefined = $state(undefined);
   let inspected_primitive_task:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
     | undefined = $state(undefined);
+
   // let primitive_task_execution_plan = $state(undefined);
   // let goal_candidate_steps = $state([]);
 
@@ -317,6 +338,20 @@
       });
   }
 
+  function handleUserFeedback(
+    task_id: string,
+    evaluation: string,
+    value: boolean
+  ) {
+    const target_task_index = semantic_tasks
+      .map((t) => t["MCT_id"])
+      .indexOf(task_id);
+    if (target_task_index !== -1) {
+      semantic_tasks[target_task_index].user_evaluation[evaluation] = value;
+    }
+  }
+  setContext("handleUserFeedback", handleUserFeedback);
+
   onMount(() => {
     init();
   });
@@ -359,7 +394,7 @@
             {#if show_dag === "semantic"}
               <SemanticTasksTree
                 {decomposing_goal}
-                semantic_tasks={semantic_tasks || []}
+                {semantic_tasks}
                 {streaming_states}
                 bind:next_expansion
                 {max_value_path}
@@ -419,7 +454,9 @@
     </div>
     {#if show_dag == "semantic"}
       <div class="flex-1">
-        <SemanticTaskInspection></SemanticTaskInspection>
+        <SemanticTaskInspection
+          few_shot_examples={few_shot_examples_semantic_tasks}
+        ></SemanticTaskInspection>
       </div>
     {:else if show_dag == "primitive"}
       <div class="flex-1 overflow-auto">
