@@ -25,6 +25,7 @@
     finished: false,
   });
   let stream_controller: any = $state(undefined);
+  let mode = $state("step");
 
   let semantic_tasks: tSemanticTask[] | undefined = $state(undefined);
   let next_expansion: tSemanticTask | undefined = $state(undefined);
@@ -203,6 +204,10 @@
             semantic_tasks = Object.values(obj["node_dict"]) as any[];
             next_expansion = obj["next_node"];
             max_value_path = obj["max_value_path"];
+            if (mode === "step" && stream_controller !== undefined) {
+              stream_controller.abort(); // Stop streaming
+              stream_controller = undefined;
+            }
             // semantic_tasks = obj["semantic_tasks"][0][0];
           }
         }
@@ -325,6 +330,7 @@
       <div class="bg-white flex gap-x-2">
         <GoalInput
           handleDecomposeGoal={handleDecomposeGoalStepped_MCTS}
+          bind:mode
           {streaming_states}
         />
         <button
@@ -354,6 +360,7 @@
               <SemanticTasksTree
                 {decomposing_goal}
                 semantic_tasks={semantic_tasks || []}
+                {streaming_states}
                 bind:next_expansion
                 {max_value_path}
                 {handleConvert}
