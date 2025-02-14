@@ -11,12 +11,18 @@
   let {
     semantic_tasks = $bindable([]),
     next_expansion = $bindable(undefined),
+    streaming_states,
     max_value_path,
     decomposing_goal,
     handleConvert,
   }: {
     semantic_tasks: tSemanticTask[];
     next_expansion: tSemanticTask | undefined;
+    streaming_states: {
+      started: boolean;
+      paused: boolean;
+      finished: boolean;
+    };
     max_value_path: [string[], number];
     decomposing_goal: boolean;
     handleConvert: Function;
@@ -42,6 +48,11 @@
     show_coherence: true,
     show_importance: true,
   });
+  let streaming = $derived(
+    streaming_states.started &&
+      !streaming_states.paused &&
+      !streaming_states.finished
+  );
   let hovered_task_id: string = $state("");
 
   $effect(() => {
@@ -443,6 +454,7 @@
             {task}
             {id_key}
             {controllers}
+            {streaming}
             next_expansion={(next_expansion &&
               next_expansion[id_key] === task[id_key]) ||
               false}
@@ -481,6 +493,9 @@
   @reference "../app.css";
   .evaluation-legend {
     @apply flex items-center px-2 py-1 rounded bg-white outline-2 outline-slate-700 text-xs text-slate-700 gap-x-1;
+  }
+  .disabled {
+    @apply pointer-events-none opacity-50;
   }
   .inactive {
     @apply opacity-40;

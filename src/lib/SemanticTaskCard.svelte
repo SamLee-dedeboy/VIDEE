@@ -9,6 +9,7 @@
     next_expansion,
     on_max_value_path = false,
     controllers,
+    streaming,
     show_explanation = $bindable(false),
     expand,
     handleTaskHovered = () => {},
@@ -28,6 +29,7 @@
     next_expansion: boolean;
     on_max_value_path: boolean;
     controllers: tControllers;
+    streaming: boolean;
     show_explanation: boolean;
     expand: boolean;
     handleTaskHovered: Function;
@@ -55,6 +57,7 @@
 <div
   role="tooltip"
   class="container flex flex-col w-min rounded-sm items-center gap-y-0.5"
+  class:card-disabled={streaming}
   onmouseover={() => handleTaskHovered(task[id_key], true)}
   onmouseout={() => handleTaskHovered(task[id_key], false)}
   onfocus={() => handleTaskHovered(task[id_key], true)}
@@ -81,6 +84,7 @@
           <div class="absolute left-0 bottom-[calc(100%+5px)] flex gap-x-1">
             {#if controllers.show_complexity}
               <EvaluationIndicator
+                {streaming}
                 value={task.complexity}
                 label="Complexity"
                 icon={complexity_icon}
@@ -88,6 +92,7 @@
             {/if}
             {#if controllers.show_coherence}
               <EvaluationIndicator
+                {streaming}
                 value={task.coherence}
                 label="Coherence"
                 icon={coherence_icon}
@@ -95,6 +100,7 @@
             {/if}
             {#if controllers.show_importance}
               <EvaluationIndicator
+                {streaming}
                 value={task.importance}
                 label="Importance"
                 icon={importance_icon}
@@ -105,6 +111,7 @@
         {#if !isEnd}
           <button
             class="shrink-0 ml-auto cursor-pointer hover:bg-orange-300 p-0.5 rounded"
+            style={`visibility: ${streaming ? "hidden" : "visible"}`}
             onclick={() => handleToggleExpand(task[id_key])}
             ><img src="panel_top_open.svg" alt="more" class="w-6 h-6" /></button
           >
@@ -225,7 +232,9 @@
 
 <style lang="postcss">
   @reference "../app.css";
-
+  .card-disabled {
+    @apply cursor-not-allowed pointer-events-none;
+  }
   .card-label.end {
     @apply flex justify-center items-center;
   }

@@ -2,7 +2,12 @@
   import { onMount } from "svelte";
   import { scale } from "svelte/transition";
   import type { Snippet } from "svelte";
-  let { value, label, icon }: { value: boolean; label: string; icon: Snippet } =
+  let {
+    value,
+    label,
+    streaming,
+    icon,
+  }: { value: boolean; label: string; streaming: boolean; icon: Snippet } =
     $props();
   let component;
   let active_color = "lightgreen";
@@ -14,6 +19,7 @@
   transition:scale
   bind:this={component}
   class="p-1 rounded-full outline-gray-500 hover:outline-2 hover:scale-110 transition-all duration-100"
+  class:disabled={streaming}
   style="background-color: {value ? active_color : inactive_color}"
   onclick={() => (value = !value)}
 >
@@ -21,4 +27,8 @@
 </button>
 
 <style lang="postcss">
+  @reference "../app.css";
+  .disabled {
+    @apply cursor-not-allowed hover:scale-none hover:outline-none;
+  }
 </style>
