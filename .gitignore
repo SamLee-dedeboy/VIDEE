@@ -131,6 +131,8 @@ dist
 
 experiments/**/*.json
 api_key
+server/models/google_api_key
+server/models/openai_api_key
 request_log.txt
 *.docx
 *.pyc
