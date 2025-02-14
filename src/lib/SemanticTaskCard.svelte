@@ -1,10 +1,11 @@
 <script lang="ts">
   import type { tControllers, tSemanticTask } from "types";
   import type { Snippet } from "svelte";
+  import { getContext } from "svelte";
   import { slide, scale } from "svelte/transition";
   import EvaluationIndicator from "./EvaluationIndicator.svelte";
   let {
-    task,
+    task = $bindable(),
     id_key,
     next_expansion,
     on_max_value_path = false,
@@ -51,7 +52,8 @@
     handleToggleShowSubTasks(task[id_key]);
   }
   let isEnd = $derived(task.label === "END");
-  $inspect(on_max_value_path);
+  const handleUserFeedback: Function = getContext("handleUserFeedback");
+  $inspect(task);
 </script>
 
 <div
@@ -85,25 +87,31 @@
             {#if controllers.show_complexity}
               <EvaluationIndicator
                 {streaming}
-                value={task.complexity}
+                value={task.user_evaluation.complexity}
                 label="Complexity"
                 icon={complexity_icon}
+                handleToggle={(user_value) =>
+                  handleUserFeedback(task[id_key], "complexity", user_value)}
               />
             {/if}
             {#if controllers.show_coherence}
               <EvaluationIndicator
                 {streaming}
-                value={task.coherence}
+                value={task.user_evaluation.coherence}
                 label="Coherence"
                 icon={coherence_icon}
+                handleToggle={(user_value) =>
+                  handleUserFeedback(task[id_key], "coherence", user_value)}
               />
             {/if}
             {#if controllers.show_importance}
               <EvaluationIndicator
                 {streaming}
-                value={task.importance}
+                value={task.user_evaluation.importance}
                 label="Importance"
                 icon={importance_icon}
+                handleToggle={(user_value) =>
+                  handleUserFeedback(task[id_key], "importance", user_value)}
               />
             {/if}
           </div>

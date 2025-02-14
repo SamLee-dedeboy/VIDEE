@@ -9,6 +9,8 @@
   import { getContext } from "svelte";
   import DocumentCard from "./DocumentCard.svelte";
   import Evaluator from "./Evaluator.svelte";
+  let { few_shot_examples }: { few_shot_examples: Record<string, any> } =
+    $props();
   const session_id = (getContext("session_id") as Function)();
   let documents: any[] = $state([]);
   let show_documents = $state(false);
@@ -91,9 +93,21 @@
     >
       Evaluators
     </div>
-    <Evaluator title="Complexity" icon={complexity_icon} />
-    <Evaluator title="Coherence" icon={coherence_icon} />
-    <Evaluator title="Importance" icon={importance_icon} />
+    <Evaluator
+      title="Complexity"
+      icon={complexity_icon}
+      few_shot_examples={few_shot_examples["complexity"]}
+    />
+    <Evaluator
+      title="Coherence"
+      icon={coherence_icon}
+      few_shot_examples={few_shot_examples["coherence"]}
+    />
+    <Evaluator
+      title="Importance"
+      icon={importance_icon}
+      few_shot_examples={few_shot_examples["importance"]}
+    />
   </div>
 </div>
 

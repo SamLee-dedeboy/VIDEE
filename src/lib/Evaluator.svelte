@@ -2,7 +2,11 @@
   import { slide } from "svelte/transition";
   import type { Snippet } from "svelte";
 
-  let { title, icon }: { title: string; icon: Snippet } = $props();
+  let {
+    title,
+    few_shot_examples,
+    icon,
+  }: { title: string; few_shot_examples: any; icon: Snippet } = $props();
   let show = $state(false);
 </script>
 
@@ -22,7 +26,20 @@
   </div>
 
   {#if show}
-    <div in:slide class="flex flex-col gap-y-2">Definition here!</div>
+    <div in:slide class="flex flex-col gap-y-2">
+      Definition here!
+      {#each few_shot_examples as example}
+        <div class="flex gap-x-2 items-center text-gray-500">
+          <div class="font-mono text-sm min-w-[4rem]">{example.task_label}</div>
+          <div class="max-h-[15rem] overflow-auto">
+            {example.user_evaluation}
+          </div>
+          <div class="max-h-[15rem] overflow-auto">
+            {example.llm_evaluation}
+          </div>
+        </div>
+      {/each}
+    </div>
   {/if}
 </div>
 
