@@ -204,7 +204,7 @@
       return acc;
     }, {});
     // update the parentIds of the children
-    task.children.forEach((child_task_id) => {
+    task.children?.forEach((child_task_id) => {
       task_dict[child_task_id].parentIds = task_dict[
         child_task_id
       ].parentIds.filter((id) => id !== task.id);
@@ -216,6 +216,9 @@
         parent_task_id
       ].children.filter((id) => id !== task.id);
     });
+    if (task[id_key] === next_expansion?.[id_key]) {
+      next_expansion = undefined;
+    }
     update_with_server();
   }
 
@@ -307,8 +310,6 @@
       });
   }
 
-  function navigateToNextExpansion() {}
-
   onMount(() => {
     dag_renderer.init();
     update_dag(semantic_tasks, max_value_path, controllers);
@@ -316,15 +317,15 @@
 </script>
 
 {#snippet complexity_icon()}
-  <img src="network.svg" alt="complexity" class="w-6 h-6 pointer-events-none" />
+  <img src="network.svg" alt="complexity" class="pointer-events-none" />
 {/snippet}
 
 {#snippet coherence_icon()}
-  <img src="waveform.svg" alt="coherence" class="w-6 h-6 pointer-events-none" />
+  <img src="waveform.svg" alt="coherence" class="pointer-events-none" />
 {/snippet}
 
 {#snippet importance_icon()}
-  <img src="cpu.svg" alt="importance" class="w-6 h-6 pointer-events-none" />
+  <img src="cpu.svg" alt="importance" class="pointer-events-none" />
 {/snippet}
 
 <div class="flex flex-col grow">

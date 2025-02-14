@@ -30,9 +30,23 @@ def init_MCTS():
 #     return node_dict
 
 
-async def stream_MCTS(root, node_dict, goal: str, model: str, api_key: str):
+async def stream_MCTS(
+    root,
+    node_dict,
+    goal: str,
+    model: str,
+    api_key: str,
+    next_selection=None,
+):
     while True:
-        root = await MCTS_step(root, node_dict, goal, model, api_key)
+        root = await MCTS_step(
+            root,
+            node_dict,
+            next_selection=next_selection,
+            goal=goal,
+            model=model,
+            api_key=api_key,
+        )
         next_selection = select(root, node_dict)
         max_value_path = get_max_value_path(root, node_dict)
         yield root, next_selection, max_value_path
@@ -42,9 +56,19 @@ async def stream_MCTS(root, node_dict, goal: str, model: str, api_key: str):
 
 
 async def MCTS_step(
-    root: MCT_Node, node_dict: dict, goal: str, model: str, api_key: str
+    root: MCT_Node,
+    node_dict: dict,
+    goal: str,
+    model: str,
+    api_key: str,
+    next_selection=None,
 ) -> MCT_Node:
-    node = select(root, node_dict)
+    if next_selection is None:
+        node = select(root, node_dict)
+    else:
+        node = node_dict[next_selection.MCT_id]
+    # node = select(root, node_dict)
+    print(f"Selected node: {node.label}")
     child = await expand(node, node_dict, goal, model, api_key)
     reward_value = await reward(child)
     backpropagate(child, reward_value, node_dict)
