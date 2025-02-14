@@ -4,6 +4,8 @@
   import { getContext } from "svelte";
   import { slide, scale } from "svelte/transition";
   import EvaluationIndicator from "./EvaluationIndicator.svelte";
+  import { evaluation_colors } from "constants";
+  import SemanticTaskCardUtilities from "./SemanticTaskCardUtilities.svelte";
   let {
     task = $bindable(),
     id_key,
@@ -60,10 +62,18 @@
   role="tooltip"
   class="container flex flex-col w-min rounded-sm items-center gap-y-0.5"
   class:card-disabled={streaming}
-  onmouseover={() => handleTaskHovered(task[id_key], true)}
-  onmouseout={() => handleTaskHovered(task[id_key], false)}
-  onfocus={() => handleTaskHovered(task[id_key], true)}
-  onblur={() => handleTaskHovered(task[id_key], false)}
+  onmouseover={() => {
+    if (!expand) handleTaskHovered(task[id_key], true);
+  }}
+  onmouseout={() => {
+    if (!expand) handleTaskHovered(task[id_key], false);
+  }}
+  onfocus={() => {
+    if (!expand) handleTaskHovered(task[id_key], true);
+  }}
+  onblur={() => {
+    if (!expand) handleTaskHovered(task[id_key], false);
+  }}
 >
   <div
     class="task-card text-slate-600 w-min min-w-[18rem] transition-all outline-2 outline-[#FFCFB1] bg-[#fbfaec] shadow rounded relative flex gap-y-1 gap-x-2"
@@ -85,34 +95,43 @@
         {#if !expand}
           <div class="absolute left-0 bottom-[calc(100%+5px)] flex gap-x-1">
             {#if controllers.show_complexity}
-              <EvaluationIndicator
-                {streaming}
-                value={task.user_evaluation.complexity}
-                label="Complexity"
-                icon={complexity_icon}
-                handleToggle={(user_value) =>
-                  handleUserFeedback(task[id_key], "complexity", user_value)}
-              />
+              <div transition:scale class="flex">
+                <EvaluationIndicator
+                  {streaming}
+                  show_transition={true}
+                  value={task.user_evaluation.complexity}
+                  label="Complexity"
+                  icon={complexity_icon}
+                  handleToggle={(user_value) =>
+                    handleUserFeedback(task[id_key], "complexity", user_value)}
+                />
+              </div>
             {/if}
             {#if controllers.show_coherence}
-              <EvaluationIndicator
-                {streaming}
-                value={task.user_evaluation.coherence}
-                label="Coherence"
-                icon={coherence_icon}
-                handleToggle={(user_value) =>
-                  handleUserFeedback(task[id_key], "coherence", user_value)}
-              />
+              <div transition:scale class="flex">
+                <EvaluationIndicator
+                  {streaming}
+                  show_transition={true}
+                  value={task.user_evaluation.coherence}
+                  label="Coherence"
+                  icon={coherence_icon}
+                  handleToggle={(user_value) =>
+                    handleUserFeedback(task[id_key], "coherence", user_value)}
+                />
+              </div>
             {/if}
             {#if controllers.show_importance}
-              <EvaluationIndicator
-                {streaming}
-                value={task.user_evaluation.importance}
-                label="Importance"
-                icon={importance_icon}
-                handleToggle={(user_value) =>
-                  handleUserFeedback(task[id_key], "importance", user_value)}
-              />
+              <div transition:scale class="flex">
+                <EvaluationIndicator
+                  {streaming}
+                  show_transition={true}
+                  value={task.user_evaluation.importance}
+                  label="Importance"
+                  icon={importance_icon}
+                  handleToggle={(user_value) =>
+                    handleUserFeedback(task[id_key], "importance", user_value)}
+                />
+              </div>
             {/if}
           </div>
         {/if}
@@ -125,59 +144,76 @@
           >
         {/if}
       </div>
-      <div class="flex flex-col px-2 gap-y-2">
+      <div class="flex flex-col px-2 gap-y-1">
         {#if !isEnd && expand}
-          <div in:slide class=" flex flex-col min-w-[15rem]">
+          <div in:slide class="flex flex-col min-w-[15rem]">
             <div class="text-sm text-gray-400 italic">Description</div>
             {task.description}
           </div>
-          <div in:slide class="  flex gap-x-2 min-w-[15rem]">
-            <div class="text-sm text-gray-400 italic">Complexity</div>
+          <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
+            <EvaluationIndicator
+              {streaming}
+              show_transition={false}
+              value={task.user_evaluation.complexity}
+              label="Complexity"
+              icon={complexity_icon}
+              handleToggle={(user_value) =>
+                handleUserFeedback(task[id_key], "complexity", user_value)}
+            />
+            <div class="text-sm text-gray-500 italic w-[5rem]">Complexity</div>
             <div class="text-sm">
-              {task.complexity}
+              {task.user_evaluation.complexity ? "Good" : "Bad"}
             </div>
           </div>
-          <div in:slide class="  flex gap-x-2 min-w-[15rem]">
-            <div class="text-sm text-gray-400 italic">Coherence</div>
+          <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
+            <EvaluationIndicator
+              {streaming}
+              value={task.user_evaluation.coherence}
+              show_transition={false}
+              label="Coherence"
+              icon={coherence_icon}
+              handleToggle={(user_value) =>
+                handleUserFeedback(task[id_key], "coherence", user_value)}
+            />
+            <div class="text-sm text-gray-500 italic w-[5rem]">Coherence</div>
             <div class="text-sm">
-              {task.coherence}
+              {task.user_evaluation.coherence ? "Good" : "Bad"}
             </div>
           </div>
-          <div class="flex gap-x-2 mt-1">
+          <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
+            <EvaluationIndicator
+              {streaming}
+              show_transition={false}
+              value={task.user_evaluation.importance}
+              label="Importance"
+              icon={importance_icon}
+              handleToggle={(user_value) =>
+                handleUserFeedback(task[id_key], "importance", user_value)}
+            />
+            <div class="text-sm text-gray-500 italic w-[5rem]">Importance</div>
+            <div class="text-sm">
+              {task.user_evaluation.importance ? "Good" : "Bad"}
+            </div>
+          </div>
+          <div class="flex gap-x-2 my-1">
             <div class="flex justify-between flex-wrap">
-              <button
+              <!-- <button
                 class="action-button outline-gray-200 bg-gray-100 hover:bg-green-100"
                 class:disabled={task.sub_tasks === undefined ||
                   task.sub_tasks.length === 0}
                 class:active={show_subtasks}
                 onclick={() => showSubTasks()}>SubTasks</button
-              >
+              > -->
             </div>
           </div>
           <div in:slide class="more-actions flex flex-wrap mb-2">
-            <div class="flex gap-x-2">
-              <button
-                class="action-button rounded outline-2 outline-orange-200 bg-orange-100 hover:bg-orange-200"
-                onclick={() => handleDecompose(task)}>Decompose</button
-              >
-              <button
-                class="action-button rounded outline-2 outline-gray-200 bg-gray-100 hover:bg-gray-200"
-                >Edit</button
-              >
-              <button
-                class="action-button rounded outline-2 outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
-                onclick={() => handleDeleteTask(task)}
-              >
-                Delete
-              </button>
-              <button
-                class="action-button rounded outline-2 outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
-                tabindex="0"
-                onclick={() => handleDeleteSubTasks(task)}
-              >
-                Delete SubTasks
-              </button>
-            </div>
+            <SemanticTaskCardUtilities
+              {task}
+              {handleDecompose}
+              {handleDeleteTask}
+              {handleDeleteSubTasks}
+              {handleSetAsNextExpansion}
+            />
           </div>
         {/if}
       </div>
@@ -201,39 +237,16 @@
   {#if !expand}
     <div
       in:slide
-      class="more-actions hidden flex-wrap absolute top-[calc(100%+3px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
+      class="more-actions hidden absolute top-[calc(100%+3px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
       class:bounce={next_expansion && !expand}
     >
-      <div class="flex gap-x-0">
-        <button
-          class="action-button border-y-2 border-l-2 border-r-2 border-dashed border-orange-500 bg-[#fbfaec] hover:bg-orange-200 ml-auto right-0"
-          tabindex="0"
-          onclick={() => handleSetAsNextExpansion(task)}
-        >
-          Next Expansion
-        </button>
-        <button
-          class="action-button border-y-2 border-l-2 border-r-1 border-orange-200 bg-orange-100 hover:bg-orange-200"
-          onclick={() => handleDecompose(task)}>Decompose</button
-        >
-        <button
-          class="action-button border-y-2 border-x-1 border-gray-200 bg-gray-100 hover:bg-gray-200"
-          >Edit</button
-        >
-        <button
-          class="action-button border-y-2 border-x-1 border-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
-          onclick={() => handleDeleteTask(task)}
-        >
-          Delete
-        </button>
-        <button
-          class="action-button border-y-2 border-l-1 border-r-2 border-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
-          tabindex="0"
-          onclick={() => handleDeleteSubTasks(task)}
-        >
-          Delete SubTasks
-        </button>
-      </div>
+      <SemanticTaskCardUtilities
+        {task}
+        {handleDecompose}
+        {handleDeleteTask}
+        {handleDeleteSubTasks}
+        {handleSetAsNextExpansion}
+      />
     </div>
   {/if}
 </div>
@@ -264,7 +277,7 @@
     @apply px-1 py-0.5 text-sm font-mono;
   }
   .disabled {
-    @apply cursor-not-allowed bg-gray-300 outline-gray-200 opacity-50;
+    @apply cursor-not-allowed pointer-events-none  outline-gray-200 opacity-50;
   }
   .active {
     @apply outline-gray-600 bg-green-200;

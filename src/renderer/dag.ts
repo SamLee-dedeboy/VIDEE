@@ -208,9 +208,10 @@ export class DAG {
     }
 
     update_next_expansion_link(next_expansion_id: string | undefined) {
+        console.log({next_expansion_id})
         this.next_expansion_id = next_expansion_id
         const svg = d3.select(`#${this.svgId}`);
-        if(next_expansion_id) {
+        if(next_expansion_id && this.bbox_dict[next_expansion_id]) {
             const current_transform = d3.zoomTransform(svg.node())
             const next_expansion_group = svg.select("g.next_expansion_link")
             // next_expansion_group.selectAll("*").remove()
@@ -230,6 +231,8 @@ export class DAG {
                 .attr("stroke-width", 3)
                 .attr("stroke", "oklch(0.705 0.213 47.604)")
                 .attr("stroke-dasharray", "8,8")
+        } else {
+            svg.select("g.next_expansion_link").selectAll("*").remove()
         }
 
     }

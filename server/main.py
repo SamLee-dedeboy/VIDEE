@@ -112,6 +112,12 @@ async def goal_decomposition_MCTS_stepped(request: Request):
     assert session_id in user_sessions
     user_sessions[session_id]["goal"] = goal
     semantic_tasks = request["semantic_tasks"] if "semantic_tasks" in request else None
+    next_selection = (
+        custom_types.MCT_Node.model_validate(request["next_expansion"])
+        if "next_expansion" in request
+        else None
+    )
+    print("User next selection", next_selection)
     if semantic_tasks is None or semantic_tasks == []:
         user_root = decomposer.init_MCTS()
         node_dict = {user_root.MCT_id: user_root}
@@ -123,9 +129,14 @@ async def goal_decomposition_MCTS_stepped(request: Request):
 
     # node_dict = decomposer.collect_MCT_node_dict(user_root)
 
-    async def iter_response(root):  # (1)
+    async def iter_response(root, node_dict, goal, next_selection):  # (1)
         async for new_root, next_selection, max_value_path in decomposer.stream_MCTS(
-            root, node_dict, goal, model=default_model, api_key=api_key
+            root,
+            node_dict,
+            goal,
+            next_selection=next_selection,
+            model=default_model,
+            api_key=api_key,
         ):
             root = new_root
             save_json(
@@ -148,7 +159,10 @@ async def goal_decomposition_MCTS_stepped(request: Request):
                 }
             ) + "\n"
 
-    return StreamingResponse(iter_response(user_root), media_type="application/json")
+    return StreamingResponse(
+        iter_response(user_root, node_dict, goal, next_selection),
+        media_type="application/json",
+    )
 
 
 @app.post("/goal_decomposition/beam_search/stepped/")

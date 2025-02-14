@@ -196,6 +196,7 @@
             goal,
             session_id,
             semantic_tasks,
+            next_expansion,
           }),
           signal,
         }
