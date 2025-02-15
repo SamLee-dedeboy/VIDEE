@@ -1,0 +1,72 @@
+[
+    {
+        "label": "Document Preprocessing",
+        "description": "Clean and preprocess the text from the Wikipedia documents.",
+        "explanation": "Preprocessing is essential to remove noise and irrelevant information, which will enhance the quality of the extraction process and ensure consistency in the analysis.",
+        "depend_on": [],
+        "id": "0",
+        "parentIds": []
+    },
+    {
+        "label": "Entity Recognition",
+        "description": "Identify key entities (like people, places, organizations) within the preprocessed documents.",
+        "explanation": "Entity recognition is crucial as it helps in identifying the main subjects or nodes that will form the foundation of the knowledge graph.",
+        "depend_on": [
+            "Document Preprocessing"
+        ],
+        "id": "1",
+        "parentIds": [
+            "0"
+        ]
+    },
+    {
+        "label": "Relationship Extraction",
+        "description": "Extract relationships between the identified entities.",
+        "explanation": "Understanding how entities relate to each other is key to building the connections in the knowledge graph, which provides context and meaning.",
+        "depend_on": [
+            "Entity Recognition"
+        ],
+        "id": "2",
+        "parentIds": [
+            "1"
+        ]
+    },
+    {
+        "label": "Ontology Definition",
+        "description": "Define the structure and schema of the knowledge graph, including classes and properties.",
+        "explanation": "Creating an ontology is needed to formalize the relationships and hierarchy of the entities, ensuring the knowledge graph is organized and interpretable.",
+        "depend_on": [
+            "Entity Recognition",
+            "Relationship Extraction"
+        ],
+        "id": "3",
+        "parentIds": [
+            "1",
+            "2"
+        ]
+    },
+    {
+        "label": "Graph Construction",
+        "description": "Construct the knowledge graph using the identified entities, relationships, and defined ontology.",
+        "explanation": "This step is where the actual graph is built, combining all the previous outputs into a structured format that can be utilized for querying and analysis.",
+        "depend_on": [
+            "Ontology Definition"
+        ],
+        "id": "4",
+        "parentIds": [
+            "3"
+        ]
+    },
+    {
+        "label": "Validation and Refinement",
+        "description": "Validate the knowledge graph for accuracy and completeness, and refine it as necessary.",
+        "explanation": "Validation ensures the knowledge graph accurately represents the information extracted from the documents; refinement helps improve its quality and usability.",
+        "depend_on": [
+            "Graph Construction"
+        ],
+        "id": "5",
+        "parentIds": [
+            "4"
+        ]
+    }
+]

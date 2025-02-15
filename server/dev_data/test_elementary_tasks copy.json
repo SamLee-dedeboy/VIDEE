@@ -1,0 +1,67 @@
+[
+    {
+        "label": "Information Extraction",
+        "id": "Information Extraction-1",
+        "description": "Automatically identify and extract structured information such as entities from the documents.",
+        "explanation": "This task is needed to identify key entities that will form the nodes of the knowledge graph.",
+        "depend_on": [],
+        "parentIds": [],
+        "children": []
+    },
+    {
+        "label": "Information Extraction",
+        "id": "Information Extraction-2",
+        "description": "Determine the relationships between the extracted entities based on the context of the documents.",
+        "explanation": "Understanding the relationships allows us to connect the entities and define the edges of the knowledge graph.",
+        "depend_on": [
+            "Information Extraction-1"
+        ],
+        "parentIds": [
+            "Information Extraction-1"
+        ],
+        "children": []
+    },
+    {
+        "label": "Data Processing",
+        "id": "Data Processing-1",
+        "description": "Establish a schema or ontology that categorizes the types of entities and relationships.",
+        "explanation": "An ontology helps in standardizing how entities and relationships are represented, making the knowledge graph more structured.",
+        "depend_on": [
+            "Information Extraction-1",
+            "Information Extraction-2"
+        ],
+        "parentIds": [
+            "Information Extraction-1",
+            "Information Extraction-2"
+        ],
+        "children": []
+    },
+    {
+        "label": "Data Analysis",
+        "id": "Data Analysis-1",
+        "description": "Create the knowledge graph by integrating the extracted entities and their relationships according to the defined ontology.",
+        "explanation": "This step involves the actual creation of the graph structure that can be visualized or queried.",
+        "depend_on": [
+            "Data Processing-1",
+            "Information Extraction-2"
+        ],
+        "parentIds": [
+            "Data Processing-1",
+            "Information Extraction-2"
+        ],
+        "children": []
+    },
+    {
+        "label": "Data Analysis",
+        "id": "Data Analysis-2",
+        "description": "Review and refine the knowledge graph to improve accuracy and completeness.",
+        "explanation": "It’s essential to validate the graph to ensure it accurately represents the information from the documents.",
+        "depend_on": [
+            "Data Analysis-1"
+        ],
+        "parentIds": [
+            "Data Analysis-1"
+        ],
+        "children": []
+    }
+]

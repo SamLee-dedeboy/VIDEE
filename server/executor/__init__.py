@@ -4,7 +4,7 @@ from .langgraph_utils import (
     execute_next,
     execution_plan,
     init_user_execution_state,
-    make_children_executable,
+    update_execution_state,
 )
 
 __all__ = [
@@ -13,5 +13,5 @@ __all__ = [
     "execute_next",
     "execution_plan",
     "init_user_execution_state",
-    "make_children_executable",
+    "update_execution_state",
 ]

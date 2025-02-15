@@ -6,6 +6,11 @@ from collections import defaultdict
 from typing import Callable
 from openai import OpenAI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+
+
+import random
+import asyncio
 
 # local packages
 import server.custom_types as custom_types
@@ -37,15 +42,41 @@ def test():
     return "Hello Task Decomposition"
 
 
+@app.post("/test/stream/")
+async def test_stream():
+    async def iter_response():  # (1)
+        k = 5
+        for i in range(k):
+            obj = {"id": i, "data": f"Object {i}"}
+            yield json.dumps(obj) + "\n"  # Ensure newline separation
+            await asyncio.sleep(5)
+
+    return StreamingResponse(iter_response(), media_type="application/json")
+
+
 @app.post("/session/create/")
 async def create_session(request: Request):
     request = await request.body()
     request = json.loads(request)
     session_id = request["session_id"]
     user_sessions[session_id] = {
+        "goal": "",
+        "semantic_tasks": [],
+        "primitive_tasks": [],
         "execution_graph": {},
+        "execution_state": {},
+        "execution_results": {},
     }
     return {"session_id": session_id}
+
+
+@app.post("/documents/")
+async def get_documents(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    return json.load(open(relative_path("executor/docs.json")))
 
 
 @app.post("/goal_decomposition/")
@@ -53,18 +84,136 @@ async def goal_decomposition(request: Request) -> list[custom_types.Node]:
     request = await request.body()
     request = json.loads(request)
     goal = request["goal"]
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    user_sessions[session_id]["goal"] = goal
     if dev:
         decomposed_steps = json.load(
-            open(relative_path("test_decomposed_steps_w_children.json"))
+            open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
         )
     else:
         decomposed_steps = await decomposer.goal_decomposition(
             goal, model=default_model, api_key=api_key
         )
         save_json(
-            decomposed_steps, relative_path("test_decomposed_steps_w_children.json")
+            decomposed_steps,
+            relative_path("dev_data/test_decomposed_steps_w_children.json"),
         )
+    user_sessions[session_id]["semantic_tasks"] = decomposed_steps
     return decomposed_steps
+
+
+@app.post("/goal_decomposition/mcts/stepped/")
+async def goal_decomposition_MCTS_stepped(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    goal = request["goal"]
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    user_sessions[session_id]["goal"] = goal
+    semantic_tasks = request["semantic_tasks"] if "semantic_tasks" in request else None
+    next_selection = (
+        custom_types.MCT_Node.model_validate(request["next_expansion"])
+        if "next_expansion" in request
+        else None
+    )
+    print("User next selection", next_selection)
+    if semantic_tasks is None or semantic_tasks == []:
+        user_root = decomposer.init_MCTS()
+        node_dict = {user_root.MCT_id: user_root}
+    else:
+        node_dict = {
+            t["MCT_id"]: custom_types.MCT_Node.model_validate(t) for t in semantic_tasks
+        }
+        user_root = node_dict["-1"]
+
+    # node_dict = decomposer.collect_MCT_node_dict(user_root)
+
+    async def iter_response(root, node_dict, goal, next_selection):  # (1)
+        async for new_root, next_selection, max_value_path in decomposer.stream_MCTS(
+            root,
+            node_dict,
+            goal,
+            next_selection=next_selection,
+            model=default_model,
+            api_key=api_key,
+        ):
+            root = new_root
+            save_json(
+                {
+                    "node_dict": {
+                        k: v.model_dump(mode="json") for k, v in node_dict.items()
+                    },
+                    "next_node": next_selection.model_dump(mode="json"),
+                    "max_value_path": max_value_path,
+                },
+                relative_path("dev_data/test_mcts_root.json"),
+            )
+            yield json.dumps(
+                {
+                    "node_dict": {
+                        k: v.model_dump(mode="json") for k, v in node_dict.items()
+                    },
+                    "next_node": next_selection.model_dump(mode="json"),
+                    "max_value_path": max_value_path,
+                }
+            ) + "\n"
+
+    return StreamingResponse(
+        iter_response(user_root, node_dict, goal, next_selection),
+        media_type="application/json",
+    )
+
+
+@app.post("/goal_decomposition/beam_search/stepped/")
+async def goal_decomposition_beam_search_stepped(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    goal = request["goal"]
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    user_sessions[session_id]["goal"] = goal
+    user_steps = request["user_steps"]
+    print("user_steps", user_steps)
+    k, n = 2, 2
+    if False:
+        decomposed_steps = json.load(
+            open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
+        )
+        user_sessions[session_id]["semantic_tasks"] = decomposed_steps
+        return decomposed_steps
+    else:
+
+        async def iter_response(candidate_steps):  # (1)
+            if len(candidate_steps) == 0:
+                candidate_steps = await decomposer.goal_decode_n_samples(
+                    goal, [], default_model, api_key, n=n
+                )
+                yield json.dumps({"semantic_tasks": candidate_steps}) + "\n"
+            async for steps in decomposer.stream_goal_beam_search(
+                goal, candidate_steps, default_model, api_key, k=k, n=n
+            ):
+                candidate_steps = steps
+                save_json(
+                    candidate_steps,
+                    relative_path("dev_data/test_beam_search_candidate_steps.json"),
+                )
+                yield json.dumps({"semantic_tasks": candidate_steps}) + "\n"
+
+        return StreamingResponse(
+            iter_response(user_steps), media_type="application/json"
+        )
+
+
+@app.post("/semantic_task/update/")
+async def update_semantic_tasks(request: Request) -> dict:
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    semantic_tasks = request["semantic_tasks"]
+    user_sessions[session_id]["semantic_tasks"] = semantic_tasks
+    return {"status": "success"}
 
 
 @app.post("/semantic_task/task_decomposition/")
@@ -75,86 +224,100 @@ async def task_decomposition(request: Request) -> list[custom_types.Node]:
     current_steps = request["current_steps"]
     if False:
         current_steps = json.load(
-            open(relative_path("test_decomposed_steps_w_children.json"))
+            open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
         )
     else:
         # modifies current_steps
         current_steps = await decomposer.task_decomposition(
             task, current_steps, model=default_model, api_key=api_key
         )
-        save_json(current_steps, relative_path("test_decomposed_steps_w_children.json"))
+        save_json(
+            current_steps,
+            relative_path("dev_data/test_decomposed_steps_w_children.json"),
+        )
     return current_steps
 
 
-@app.post("/semantic_task/decomposition_to_elementary_tasks/")
+@app.post("/semantic_task/decomposition_to_primitive_tasks/")
 async def task_decomposition(request: Request) -> list:
     request = await request.body()
     request = json.loads(request)
     task = request["task"]
     current_steps = request["current_steps"]
-    elementary_task_list = json.load(
-        open(relative_path("decomposer/elementary_task_defs.json"))
+    primitive_task_list = json.load(
+        open(relative_path("decomposer/primitive_task_defs.json"))
     )
     if dev:
-        decomposed_elementary_tasks = json.load(
-            open(relative_path("test_elementary_tasks.json"))
+        decomposed_primitive_tasks = json.load(
+            open(relative_path("dev_data/test_primitive_tasks.json"))
         )
     else:
-        decomposed_elementary_tasks = await decomposer.decomposition_to_elementary_task(
+        decomposed_primitive_tasks = await decomposer.decomposition_to_primitive_task(
             task,
             current_steps,
-            elementary_task_list,
+            primitive_task_list,
             model=default_model,
             api_key=api_key,
         )
         save_json(
-            decomposed_elementary_tasks, relative_path("test_elementary_tasks.json")
+            decomposed_primitive_tasks,
+            relative_path("dev_data/test_primitive_tasks.json"),
         )
-    return decomposed_elementary_tasks
+    return decomposed_primitive_tasks
 
 
-@app.post("/semantic_task/delete_children/")
-async def task_decomposition(request: Request) -> list:
-    request = await request.body()
-    request = json.loads(request)
-    task = request["task"]
-    current_steps = request["current_steps"]
-    dfs_find_and_do(
-        current_steps, task["id"], lambda step: step.update({"children": []})
-    )
-    # save_json(current_steps, "test_decomposed_steps_w_children.json")
-    return current_steps
-
-
-@app.post("/elementary_task/compile/")
-async def compile_elementary_tasks(request: Request) -> dict:
+@app.post("/primitive_task/update/")
+async def update_primitive_tasks(request: Request) -> dict:
     request = await request.body()
     request = json.loads(request)
     session_id = request["session_id"]
-    elementary_task_descriptions = request["elementary_tasks"]
+    assert session_id in user_sessions
+    primitive_tasks = request["primitive_tasks"]
+    user_sessions[session_id]["primitive_tasks"] = primitive_tasks
+    return {"status": "success"}
+
+
+@app.post("/primitive_task/compile/")
+async def compile_primitive_tasks(request: Request) -> dict:
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    primitive_task_descriptions = request["primitive_tasks"]
     if dev:
-        elementary_task_execution_plan = test_execution_plan
-    else:
-        elementary_task_execution_plan = executor.execution_plan(
-            elementary_task_descriptions
+        primitive_task_execution_plan = json.load(
+            open(relative_path("dev_data/test_execution_plan.json"))
         )
-    execution_graph = executor.create_graph(elementary_task_execution_plan)
+    else:
+        primitive_task_execution_plan = await executor.execution_plan(
+            primitive_task_descriptions,
+            model=default_model,
+            api_key=api_key,
+        )
+        save_json(
+            primitive_task_execution_plan,
+            relative_path("dev_data/test_execution_plan.json"),
+        )
+
+    execution_graph = executor.create_graph(primitive_task_execution_plan)
     user_sessions[session_id]["execution_graph"] = execution_graph
     execution_state = executor.init_user_execution_state(
-        execution_graph, elementary_task_execution_plan
+        execution_graph,
+        primitive_task_execution_plan,
     )
     user_sessions[session_id]["execution_state"] = execution_state
     return {
-        "elementary_tasks": elementary_task_execution_plan,
+        "primitive_tasks": primitive_task_execution_plan,
         "execution_state": execution_state,
     }
 
 
-@app.post("/elementary_task/execute/")
-async def execute_elementary_tasks(request: Request):
+@app.post("/primitive_task/execute/")
+async def execute_primitive_tasks(request: Request):
     request = await request.body()
     request = json.loads(request)
     session_id = request["session_id"]
+    assert session_id in user_sessions
     execution_graph = user_sessions[session_id]["execution_graph"]
     execute_node = request["execute_node"]
     parent_version = (
@@ -169,16 +332,33 @@ async def execute_elementary_tasks(request: Request):
         parent_version,
         initial_state=initial_state,
     )
-    # update execution state
-    user_sessions[session_id]["execution_state"] = executor.make_children_executable(
-        execution_graph,
+    # update execution state by adding the executed node as "executed" and updating its children "executable" states
+    user_sessions[session_id]["execution_state"] = executor.update_execution_state(
         user_sessions[session_id]["execution_state"],
         execute_node["id"],
     )
+    user_sessions[session_id]["execution_results"][execute_node["id"]] = state
+    save_json(state, relative_path("dev_data/test_execution_result.json"))
     # save_json(current_steps, "test_decomposed_steps_w_children.json")
     return {
-        "result": state,
         "execution_state": user_sessions[session_id]["execution_state"],
+    }
+
+
+@app.post("/primitive_task/result/")
+async def fetch_primitive_task_result(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    task_id = request["task_id"]
+    if dev:
+        result = json.load(open(relative_path("dev_data/test_execution_result.json")))
+    else:
+        result = user_sessions[session_id]["execution_results"][task_id]
+
+    return {
+        "result": result,
     }
 
 
@@ -191,8 +371,8 @@ def dfs_find_and_do(task_tree: list[custom_types.Node], task_id: str, action: Ca
         if step["id"] == task_id:
             action(step)
             return
-        elif "children" in step:
-            dfs_find_and_do(step["children"], task_id, action)
+        elif "sub_tasks" in step:
+            dfs_find_and_do(step["sub_tasks"], task_id, action)
         else:
             continue
     return None
@@ -208,91 +388,3 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run("server.main:app", host="127.0.0.1", port=8000, reload=True)
-
-test_execution_plan = [
-    {
-        "id": "Information Extraction-1",
-        "label": "Information Extraction",
-        "description": "Automatically identify and extract structured information such as entities from the documents.",
-        "explanation": "This task is needed to identify key entities that will form the nodes of the knowledge graph.",
-        "state_input_key": "documents",
-        "doc_input_keys": ["content"],
-        "state_output_key": "entities",
-        "parentIds": [],
-        "execution": {
-            "tool": "prompt_tool",
-            "parameters": {
-                "name": "entity_extraction",
-                "model": "gpt-4o-mini",
-                "api_key": api_key,
-                "format": "json",
-                "prompt_template": [
-                    {
-                        "role": "system",
-                        "content": """
-                            ** Context **
-                            You are an entity extraction system. The user will give you a piece of text.
-                            ** Task **
-                            Your task is to extract the entities from the text. 
-                            ** Requirements **
-                            Reply with the following JSON format: {{ "entities": ["entity1", "entity2", ...] }}
-                        """,
-                    },
-                    {"role": "human", "content": "{content}"},
-                ],
-            },
-        },
-    },
-    {
-        "id": "Information Extraction-2",
-        "label": "Information Extraction",
-        "description": "Determine the relationships between the extracted entities based on the context of the documents.",
-        "explanation": "Understanding the relationships allows us to connect the entities and define the edges of the knowledge graph.",
-        "state_input_key": "documents",
-        "doc_input_keys": ["content", "entities"],
-        "state_output_key": "relationships",
-        "parentIds": ["Information Extraction-1"],
-        "execution": {
-            "tool": "prompt_tool",
-            "parameters": {
-                "name": "relationship_extraction",
-                "model": "gpt-4o-mini",
-                "api_key": api_key,
-                "format": "json",
-                "prompt_template": [
-                    {
-                        "role": "system",
-                        "content": """
-                        ** Context **
-                        You are a relationship extraction system. The user will give you a piece of text and the entities extracted from it.
-                        ** Task **
-                        Your task is to extract the relationships between entities from the text. 
-                        ** Requirements **
-                        Reply with the following JSON format: 
-                            {{ "relationships": [
-                                {{
-                                    "label": (str, label for the relationship), 
-                                    "source": (str, entity1),
-                                    "target": (str, entity2),
-                                    "explanation": (str, explanation of the relationship)
-                                }}, 
-                                {{
-                                    "label": (str, label for the relationship), 
-                                    "source": (str, entity1),
-                                    "target": (str, entity2),
-                                    "explanation": (str, explanation of the relationship)
-                                }}, 
-                                ...
-                                ] 
-                            }}
-                        """,
-                    },
-                    {
-                        "role": "human",
-                        "content": "Content: {content}\n Entities: {entities}",
-                    },
-                ],
-            },
-        },
-    },
-]

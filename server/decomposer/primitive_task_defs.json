@@ -1,0 +1,86 @@
+[
+  {
+    "label": "Entity Extraction",
+    "definition": "Finds and categorizes entities like names, places, and dates.",
+    "input": "Sentence/Paragraph/Document",
+    "output": "Entities"
+  },
+  {
+    "label": "Relationship Extraction",
+    "definition": "Finds relationships between entities in text.",
+    "input": "Sentence/Paragraph/Document",
+    "output": "Entity relationships"
+  },
+  {
+    "label": "Sentiment Analysis",
+    "definition": "Identifies the sentiment of the text as positive, negative, or neutral.",
+    "input": "Sentence/Paragraph/Document",
+    "output": "Sentiment"
+  },
+  {
+    "label": "Document Classification",
+    "definition": "Assigns categories to a document based on its content.",
+    "input": "Document/Corpus",
+    "output": "Categories"
+  },
+  {
+    "label": "Label Generation",
+    "definition": "Generates keywords or labels summarizing a document.",
+    "input": "Document/Document+Context",
+    "output": "Labels"
+  },
+  {
+    "label": "Summarization",
+    "definition": "Creates a shorter version of the text while keeping key information.",
+    "input": "Document/Corpus",
+    "output": "Summary"
+  },
+  {
+    "label": "Embedding Generation",
+    "definition": "Converts text into numerical representations for analysis.",
+    "input": "Sentence/Paragraph/Document",
+    "output": "Embeddings"
+  },
+  {
+    "label": "Clustering Analysis",
+    "definition": "Groups similar texts together based on content or structure.",
+    "input": "Document/Corpus",
+    "output": "Clusters"
+  },
+  {
+    "label": "Dimensionality Reduction",
+    "definition": "Reduces the number of features in text data while keeping important patterns.",
+    "input": "Document/Corpus",
+    "output": "Reduced features"
+  },
+  {
+    "label": "Data Transformation",
+    "definition": "Converts text into a different format for analysis or modeling.",
+    "input": "Sentence/Paragraph/Document",
+    "output": "Transformed text"
+  },
+  {
+    "label": "Machine Translation",
+    "definition": "Translates text from one language to another.",
+    "input": "Sentence/Paragraph/Document",
+    "output": "Translated text"
+  },
+  {
+    "label": "Question Answering",
+    "definition": "Finds answers to questions based on a given text.",
+    "input": "Sentence/Paragraph/Document+Context",
+    "output": "Answer"
+  },
+  {
+    "label": "Natural Language Inference",
+    "definition": "Determines the relationship between two pieces of text, such as entailment or contradiction.",
+    "input": "Sentence/Paragraph",
+    "output": "Inference label"
+  },
+  {
+    "label": "Segmentation",
+    "definition": "Splits text into meaningful parts like sentences, paragraphs, or topics.",
+    "input": "Document/Corpus",
+    "output": "Segments"
+  }
+]

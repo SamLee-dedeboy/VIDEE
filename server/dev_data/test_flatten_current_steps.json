@@ -1,0 +1,1166 @@
+[
+    {
+        "label": "Document Preprocessing",
+        "description": "Clean and preprocess the text from the Wikipedia documents.",
+        "explanation": "Preprocessing is essential to remove noise and irrelevant information, which will enhance the quality of the extraction process and ensure consistency in the analysis.",
+        "depend_on": [],
+        "id": "0",
+        "parentIds": []
+    },
+    {
+        "label": "Entity Recognition",
+        "description": "Identify key entities (like people, places, organizations) within the preprocessed documents.",
+        "explanation": "Entity recognition is crucial as it helps in identifying the main subjects or nodes that will form the foundation of the knowledge graph.",
+        "depend_on": [
+            "Document Preprocessing"
+        ],
+        "id": "1",
+        "parentIds": [
+            "0"
+        ],
+        "children": [
+            {
+                "label": "Define Entity Types",
+                "description": "Determine the types of entities to recognize (e.g., person, location, organization).",
+                "explanation": "This step is essential to understand the scope of the recognition process and focus on relevant entities that align with the project's objectives.",
+                "depend_on": [],
+                "id": "1-0",
+                "parentIds": [],
+                "children": [
+                    {
+                        "label": "Research Existing Entity Types",
+                        "description": "Review common entity types recognized in text analytics.",
+                        "explanation": "This step is needed to understand what entity types already exist and are commonly used, which will inform the definition of new or specific types required for the task.",
+                        "depend_on": [],
+                        "id": "1-0-0",
+                        "parentIds": []
+                    },
+                    {
+                        "label": "Identify Use Case Requirements",
+                        "description": "Determine the specific requirements and context of the project to identify relevant entity types.",
+                        "explanation": "Understanding the specific context of the text being analyzed will help in defining which entity types are necessary for the task at hand.",
+                        "depend_on": [],
+                        "id": "1-0-1",
+                        "parentIds": [],
+                        "children": [
+                            {
+                                "label": "Gather Stakeholder Input",
+                                "description": "Collect requirements and expectations from all stakeholders involved in the project.",
+                                "explanation": "Understanding stakeholders' needs and expectations is crucial to identify relevant entity types that must be addressed in the project.",
+                                "depend_on": [],
+                                "id": "1-0-1-0",
+                                "parentIds": []
+                            },
+                            {
+                                "label": "Define Project Context",
+                                "description": "Outline the project scope, objectives, and overall context.",
+                                "explanation": "Defining the context helps clarify the boundaries and goals of the project, ensuring that relevant entity types are identified in alignment with these parameters.",
+                                "depend_on": [],
+                                "id": "1-0-1-1",
+                                "parentIds": []
+                            },
+                            {
+                                "label": "Identify Relevant Domain",
+                                "description": "Determine the specific domain or industry to which the project belongs.",
+                                "explanation": "This step is necessary to focus on entity types that are pertinent to the specific field, ensuring the project's relevance and applicability.",
+                                "depend_on": [],
+                                "id": "1-0-1-2",
+                                "parentIds": []
+                            },
+                            {
+                                "label": "Analyze Use Cases",
+                                "description": "Review potential use cases to understand how entity types will be utilized.",
+                                "explanation": "This analysis allows for identification of entity types that are frequently referenced or required in specific scenarios, enhancing the project’s effectiveness.",
+                                "depend_on": [
+                                    "Gather Stakeholder Input",
+                                    "Define Project Context",
+                                    "Identify Relevant Domain"
+                                ],
+                                "id": "1-0-1-3",
+                                "parentIds": [
+                                    "1-0-1-0",
+                                    "1-0-1-1",
+                                    "1-0-1-2"
+                                ]
+                            },
+                            {
+                                "label": "Document Entity Type Requirements",
+                                "description": "Compile and document the identified entity types and their specific attributes.",
+                                "explanation": "Documentation is essential to clearly outline what entity types are relevant, which serves as a reference for the project and guides future developmental steps.",
+                                "depend_on": [
+                                    "Analyze Use Cases"
+                                ],
+                                "id": "1-0-1-4",
+                                "parentIds": [
+                                    "1-0-1-3"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "label": "Draft Entity Type List",
+                        "description": "Create a preliminary list of entity types based on research and requirements.",
+                        "explanation": "This step synthesizes the insights gained from research and requirements to form a working document that outlines the necessary entity types.",
+                        "depend_on": [
+                            "Research Existing Entity Types",
+                            "Identify Use Case Requirements"
+                        ],
+                        "id": "1-0-2",
+                        "parentIds": [
+                            "1-0-0",
+                            "1-0-1"
+                        ]
+                    },
+                    {
+                        "label": "Validate Entity Types",
+                        "description": "Review the drafted list with stakeholders or domain experts for feedback and adjustments.",
+                        "explanation": "Validation is necessary to ensure that the identified entity types are relevant and comprehensive for the intended analysis, aligning with stakeholder expectations.",
+                        "depend_on": [
+                            "Draft Entity Type List"
+                        ],
+                        "id": "1-0-3",
+                        "parentIds": [
+                            "1-0-2"
+                        ]
+                    },
+                    {
+                        "label": "Finalize Entity Types",
+                        "description": "Finalize the entity types based on feedback and prepare them for implementation.",
+                        "explanation": "Finalization is essential to establish a definitive set of entity types that will be utilized in the text analytics processes, ensuring clarity and consistency.",
+                        "depend_on": [
+                            "Validate Entity Types"
+                        ],
+                        "id": "1-0-4",
+                        "parentIds": [
+                            "1-0-3"
+                        ]
+                    }
+                ]
+            },
+            {
+                "label": "Select Recognition Model",
+                "description": "Choose an appropriate model or algorithm for entity recognition (e.g., rule-based, supervised learning, or pre-trained models).",
+                "explanation": "Selecting the right model is crucial for effectively identifying the defined entities based on the text characteristics and complexity.",
+                "depend_on": [
+                    "Define Entity Types"
+                ],
+                "id": "1-1",
+                "parentIds": [
+                    "1-0"
+                ],
+                "children": [
+                    {
+                        "label": "Assess Requirements",
+                        "description": "Identify the specific requirements for the entity recognition task, including types of entities to recognize and context of use.",
+                        "explanation": "Understanding the requirements is critical to selecting an appropriate model that aligns with the needs of the task, such as accuracy, speed, and types of entities.",
+                        "depend_on": [],
+                        "id": "1-1-0",
+                        "parentIds": []
+                    },
+                    {
+                        "label": "Evaluate Available Models",
+                        "description": "Research and evaluate different models or algorithms suitable for entity recognition, such as rule-based models, supervised learning models, or pre-trained models.",
+                        "explanation": "Exploring the strengths and weaknesses of various models helps in making an informed decision on which one might perform best given the assessed requirements.",
+                        "depend_on": [
+                            "Assess Requirements"
+                        ],
+                        "id": "1-1-1",
+                        "parentIds": [
+                            "1-1-0"
+                        ],
+                        "children": [
+                            {
+                                "label": "Identify Model Categories",
+                                "description": "Categorize the different types of models available for entity recognition.",
+                                "explanation": "This step is necessary to establish a clear understanding of the landscape of entity recognition models, which includes rule-based, supervised learning, and pre-trained models. It helps in organizing the research process.",
+                                "depend_on": [],
+                                "id": "1-1-1-0",
+                                "parentIds": []
+                            },
+                            {
+                                "label": "Research Rule-based Models",
+                                "description": "Investigate existing rule-based models for entity recognition.",
+                                "explanation": "Understanding rule-based models is crucial as they often use handcrafted rules and patterns, providing insights into one of the simpler approaches to entity recognition.",
+                                "depend_on": [
+                                    "Identify Model Categories"
+                                ],
+                                "id": "1-1-1-1",
+                                "parentIds": [
+                                    "1-1-1-0"
+                                ]
+                            },
+                            {
+                                "label": "Research Supervised Learning Models",
+                                "description": "Explore various supervised learning models that can be used for entity recognition.",
+                                "explanation": "This step is important to evaluate more complex methodologies that can learn from annotated data, thus understanding how to leverage training data for improved performance.",
+                                "depend_on": [
+                                    "Identify Model Categories"
+                                ],
+                                "id": "1-1-1-2",
+                                "parentIds": [
+                                    "1-1-1-0"
+                                ]
+                            },
+                            {
+                                "label": "Research Pre-trained Models",
+                                "description": "Examine available pre-trained models for entity recognition.",
+                                "explanation": "Investigating pre-trained models is key as they are often state-of-the-art and can significantly reduce development time, providing strong baseline performance on various tasks.",
+                                "depend_on": [
+                                    "Identify Model Categories"
+                                ],
+                                "id": "1-1-1-3",
+                                "parentIds": [
+                                    "1-1-1-0"
+                                ]
+                            },
+                            {
+                                "label": "Compare Model Performance",
+                                "description": "Evaluate and compare the performance metrics of the identified models.",
+                                "explanation": "This comparison helps in understanding the strengths and weaknesses of each model type, guiding the selection of the most suitable model for specific use cases.",
+                                "depend_on": [
+                                    "Research Rule-based Models",
+                                    "Research Supervised Learning Models",
+                                    "Research Pre-trained Models"
+                                ],
+                                "id": "1-1-1-4",
+                                "parentIds": [
+                                    "1-1-1-1",
+                                    "1-1-1-2",
+                                    "1-1-1-3"
+                                ]
+                            },
+                            {
+                                "label": "Assess Practical Considerations",
+                                "description": "Consider practical aspects such as resource requirements, ease of implementation, and scalability of each model.",
+                                "explanation": "Assessing practical considerations ensures that the chosen model not only performs well in theory but can also be effectively implemented in a real-world scenario.",
+                                "depend_on": [
+                                    "Compare Model Performance"
+                                ],
+                                "id": "1-1-1-5",
+                                "parentIds": [
+                                    "1-1-1-4"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "label": "Consider Resources and Constraints",
+                        "description": "Take into account available resources and any constraints, such as computational power, expertise, and time.",
+                        "explanation": "This step is essential to ensure that the chosen model is feasible within the given limitations and can be implemented effectively.",
+                        "depend_on": [
+                            "Assess Requirements"
+                        ],
+                        "id": "1-1-2",
+                        "parentIds": [
+                            "1-1-0"
+                        ]
+                    },
+                    {
+                        "label": "Select Model",
+                        "description": "Choose the most appropriate model or algorithm for the entity recognition task based on the evaluated options, requirements, and constraints.",
+                        "explanation": "This selection is the culmination of previous assessments and evaluations, ensuring that the chosen model is suitable for achieving the desired outcomes.",
+                        "depend_on": [
+                            "Evaluate Available Models",
+                            "Consider Resources and Constraints"
+                        ],
+                        "id": "1-1-3",
+                        "parentIds": [
+                            "1-1-1",
+                            "1-1-2"
+                        ]
+                    }
+                ]
+            },
+            {
+                "label": "Apply Entity Recognition",
+                "description": "Implement the selected model on the preprocessed documents to extract key entities.",
+                "explanation": "This step is where the actual identification of entities happens, applying algorithms to process the text data and recognize entities of interest.",
+                "depend_on": [
+                    "Select Recognition Model"
+                ],
+                "id": "1-2",
+                "parentIds": [
+                    "1-1"
+                ]
+            },
+            {
+                "label": "Post-Processing and Validation",
+                "description": "Review and validate the recognized entities to ensure accuracy and eliminate false positives.",
+                "explanation": "This step is necessary to enhance the reliability of the entity recognition output, as it checks for accuracy and relevance of the identified entities.",
+                "depend_on": [
+                    "Apply Entity Recognition"
+                ],
+                "id": "1-3",
+                "parentIds": [
+                    "1-2"
+                ]
+            }
+        ]
+    },
+    {
+        "label": "Define Entity Types",
+        "description": "Determine the types of entities to recognize (e.g., person, location, organization).",
+        "explanation": "This step is essential to understand the scope of the recognition process and focus on relevant entities that align with the project's objectives.",
+        "depend_on": [],
+        "id": "1-0",
+        "parentIds": [],
+        "children": [
+            {
+                "label": "Research Existing Entity Types",
+                "description": "Review common entity types recognized in text analytics.",
+                "explanation": "This step is needed to understand what entity types already exist and are commonly used, which will inform the definition of new or specific types required for the task.",
+                "depend_on": [],
+                "id": "1-0-0",
+                "parentIds": []
+            },
+            {
+                "label": "Identify Use Case Requirements",
+                "description": "Determine the specific requirements and context of the project to identify relevant entity types.",
+                "explanation": "Understanding the specific context of the text being analyzed will help in defining which entity types are necessary for the task at hand.",
+                "depend_on": [],
+                "id": "1-0-1",
+                "parentIds": [],
+                "children": [
+                    {
+                        "label": "Gather Stakeholder Input",
+                        "description": "Collect requirements and expectations from all stakeholders involved in the project.",
+                        "explanation": "Understanding stakeholders' needs and expectations is crucial to identify relevant entity types that must be addressed in the project.",
+                        "depend_on": [],
+                        "id": "1-0-1-0",
+                        "parentIds": []
+                    },
+                    {
+                        "label": "Define Project Context",
+                        "description": "Outline the project scope, objectives, and overall context.",
+                        "explanation": "Defining the context helps clarify the boundaries and goals of the project, ensuring that relevant entity types are identified in alignment with these parameters.",
+                        "depend_on": [],
+                        "id": "1-0-1-1",
+                        "parentIds": []
+                    },
+                    {
+                        "label": "Identify Relevant Domain",
+                        "description": "Determine the specific domain or industry to which the project belongs.",
+                        "explanation": "This step is necessary to focus on entity types that are pertinent to the specific field, ensuring the project's relevance and applicability.",
+                        "depend_on": [],
+                        "id": "1-0-1-2",
+                        "parentIds": []
+                    },
+                    {
+                        "label": "Analyze Use Cases",
+                        "description": "Review potential use cases to understand how entity types will be utilized.",
+                        "explanation": "This analysis allows for identification of entity types that are frequently referenced or required in specific scenarios, enhancing the project’s effectiveness.",
+                        "depend_on": [
+                            "Gather Stakeholder Input",
+                            "Define Project Context",
+                            "Identify Relevant Domain"
+                        ],
+                        "id": "1-0-1-3",
+                        "parentIds": [
+                            "1-0-1-0",
+                            "1-0-1-1",
+                            "1-0-1-2"
+                        ]
+                    },
+                    {
+                        "label": "Document Entity Type Requirements",
+                        "description": "Compile and document the identified entity types and their specific attributes.",
+                        "explanation": "Documentation is essential to clearly outline what entity types are relevant, which serves as a reference for the project and guides future developmental steps.",
+                        "depend_on": [
+                            "Analyze Use Cases"
+                        ],
+                        "id": "1-0-1-4",
+                        "parentIds": [
+                            "1-0-1-3"
+                        ]
+                    }
+                ]
+            },
+            {
+                "label": "Draft Entity Type List",
+                "description": "Create a preliminary list of entity types based on research and requirements.",
+                "explanation": "This step synthesizes the insights gained from research and requirements to form a working document that outlines the necessary entity types.",
+                "depend_on": [
+                    "Research Existing Entity Types",
+                    "Identify Use Case Requirements"
+                ],
+                "id": "1-0-2",
+                "parentIds": [
+                    "1-0-0",
+                    "1-0-1"
+                ]
+            },
+            {
+                "label": "Validate Entity Types",
+                "description": "Review the drafted list with stakeholders or domain experts for feedback and adjustments.",
+                "explanation": "Validation is necessary to ensure that the identified entity types are relevant and comprehensive for the intended analysis, aligning with stakeholder expectations.",
+                "depend_on": [
+                    "Draft Entity Type List"
+                ],
+                "id": "1-0-3",
+                "parentIds": [
+                    "1-0-2"
+                ]
+            },
+            {
+                "label": "Finalize Entity Types",
+                "description": "Finalize the entity types based on feedback and prepare them for implementation.",
+                "explanation": "Finalization is essential to establish a definitive set of entity types that will be utilized in the text analytics processes, ensuring clarity and consistency.",
+                "depend_on": [
+                    "Validate Entity Types"
+                ],
+                "id": "1-0-4",
+                "parentIds": [
+                    "1-0-3"
+                ]
+            }
+        ]
+    },
+    {
+        "label": "Research Existing Entity Types",
+        "description": "Review common entity types recognized in text analytics.",
+        "explanation": "This step is needed to understand what entity types already exist and are commonly used, which will inform the definition of new or specific types required for the task.",
+        "depend_on": [],
+        "id": "1-0-0",
+        "parentIds": []
+    },
+    {
+        "label": "Identify Use Case Requirements",
+        "description": "Determine the specific requirements and context of the project to identify relevant entity types.",
+        "explanation": "Understanding the specific context of the text being analyzed will help in defining which entity types are necessary for the task at hand.",
+        "depend_on": [],
+        "id": "1-0-1",
+        "parentIds": [],
+        "children": [
+            {
+                "label": "Gather Stakeholder Input",
+                "description": "Collect requirements and expectations from all stakeholders involved in the project.",
+                "explanation": "Understanding stakeholders' needs and expectations is crucial to identify relevant entity types that must be addressed in the project.",
+                "depend_on": [],
+                "id": "1-0-1-0",
+                "parentIds": []
+            },
+            {
+                "label": "Define Project Context",
+                "description": "Outline the project scope, objectives, and overall context.",
+                "explanation": "Defining the context helps clarify the boundaries and goals of the project, ensuring that relevant entity types are identified in alignment with these parameters.",
+                "depend_on": [],
+                "id": "1-0-1-1",
+                "parentIds": []
+            },
+            {
+                "label": "Identify Relevant Domain",
+                "description": "Determine the specific domain or industry to which the project belongs.",
+                "explanation": "This step is necessary to focus on entity types that are pertinent to the specific field, ensuring the project's relevance and applicability.",
+                "depend_on": [],
+                "id": "1-0-1-2",
+                "parentIds": []
+            },
+            {
+                "label": "Analyze Use Cases",
+                "description": "Review potential use cases to understand how entity types will be utilized.",
+                "explanation": "This analysis allows for identification of entity types that are frequently referenced or required in specific scenarios, enhancing the project’s effectiveness.",
+                "depend_on": [
+                    "Gather Stakeholder Input",
+                    "Define Project Context",
+                    "Identify Relevant Domain"
+                ],
+                "id": "1-0-1-3",
+                "parentIds": [
+                    "1-0-1-0",
+                    "1-0-1-1",
+                    "1-0-1-2"
+                ]
+            },
+            {
+                "label": "Document Entity Type Requirements",
+                "description": "Compile and document the identified entity types and their specific attributes.",
+                "explanation": "Documentation is essential to clearly outline what entity types are relevant, which serves as a reference for the project and guides future developmental steps.",
+                "depend_on": [
+                    "Analyze Use Cases"
+                ],
+                "id": "1-0-1-4",
+                "parentIds": [
+                    "1-0-1-3"
+                ]
+            }
+        ]
+    },
+    {
+        "label": "Gather Stakeholder Input",
+        "description": "Collect requirements and expectations from all stakeholders involved in the project.",
+        "explanation": "Understanding stakeholders' needs and expectations is crucial to identify relevant entity types that must be addressed in the project.",
+        "depend_on": [],
+        "id": "1-0-1-0",
+        "parentIds": []
+    },
+    {
+        "label": "Define Project Context",
+        "description": "Outline the project scope, objectives, and overall context.",
+        "explanation": "Defining the context helps clarify the boundaries and goals of the project, ensuring that relevant entity types are identified in alignment with these parameters.",
+        "depend_on": [],
+        "id": "1-0-1-1",
+        "parentIds": []
+    },
+    {
+        "label": "Identify Relevant Domain",
+        "description": "Determine the specific domain or industry to which the project belongs.",
+        "explanation": "This step is necessary to focus on entity types that are pertinent to the specific field, ensuring the project's relevance and applicability.",
+        "depend_on": [],
+        "id": "1-0-1-2",
+        "parentIds": []
+    },
+    {
+        "label": "Analyze Use Cases",
+        "description": "Review potential use cases to understand how entity types will be utilized.",
+        "explanation": "This analysis allows for identification of entity types that are frequently referenced or required in specific scenarios, enhancing the project’s effectiveness.",
+        "depend_on": [
+            "Gather Stakeholder Input",
+            "Define Project Context",
+            "Identify Relevant Domain"
+        ],
+        "id": "1-0-1-3",
+        "parentIds": [
+            "1-0-1-0",
+            "1-0-1-1",
+            "1-0-1-2"
+        ]
+    },
+    {
+        "label": "Document Entity Type Requirements",
+        "description": "Compile and document the identified entity types and their specific attributes.",
+        "explanation": "Documentation is essential to clearly outline what entity types are relevant, which serves as a reference for the project and guides future developmental steps.",
+        "depend_on": [
+            "Analyze Use Cases"
+        ],
+        "id": "1-0-1-4",
+        "parentIds": [
+            "1-0-1-3"
+        ]
+    },
+    {
+        "label": "Draft Entity Type List",
+        "description": "Create a preliminary list of entity types based on research and requirements.",
+        "explanation": "This step synthesizes the insights gained from research and requirements to form a working document that outlines the necessary entity types.",
+        "depend_on": [
+            "Research Existing Entity Types",
+            "Identify Use Case Requirements"
+        ],
+        "id": "1-0-2",
+        "parentIds": [
+            "1-0-0",
+            "1-0-1"
+        ]
+    },
+    {
+        "label": "Validate Entity Types",
+        "description": "Review the drafted list with stakeholders or domain experts for feedback and adjustments.",
+        "explanation": "Validation is necessary to ensure that the identified entity types are relevant and comprehensive for the intended analysis, aligning with stakeholder expectations.",
+        "depend_on": [
+            "Draft Entity Type List"
+        ],
+        "id": "1-0-3",
+        "parentIds": [
+            "1-0-2"
+        ]
+    },
+    {
+        "label": "Finalize Entity Types",
+        "description": "Finalize the entity types based on feedback and prepare them for implementation.",
+        "explanation": "Finalization is essential to establish a definitive set of entity types that will be utilized in the text analytics processes, ensuring clarity and consistency.",
+        "depend_on": [
+            "Validate Entity Types"
+        ],
+        "id": "1-0-4",
+        "parentIds": [
+            "1-0-3"
+        ]
+    },
+    {
+        "label": "Select Recognition Model",
+        "description": "Choose an appropriate model or algorithm for entity recognition (e.g., rule-based, supervised learning, or pre-trained models).",
+        "explanation": "Selecting the right model is crucial for effectively identifying the defined entities based on the text characteristics and complexity.",
+        "depend_on": [
+            "Define Entity Types"
+        ],
+        "id": "1-1",
+        "parentIds": [
+            "1-0"
+        ],
+        "children": [
+            {
+                "label": "Assess Requirements",
+                "description": "Identify the specific requirements for the entity recognition task, including types of entities to recognize and context of use.",
+                "explanation": "Understanding the requirements is critical to selecting an appropriate model that aligns with the needs of the task, such as accuracy, speed, and types of entities.",
+                "depend_on": [],
+                "id": "1-1-0",
+                "parentIds": []
+            },
+            {
+                "label": "Evaluate Available Models",
+                "description": "Research and evaluate different models or algorithms suitable for entity recognition, such as rule-based models, supervised learning models, or pre-trained models.",
+                "explanation": "Exploring the strengths and weaknesses of various models helps in making an informed decision on which one might perform best given the assessed requirements.",
+                "depend_on": [
+                    "Assess Requirements"
+                ],
+                "id": "1-1-1",
+                "parentIds": [
+                    "1-1-0"
+                ],
+                "children": [
+                    {
+                        "label": "Identify Model Categories",
+                        "description": "Categorize the different types of models available for entity recognition.",
+                        "explanation": "This step is necessary to establish a clear understanding of the landscape of entity recognition models, which includes rule-based, supervised learning, and pre-trained models. It helps in organizing the research process.",
+                        "depend_on": [],
+                        "id": "1-1-1-0",
+                        "parentIds": []
+                    },
+                    {
+                        "label": "Research Rule-based Models",
+                        "description": "Investigate existing rule-based models for entity recognition.",
+                        "explanation": "Understanding rule-based models is crucial as they often use handcrafted rules and patterns, providing insights into one of the simpler approaches to entity recognition.",
+                        "depend_on": [
+                            "Identify Model Categories"
+                        ],
+                        "id": "1-1-1-1",
+                        "parentIds": [
+                            "1-1-1-0"
+                        ]
+                    },
+                    {
+                        "label": "Research Supervised Learning Models",
+                        "description": "Explore various supervised learning models that can be used for entity recognition.",
+                        "explanation": "This step is important to evaluate more complex methodologies that can learn from annotated data, thus understanding how to leverage training data for improved performance.",
+                        "depend_on": [
+                            "Identify Model Categories"
+                        ],
+                        "id": "1-1-1-2",
+                        "parentIds": [
+                            "1-1-1-0"
+                        ]
+                    },
+                    {
+                        "label": "Research Pre-trained Models",
+                        "description": "Examine available pre-trained models for entity recognition.",
+                        "explanation": "Investigating pre-trained models is key as they are often state-of-the-art and can significantly reduce development time, providing strong baseline performance on various tasks.",
+                        "depend_on": [
+                            "Identify Model Categories"
+                        ],
+                        "id": "1-1-1-3",
+                        "parentIds": [
+                            "1-1-1-0"
+                        ]
+                    },
+                    {
+                        "label": "Compare Model Performance",
+                        "description": "Evaluate and compare the performance metrics of the identified models.",
+                        "explanation": "This comparison helps in understanding the strengths and weaknesses of each model type, guiding the selection of the most suitable model for specific use cases.",
+                        "depend_on": [
+                            "Research Rule-based Models",
+                            "Research Supervised Learning Models",
+                            "Research Pre-trained Models"
+                        ],
+                        "id": "1-1-1-4",
+                        "parentIds": [
+                            "1-1-1-1",
+                            "1-1-1-2",
+                            "1-1-1-3"
+                        ]
+                    },
+                    {
+                        "label": "Assess Practical Considerations",
+                        "description": "Consider practical aspects such as resource requirements, ease of implementation, and scalability of each model.",
+                        "explanation": "Assessing practical considerations ensures that the chosen model not only performs well in theory but can also be effectively implemented in a real-world scenario.",
+                        "depend_on": [
+                            "Compare Model Performance"
+                        ],
+                        "id": "1-1-1-5",
+                        "parentIds": [
+                            "1-1-1-4"
+                        ]
+                    }
+                ]
+            },
+            {
+                "label": "Consider Resources and Constraints",
+                "description": "Take into account available resources and any constraints, such as computational power, expertise, and time.",
+                "explanation": "This step is essential to ensure that the chosen model is feasible within the given limitations and can be implemented effectively.",
+                "depend_on": [
+                    "Assess Requirements"
+                ],
+                "id": "1-1-2",
+                "parentIds": [
+                    "1-1-0"
+                ]
+            },
+            {
+                "label": "Select Model",
+                "description": "Choose the most appropriate model or algorithm for the entity recognition task based on the evaluated options, requirements, and constraints.",
+                "explanation": "This selection is the culmination of previous assessments and evaluations, ensuring that the chosen model is suitable for achieving the desired outcomes.",
+                "depend_on": [
+                    "Evaluate Available Models",
+                    "Consider Resources and Constraints"
+                ],
+                "id": "1-1-3",
+                "parentIds": [
+                    "1-1-1",
+                    "1-1-2"
+                ]
+            }
+        ]
+    },
+    {
+        "label": "Assess Requirements",
+        "description": "Identify the specific requirements for the entity recognition task, including types of entities to recognize and context of use.",
+        "explanation": "Understanding the requirements is critical to selecting an appropriate model that aligns with the needs of the task, such as accuracy, speed, and types of entities.",
+        "depend_on": [],
+        "id": "1-1-0",
+        "parentIds": []
+    },
+    {
+        "label": "Evaluate Available Models",
+        "description": "Research and evaluate different models or algorithms suitable for entity recognition, such as rule-based models, supervised learning models, or pre-trained models.",
+        "explanation": "Exploring the strengths and weaknesses of various models helps in making an informed decision on which one might perform best given the assessed requirements.",
+        "depend_on": [
+            "Assess Requirements"
+        ],
+        "id": "1-1-1",
+        "parentIds": [
+            "1-1-0"
+        ],
+        "children": [
+            {
+                "label": "Identify Model Categories",
+                "description": "Categorize the different types of models available for entity recognition.",
+                "explanation": "This step is necessary to establish a clear understanding of the landscape of entity recognition models, which includes rule-based, supervised learning, and pre-trained models. It helps in organizing the research process.",
+                "depend_on": [],
+                "id": "1-1-1-0",
+                "parentIds": []
+            },
+            {
+                "label": "Research Rule-based Models",
+                "description": "Investigate existing rule-based models for entity recognition.",
+                "explanation": "Understanding rule-based models is crucial as they often use handcrafted rules and patterns, providing insights into one of the simpler approaches to entity recognition.",
+                "depend_on": [
+                    "Identify Model Categories"
+                ],
+                "id": "1-1-1-1",
+                "parentIds": [
+                    "1-1-1-0"
+                ]
+            },
+            {
+                "label": "Research Supervised Learning Models",
+                "description": "Explore various supervised learning models that can be used for entity recognition.",
+                "explanation": "This step is important to evaluate more complex methodologies that can learn from annotated data, thus understanding how to leverage training data for improved performance.",
+                "depend_on": [
+                    "Identify Model Categories"
+                ],
+                "id": "1-1-1-2",
+                "parentIds": [
+                    "1-1-1-0"
+                ]
+            },
+            {
+                "label": "Research Pre-trained Models",
+                "description": "Examine available pre-trained models for entity recognition.",
+                "explanation": "Investigating pre-trained models is key as they are often state-of-the-art and can significantly reduce development time, providing strong baseline performance on various tasks.",
+                "depend_on": [
+                    "Identify Model Categories"
+                ],
+                "id": "1-1-1-3",
+                "parentIds": [
+                    "1-1-1-0"
+                ]
+            },
+            {
+                "label": "Compare Model Performance",
+                "description": "Evaluate and compare the performance metrics of the identified models.",
+                "explanation": "This comparison helps in understanding the strengths and weaknesses of each model type, guiding the selection of the most suitable model for specific use cases.",
+                "depend_on": [
+                    "Research Rule-based Models",
+                    "Research Supervised Learning Models",
+                    "Research Pre-trained Models"
+                ],
+                "id": "1-1-1-4",
+                "parentIds": [
+                    "1-1-1-1",
+                    "1-1-1-2",
+                    "1-1-1-3"
+                ]
+            },
+            {
+                "label": "Assess Practical Considerations",
+                "description": "Consider practical aspects such as resource requirements, ease of implementation, and scalability of each model.",
+                "explanation": "Assessing practical considerations ensures that the chosen model not only performs well in theory but can also be effectively implemented in a real-world scenario.",
+                "depend_on": [
+                    "Compare Model Performance"
+                ],
+                "id": "1-1-1-5",
+                "parentIds": [
+                    "1-1-1-4"
+                ]
+            }
+        ]
+    },
+    {
+        "label": "Identify Entity Recognition Requirements",
+        "description": "Define the specific types of entities to be recognized and the context in which they are being used.",
+        "explanation": "This step is needed to ensure that the evaluation of models is aligned with the precise goals and requirements of the entity recognition task.",
+        "depend_on": [],
+        "id": "1-1-1-0",
+        "parentIds": []
+    },
+    {
+        "label": "Research Existing Models",
+        "description": "Investigate various models or algorithms available for entity recognition, including rule-based models, supervised learning models, and pre-trained models.",
+        "explanation": "Understanding the types and capabilities of different models is essential for making an informed evaluation and selection of models that fit the requirements.",
+        "depend_on": [
+            "Identify Entity Recognition Requirements"
+        ],
+        "id": "1-1-1-1",
+        "parentIds": [
+            "1-1-1-0"
+        ]
+    },
+    {
+        "label": "Evaluate Model Performance Metrics",
+        "description": "Determine the relevant performance metrics to evaluate the identified models, such as accuracy, precision, recall, and F1-score.",
+        "explanation": "Choosing appropriate metrics is crucial to objectively assess the effectiveness of each model in recognizing entities, based on the task's requirements.",
+        "depend_on": [
+            "Research Existing Models"
+        ],
+        "id": "1-1-1-2",
+        "parentIds": [
+            "1-1-1-1"
+        ]
+    },
+    {
+        "label": "Compare and Analyze Model Suitability",
+        "description": "Analyze the models based on the defined metrics and requirements, comparing their strengths and weaknesses.",
+        "explanation": "This step allows for a systematic comparison of models, factoring in their performance against the defined requirements to identify the most suitable options.",
+        "depend_on": [
+            "Evaluate Model Performance Metrics"
+        ],
+        "id": "1-1-1-3",
+        "parentIds": [
+            "1-1-1-2"
+        ]
+    },
+    {
+        "label": "Select Models for Further Testing",
+        "description": "Select a subset of models that showcase the best potential based on the analysis for further testing and validation.",
+        "explanation": "Narrowing down to a few models simplifies the next steps of testing, considering resources and time, while ensuring that the most promising options are pursued.",
+        "depend_on": [
+            "Compare and Analyze Model Suitability"
+        ],
+        "id": "1-1-1-4",
+        "parentIds": [
+            "1-1-1-3"
+        ]
+    },
+    {
+        "label": "Consider Resources and Constraints",
+        "description": "Take into account available resources and any constraints, such as computational power, expertise, and time.",
+        "explanation": "This step is essential to ensure that the chosen model is feasible within the given limitations and can be implemented effectively.",
+        "depend_on": [
+            "Assess Requirements"
+        ],
+        "id": "1-1-2",
+        "parentIds": [
+            "1-1-0"
+        ]
+    },
+    {
+        "label": "Select Model",
+        "description": "Choose the most appropriate model or algorithm for the entity recognition task based on the evaluated options, requirements, and constraints.",
+        "explanation": "This selection is the culmination of previous assessments and evaluations, ensuring that the chosen model is suitable for achieving the desired outcomes.",
+        "depend_on": [
+            "Evaluate Available Models",
+            "Consider Resources and Constraints"
+        ],
+        "id": "1-1-3",
+        "parentIds": [
+            "1-1-1",
+            "1-1-2"
+        ]
+    },
+    {
+        "label": "Apply Entity Recognition",
+        "description": "Implement the selected model on the preprocessed documents to extract key entities.",
+        "explanation": "This step is where the actual identification of entities happens, applying algorithms to process the text data and recognize entities of interest.",
+        "depend_on": [
+            "Select Recognition Model"
+        ],
+        "id": "1-2",
+        "parentIds": [
+            "1-1"
+        ]
+    },
+    {
+        "label": "Post-Processing and Validation",
+        "description": "Review and validate the recognized entities to ensure accuracy and eliminate false positives.",
+        "explanation": "This step is necessary to enhance the reliability of the entity recognition output, as it checks for accuracy and relevance of the identified entities.",
+        "depend_on": [
+            "Apply Entity Recognition"
+        ],
+        "id": "1-3",
+        "parentIds": [
+            "1-2"
+        ]
+    },
+    {
+        "label": "Relationship Extraction",
+        "description": "Extract relationships between the identified entities.",
+        "explanation": "Understanding how entities relate to each other is key to building the connections in the knowledge graph, which provides context and meaning.",
+        "depend_on": [
+            "Entity Recognition"
+        ],
+        "id": "2",
+        "parentIds": [
+            "1"
+        ],
+        "children": [
+            {
+                "label": "Identify Entities",
+                "description": "Identify and categorize entities within the text that are relevant for relationship extraction.",
+                "explanation": "Identifying entities is crucial because you need to know which specific entities you're looking for relationships between before you can extract those relationships.",
+                "depend_on": [],
+                "id": "2-0",
+                "parentIds": []
+            },
+            {
+                "label": "Define Relationship Types",
+                "description": "Establish the types of relationships that are of interest for extraction.",
+                "explanation": "Defining what types of relationships to extract helps focus the extraction process and ensures that pertinent information is not overlooked.",
+                "depend_on": [
+                    "Identify Entities"
+                ],
+                "id": "2-1",
+                "parentIds": [
+                    "2-0"
+                ]
+            },
+            {
+                "label": "Apply Relationship Extraction Techniques",
+                "description": "Utilize natural language processing (NLP) techniques or algorithms to identify and extract relationships between the identified entities.",
+                "explanation": "This step involves the actual application of methods (such as rule-based, machine learning, or deep learning) to find relationships in the text based on the entities identified.",
+                "depend_on": [
+                    "Define Relationship Types"
+                ],
+                "id": "2-2",
+                "parentIds": [
+                    "2-1"
+                ]
+            },
+            {
+                "label": "Validate Extracted Relationships",
+                "description": "Verify and validate the accuracy of the extracted relationships.",
+                "explanation": "Validation is necessary to ensure that the extracted relationships are correct and meaningful, which helps in assessing the quality of the extraction process.",
+                "depend_on": [
+                    "Apply Relationship Extraction Techniques"
+                ],
+                "id": "2-3",
+                "parentIds": [
+                    "2-2"
+                ]
+            }
+        ]
+    },
+    {
+        "label": "Identify Entities",
+        "description": "Identify and categorize entities within the text that are relevant for relationship extraction.",
+        "explanation": "Identifying entities is crucial because you need to know which specific entities you're looking for relationships between before you can extract those relationships.",
+        "depend_on": [],
+        "id": "2-0",
+        "parentIds": []
+    },
+    {
+        "label": "Define Relationship Types",
+        "description": "Establish the types of relationships that are of interest for extraction.",
+        "explanation": "Defining what types of relationships to extract helps focus the extraction process and ensures that pertinent information is not overlooked.",
+        "depend_on": [
+            "Identify Entities"
+        ],
+        "id": "2-1",
+        "parentIds": [
+            "2-0"
+        ]
+    },
+    {
+        "label": "Apply Relationship Extraction Techniques",
+        "description": "Utilize natural language processing (NLP) techniques or algorithms to identify and extract relationships between the identified entities.",
+        "explanation": "This step involves the actual application of methods (such as rule-based, machine learning, or deep learning) to find relationships in the text based on the entities identified.",
+        "depend_on": [
+            "Define Relationship Types"
+        ],
+        "id": "2-2",
+        "parentIds": [
+            "2-1"
+        ]
+    },
+    {
+        "label": "Validate Extracted Relationships",
+        "description": "Verify and validate the accuracy of the extracted relationships.",
+        "explanation": "Validation is necessary to ensure that the extracted relationships are correct and meaningful, which helps in assessing the quality of the extraction process.",
+        "depend_on": [
+            "Apply Relationship Extraction Techniques"
+        ],
+        "id": "2-3",
+        "parentIds": [
+            "2-2"
+        ]
+    },
+    {
+        "label": "Ontology Definition",
+        "description": "Define the structure and schema of the knowledge graph, including classes and properties.",
+        "explanation": "Creating an ontology is needed to formalize the relationships and hierarchy of the entities, ensuring the knowledge graph is organized and interpretable.",
+        "depend_on": [
+            "Entity Recognition",
+            "Relationship Extraction"
+        ],
+        "id": "3",
+        "parentIds": [
+            "1",
+            "2"
+        ]
+    },
+    {
+        "label": "Graph Construction",
+        "description": "Construct the knowledge graph using the identified entities, relationships, and defined ontology.",
+        "explanation": "This step is where the actual graph is built, combining all the previous outputs into a structured format that can be utilized for querying and analysis.",
+        "depend_on": [
+            "Ontology Definition"
+        ],
+        "id": "4",
+        "parentIds": [
+            "3"
+        ]
+    },
+    {
+        "label": "Validation and Refinement",
+        "description": "Validate the knowledge graph for accuracy and completeness, and refine it as necessary.",
+        "explanation": "Validation ensures the knowledge graph accurately represents the information extracted from the documents; refinement helps improve its quality and usability.",
+        "depend_on": [
+            "Graph Construction"
+        ],
+        "id": "5",
+        "parentIds": [
+            "4"
+        ],
+        "children": [
+            {
+                "label": "Identify Use Case",
+                "description": "Define the specific context or application for entity recognition.",
+                "explanation": "Understanding the use case helps in determining which entity types are relevant and necessary for the analysis.",
+                "depend_on": [],
+                "id": "5-0",
+                "parentIds": []
+            },
+            {
+                "label": "Review Existing Entity Types",
+                "description": "Research common entity types used in similar tasks and frameworks.",
+                "explanation": "Reviewing established entity types provides a starting point and ensures alignment with industry standards or existing models.",
+                "depend_on": [
+                    "Identify Use Case"
+                ],
+                "id": "5-1",
+                "parentIds": [
+                    "5-0"
+                ]
+            },
+            {
+                "label": "Categorize Entities",
+                "description": "Organize the identified entities into specific types such as person, location, and organization.",
+                "explanation": "Categorizing entities allows for a structured approach to recognize and extract them from the data.",
+                "depend_on": [
+                    "Review Existing Entity Types"
+                ],
+                "id": "5-2",
+                "parentIds": [
+                    "5-1"
+                ]
+            },
+            {
+                "label": "Define Each Entity Type",
+                "description": "Create definitions and criteria for each identified entity type.",
+                "explanation": "Clear definitions help in accurately identifying and differentiating entities during the recognition process.",
+                "depend_on": [
+                    "Categorize Entities"
+                ],
+                "id": "5-3",
+                "parentIds": [
+                    "5-2"
+                ]
+            },
+            {
+                "label": "Prioritize Entity Types",
+                "description": "Determine which entity types are most critical for the use case.",
+                "explanation": "Prioritizing helps focus efforts on the most relevant entities, ensuring efficiency in recognition tasks.",
+                "depend_on": [
+                    "Define Each Entity Type"
+                ],
+                "id": "5-4",
+                "parentIds": [
+                    "5-3"
+                ]
+            }
+        ]
+    },
+    {
+        "label": "Identify Use Case",
+        "description": "Define the specific context or application for entity recognition.",
+        "explanation": "Understanding the use case helps in determining which entity types are relevant and necessary for the analysis.",
+        "depend_on": [],
+        "id": "5-0",
+        "parentIds": []
+    },
+    {
+        "label": "Review Existing Entity Types",
+        "description": "Research common entity types used in similar tasks and frameworks.",
+        "explanation": "Reviewing established entity types provides a starting point and ensures alignment with industry standards or existing models.",
+        "depend_on": [
+            "Identify Use Case"
+        ],
+        "id": "5-1",
+        "parentIds": [
+            "5-0"
+        ]
+    },
+    {
+        "label": "Categorize Entities",
+        "description": "Organize the identified entities into specific types such as person, location, and organization.",
+        "explanation": "Categorizing entities allows for a structured approach to recognize and extract them from the data.",
+        "depend_on": [
+            "Review Existing Entity Types"
+        ],
+        "id": "5-2",
+        "parentIds": [
+            "5-1"
+        ]
+    },
+    {
+        "label": "Define Each Entity Type",
+        "description": "Create definitions and criteria for each identified entity type.",
+        "explanation": "Clear definitions help in accurately identifying and differentiating entities during the recognition process.",
+        "depend_on": [
+            "Categorize Entities"
+        ],
+        "id": "5-3",
+        "parentIds": [
+            "5-2"
+        ]
+    },
+    {
+        "label": "Prioritize Entity Types",
+        "description": "Determine which entity types are most critical for the use case.",
+        "explanation": "Prioritizing helps focus efforts on the most relevant entities, ensuring efficiency in recognition tasks.",
+        "depend_on": [
+            "Define Each Entity Type"
+        ],
+        "id": "5-4",
+        "parentIds": [
+            "5-3"
+        ]
+    }
+]

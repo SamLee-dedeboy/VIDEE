@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import * as d3_dag from 'd3-dag';
-import type { tNode } from 'types';
+import type { tControllers, tNode } from 'types';
 import {
     BSplineShapeGenerator,
     ShapeSimplifier,
@@ -10,166 +10,269 @@ import {
 
 export class DAG {
     svgId: string;
-    nodeRadius: number;
-    constructor(svgId: string, node_radius: number=100) {
+    svgSize: [number, number];
+    nodeRadius: [number,number];
+    line: any
+    selection_card: string
+    selection_container: string
+    bbox_dict: any
+    dag: any
+    zoom: any
+    handleClick: Function
+    next_expansion_id: string | undefined
+    new_nodes: string[] = []
+    constructor(svgId: string, node_radius: [number,number]=[100, 100], selection_card: string, selection_container: string) {
         this.svgId = svgId
+        this.svgSize = [1000, 1000]
         this.nodeRadius = node_radius
+        this.line = d3.line().curve(d3.curveMonotoneY);
+        this.dag = undefined;
+        this.zoom = d3.zoom().scaleExtent([0.5, 2])
+        .on("zoom", (e) => this.zoomed(e, this))
+        .on("end", () => document.querySelectorAll(this.selection_card).forEach((div: any) => div.style.transitionDuration = "0.5s"))
+
+        this.selection_card = selection_card
+        this.selection_container = selection_container
+        this.bbox_dict = {}
+        this.handleClick = () => {}
     }
-    init () {
+    init (handleClick=() => {}) {
         const svg = d3.select(`#${this.svgId}`)
+        svg.append("g").attr("class", "next_expansion_link");
         svg.append("g").attr("class", "links");
+        svg.append("g").attr("class", "nodes");
         svg.append("g").attr("class", "bubbles");
+        svg.call(this.zoom)
+        // .call(this.zoom.transform, d3.zoomIdentity);
+        this.handleClick = handleClick
+
         console.log("init done")
     }
-    update(data: tNode[], expanded_nodes: string[], selection_query: string) {
+
+    update(data: tNode[], expanded_nodes: string[], max_value_path_ids: string[] = [], controllers: tControllers ) {
+        const self = this
         console.log("dag update", data)
         const svg = d3.select(`#${this.svgId}`);
         const svg_bbox = svg.node().getBoundingClientRect();
         svg.attr("viewBox", `0 0 ${svg_bbox.width} ${svg_bbox.height}`);
         const max_width = 1 * svg_bbox.width;
         const max_height = 1 * svg_bbox.height;
+        this.svgSize = [max_width, max_height]
         const stratify = d3_dag.graphStratify();
-        const dag = stratify(data);
+        this.dag = stratify(data);
 
 
+        // const rect_size: [number, number] = [320, 250]
+        const rect_size: [number, number] = this.nodeRadius
         const layout = d3_dag
         .sugiyama()
-        .coord(d3_dag.coordGreedy())
-        .nodeSize([2 * this.nodeRadius, 2 * this.nodeRadius])
+        .coord(d3_dag.coordQuad())
+        // .grid()
+        // .lane(d3_dag.laneOpt())
+        // .coord(d3_dag.coordGreedy())
+        // .nodeSize(this.nodeRadius)
+        .nodeSize((node: any) => {
+            return [(node.data.bbox?.width || rect_size[0])  , (node.data.bbox?.height || rect_size[1])]
+        })
+        // .nodeSize(rect_size)
         .gap([50, 50])
+        // .tweaks([d3_dag.tweakSize({width: max_width, height: max_height})])
+        // .tweaks([d3_dag.tweakShape(rect_size, d3_dag.shapeRect)])
+        // .tweaks([d3_dag.tweakShape(rect_size, d3_dag.shapeRect), d3_dag.tweakSize({width: max_width, height: max_height})])
 
-      const { width, height } = layout(dag);
+        const { width, height } = layout(this.dag);
 
-      const vertical = true;
-      const coordinate_as_dict = Array.from(dag.nodes()).reduce((acc, d) => {
-        acc[d.data.id] = d;
-        return acc;
-      }, {})
+        this.bbox_dict = Array.from(this.dag.nodes()).reduce((acc: any, d: any) => {
+            acc[d.data.id] = {x: d.x, y: d.y, width: d.data.bbox?.width || rect_size[0], height: d.data.bbox?.height || rect_size[1]};
+            return acc;
+        }, {})
 
       // position nodes
-      d3.selectAll(selection_query)
-        .style("left", function() {
+      d3.selectAll(this.selection_card)
+        .style("left", function() { 
             const id = this.dataset.id
-            return vertical?
-            coordinate_as_dict[id].x * (max_width / width) + "px":
-            coordinate_as_dict[id].y * (max_width / height) + "px"
-
+            return (self.bbox_dict[id].x - self.bbox_dict[id].width / 2) + "px"
         })
         .style("top", function() {
             const id = this.dataset.id
-            // return coordinate_as_dict[id].x * (max_height / width) + "px"
-            return vertical ? 
-            coordinate_as_dict[id].y * (max_height / height) + "px":
-            coordinate_as_dict[id].x * (max_height / width) + "px"
+            return (self.bbox_dict[id].y - self.bbox_dict[id].height / 2)   + "px"
         })
-        const line = d3.line().curve(d3.curveMonotoneY);
-    // svg.selectAll("rect.node")
-    //     .data(dag.nodes())
-    //     .join("rect")
-    //     .attr("class", "node")
-    //     .attr("x", ({ x }) => x * (max_width / width) - this.nodeRadius)
-    //     .attr("y", ({ y }) => y * (max_height / height) - this.nodeRadius)
-    //     .attr("width", 2 * this.nodeRadius)
-    //     .attr("height", 2 * this.nodeRadius)
-    //     .attr("fill", "none")
-    //     .attr("stroke", "black")
-    //     .attr("stroke-width", 1)
-    //     .attr("rx", 10)
-        // plot edges
+        .each(function() {
+            applyTransform(this, d3.zoomTransform(svg.node()))
+            this.style.transitionDuration = "0.5s"
+        })
 
-      svg.select("g.links")
-        .selectAll("path.link")
-        .data(dag.links())
-        .join("path")
-        .attr("class", "link")
-        .attr("d",({ points }) =>  {
-            const scaled_points = points.map(p => vertical? 
-                [p[0] * (max_width / width),  p[1] * (max_height / height)]
-                :
-                [p[1] * (max_width / height), p[0] * (max_height / width)])
-            return line(scaled_points)
+        let enter_nodes: string[] = []
+        svg.select("g.nodes")
+        .selectAll("rect.node")
+            .data(Object.keys(self.bbox_dict), (d) => d)
+            .join(
+                enter => enter.append("rect").attr("class", "node")
+                        .attr("width",  0)
+                        .attr("height",  0)
+                        .attr("fill", "white")
+                        .attr("stroke", "black")
+                        .attr("stroke-width", 1)
+                        .attr("rx", 10)
+                        .attr("cursor", "pointer")
+                        .on("click", (_, d) => {
+                            // this.handleClick(d)
+                            d3.selectAll(self.selection_card)
+                            .nodes()
+                            .filter((div_data) => div_data.dataset.id === d)[0].style.visibility = "visible"
+                        })
+                        // .transition().duration(300)
+                        // .attr("width", (d) => self.bbox_dict[d].width)
+                        // .attr("height", (d) => self.bbox_dict[d].height)
+                        .each(function(d) {
+                            enter_nodes.push(d)
+                        })
+                        .transition().duration(500)
+                        .attr("x", function(d) {
+                            return (self.bbox_dict[d].x - self.bbox_dict[d].width/2) 
+                        })
+                        .attr("y", function(d) {
+                            return (self.bbox_dict[d].y - self.bbox_dict[d].height/2)
+                        })
+                        // .attr("width", rect_size[0])
+                        // .attr("height", rect_size[1])
+                        ,
+                update => update.transition().duration(500)
+                        .attr("x", function(d) {
+                            return (self.bbox_dict[d].x - self.bbox_dict[d].width/2) / d3.zoomTransform(svg.node()).k
+                            return self.bbox_dict[d].x - self.bbox_dict[d].width/2
+                            return self.bbox_dict[d].x - rect_size[0]/2
+                            // return bbox_dict[d].x * (max_width / width) - rect_size[0]
+                        })
+                        .attr("y", function(d) {
+                            return (self.bbox_dict[d].y - self.bbox_dict[d].height/2) / d3.zoomTransform(svg.node()).k
+                            return self.bbox_dict[d].y - self.bbox_dict[d].height/2
+                            return self.bbox_dict[d].y - rect_size[1]/2
+                            // return bbox_dict[d].y * (max_height / height) - rect_size[1]
+                        }),
+                exit => exit.transition().duration(300)
+                        .attr("width",  0)
+                        .attr("height",  0)
+                        .remove()
+                )
+
+        // plot edges
+        this.update_links(max_value_path_ids, controllers.show_max_value_path)
+
+        // translate to make new nodes in the center
+        if(enter_nodes.length !== 0) {
+            const new_nodes_bboxes = enter_nodes.map(d => self.bbox_dict[d])
+            const new_nodes_center = [
+                d3.mean(new_nodes_bboxes.map(d => d.x)),
+                d3.mean(new_nodes_bboxes.map(d => d.y))
+            ]
+            // move the current zoom to the center of the new nodes
+            svg.transition().duration(500).delay(0).call(this.zoom.translateTo, new_nodes_center[0], new_nodes_center[1]).on("end", () => {
+            })
+            this.new_nodes = enter_nodes
         }
 
-        )
-        .attr("fill", "none")
-        .attr("stroke-width", 3)
-        .attr("stroke", "gray")
+        // console.log("new nodes", this.new_nodes)
+        // add new node class to the divs
+        document.querySelectorAll(this.selection_card).forEach((div) => {
+            const id = (div as HTMLElement).dataset.id
+            if(id === undefined || id === "-1") return;
+            if(!controllers.show_new_nodes) {
+                div.classList.remove("new-node")
+                return
+            }
+            if(this.new_nodes.includes(id)) {
+                div.classList.add("new-node")
+            } else {
+                div.classList.remove("new-node")
+            }
+        })
+        this.update_next_expansion_link(this.next_expansion_id)
+
         // plot edges between decomposed tasks
-        const expansion_links = data.filter(d => expanded_nodes.includes(d.id)).map(d => {
-            const first_child_coord = coordinate_as_dict[d.children?.[0].id]
-            console.log(d, first_child_coord)
-            const this_coord = coordinate_as_dict[d.id]
-            const link_coords = vertical?
-            [
-                [this_coord.x * (max_width / width), this_coord.y * (max_height / height)],
-                [first_child_coord.x * (max_width / width), first_child_coord.y * (max_height / height)]
-            ]:
-            [
-                [this_coord.y * (max_width / height), this_coord.x * (max_height / width)],
-                [first_child_coord.y * (max_width / height), first_child_coord.x * (max_height / width)]
-            ]
-            return link_coords
-        })
+        // const expansion_links = data.filter(d => expanded_nodes.includes(d.id)).map(d => {
+        //     const first_child_coord = self.bbox_dict[d.sub_tasks?.[0].id]
+        //     console.log(d, first_child_coord)
+        //     const this_coord = self.bbox_dict[d.id]
+        //     const link_coords = vertical?
+        //     [
+        //         [this_coord.x * (max_width / width), this_coord.y * (max_height / height)],
+        //         [first_child_coord.x * (max_width / width), first_child_coord.y * (max_height / height)]
+        //     ]:
+        //     [
+        //         [this_coord.y * (max_width / height), this_coord.x * (max_height / width)],
+        //         [first_child_coord.y * (max_width / height), first_child_coord.x * (max_height / width)]
+        //     ]
+        //     return link_coords
+        // })
+    }
+
+    update_next_expansion_link(next_expansion_id: string | undefined) {
+        console.log({next_expansion_id})
+        this.next_expansion_id = next_expansion_id
+        const svg = d3.select(`#${this.svgId}`);
+        if(next_expansion_id && this.bbox_dict[next_expansion_id]) {
+            const current_transform = d3.zoomTransform(svg.node())
+            const next_expansion_group = svg.select("g.next_expansion_link")
+            // next_expansion_group.selectAll("*").remove()
+            const next_expansion_node = this.bbox_dict[next_expansion_id]
+            // link from the next expansion node to the button with a line
+            const next_expansion_node_position = current_transform.apply([next_expansion_node.x, next_expansion_node.y])
+            next_expansion_group.selectAll("line.next_expansion_link")
+                .data([0])
+                .join("line")
+                .attr("class", "next_expansion_link")
+                // .transition().delay(500).duration(0)
+                .attr("x1", next_expansion_node_position[0])
+                .attr("y1", next_expansion_node_position[1])
+                .attr("x2", this.svgSize[0]/2)
+                .attr("y2", 10)
+                .attr("fill", "none")
+                .attr("stroke-width", 3)
+                .attr("stroke", "oklch(0.705 0.213 47.604)")
+                .attr("stroke-dasharray", "8,8")
+        } else {
+            svg.select("g.next_expansion_link").selectAll("*").remove()
+        }
+
+    }
+
+    update_links(max_value_path_ids: string[] = [], show_max_value_path: boolean = false) {
+        const svg = d3.select(`#${this.svgId}`);
         svg.select("g.links")
-        .selectAll("path.expansion-link")
-        .data(expansion_links)
-        .join("path")
-        .attr("class", "expansion-link")
-        .attr("d", (d) => line(d))
-        .attr("fill", "none")
-        .attr("stroke-width", 3)
-        .attr("stroke", "gray")
-        .attr("stroke-dasharray", "5,5")
-
-        // add bubbles
-        return
-        const self = this
-        const bubble_group = svg.select("g.bubbles")
-        const bubble_data = Object.groupBy(data, d => getGroup(d))
-        bubble_group.selectAll("path.dag-wrapper").remove()
-        Object.entries(bubble_data).forEach(([group, nodes]) => {
-            const points = dag_to_screen_coord(nodes?.map(d => 
-                [coordinate_as_dict[d.id].x, coordinate_as_dict[d.id].y]
-            ) || [], max_width, max_height, width, height, vertical)
-            console.log({nodes, points, coordinate_as_dict})
-            const bubble_path = create_bubble_path(points, 1.3 * self.nodeRadius) 
-            bubble_group.append("path")
-                .attr("class", "dag-wrapper").attr("d", bubble_path)
-                .attr("fill", "lightgreen")
-                .attr("opacity", 0.2)
-        })
-
-    }
-    _update(data) {
-        console.log({data})
-        const svg = d3.select(`#${this.svgId}`)
-        const svg_bbox = svg.node().getBoundingClientRect();
-        svg.attr("viewBox", `0 0 ${svg_bbox.width} ${svg_bbox.height}`);
-        const link_group = svg.select("g.links");
-        const path_data = data.map((d) => {
-            const to = d
-            const dependencies = data.filter((d) => to.depend_on.includes(d.label));
-            return dependencies.map((from) => {
-                const x1 = from.bbox.x + from.bbox.width  - svg_bbox.x
-                const y1 = from.bbox.y + from.bbox.height / 2 - svg_bbox.y
-                const x2 = to.bbox.x - svg_bbox.x
-                const y2 = to.bbox.y + to.bbox.height / 2 - svg_bbox.y
-                let path = d3.path()
-                path.moveTo(x1, y1);
-                // path.bezierCurveTo(x1, y1 * 1.3, x2, y2 * 1.3, x2, y2);
-                path.bezierCurveTo(x2, y1, x1, y2, x2, y2);
-                // path.lineTo(x2, y2);
-                return path.toString();
-            })
-        }).flat()
-        link_group.selectAll("path")
-            .data(path_data)
+            .selectAll("path.link")
+            .data(this.dag.links(), ({source, target}) => `${source.data.id}-${target.data.id}`)
             .join("path")
-            .attr("d", (d) => d)
+            .transition().duration(500)
+            .attr("class", "link")
+            .attr("d", ({points}) => this.line(points.map(p => [p[0], p[1]])))
             .attr("fill", "none")
+            .attr("stroke-width", 2)
+            .attr("stroke", "gray")
+            .attr("stroke-dasharray", "8,8")
+            .filter(({source, target}) => show_max_value_path && max_value_path_ids.includes(source.data.id) && max_value_path_ids.includes(target.data.id))
             .attr("stroke", "black")
+            .attr("stroke-width", 4)
+            .attr("stroke-dasharray", "unset")
 
     }
+
+
+    zoomed(e, self) {
+        const svg = d3.select(`#${self.svgId}`);
+        svg.select("g.nodes").attr("transform", `translate(${e.transform.x}, ${e.transform.y}) scale(${e.transform.k})`);
+        svg.select("g.links").attr("transform", `translate(${e.transform.x}, ${e.transform.y}) scale(${e.transform.k})`);
+        // svg.select("g.next_expansion_link").attr("transform", `translate(${e.transform.x}, ${e.transform.y}) scale(${e.transform.k})`);
+        document.querySelectorAll(self.selection_card).forEach(div => {
+            applyTransform(div, e.transform)
+        })
+        const next_expansion_node = self.bbox_dict[self.next_expansion_id]
+        if(next_expansion_node) {
+            svg.select("g.next_expansion_link").select("line.next_expansion_link")
+                .attr("x1", e.transform.apply([next_expansion_node.x, next_expansion_node.y])[0])
+                .attr("y1", e.transform.apply([next_expansion_node.x, next_expansion_node.y])[1])
+        }
+      }
 }
 
 function getGroup(node: tNode) {
@@ -222,4 +325,18 @@ function create_bubble_path(points, radius) {
         :
         [p[1] * (max_width / height), p[0] * (max_height / width)]
     )
+  }
+
+  function applyTransform(div, transform) {
+    const id = div.dataset.id
+    const left = parseFloat(div.style.left)
+    const top = parseFloat(div.style.top)
+    const width = div.getBoundingClientRect().width * (div.style.transform === ""? transform.k : 1)
+    const height = div.getBoundingClientRect().height * (div.style.transform === ""? transform.k : 1)
+    const offsetX = left + width / 2 / transform.k
+    const offsetY = top + height / 2 / transform.k
+    // console.log(div.dataset.id, div.style.transform, {left, top, width, height, offsetX, offsetY})
+    const new_transform = `translate(${-offsetX}px, ${-offsetY}px) scale(${transform.k}) translate(${offsetX}px, ${offsetY}px) translate(${transform.x / transform.k}px, ${transform.y / transform.k}px)`
+    div.style.transitionDuration = "0s"
+    div.style.transform = new_transform
   }

@@ -2,8 +2,13 @@ openai
 flask
 flask[async]
 flask-cors
-autogen-agentchat==0.4.0.dev11
-autogen-ext[openai]==0.4.0.dev11
+autogen
+autogen-agentchat==0.4.5
+autogen-agentchat[gemini,retrievechat,lmm]
+autogen-ext[openai]==0.4.5
+google-genai
+vertexai
+ag2[gemini]
 langgraph
 langchain
 langchain-core
