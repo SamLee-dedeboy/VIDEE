@@ -138,31 +138,39 @@ async def goal_decomposition_MCTS_stepped(request: Request):
             model=default_model,
             api_key=api_key,
         ):
-            root = new_root
-            save_json(
-                {
-                    "node_dict": {
-                        k: v.model_dump(mode="json") for k, v in node_dict.items()
+            if next_selection is None:
+                break
+            try:
+                root = new_root
+                save_json(
+                    {
+                        "node_dict": {
+                            k: v.model_dump(mode="json") for k, v in node_dict.items()
+                        },
+                        "next_node": next_selection.model_dump(mode="json"),
+                        "max_value_path": max_value_path,
                     },
-                    "next_node": next_selection.model_dump(mode="json"),
-                    "max_value_path": max_value_path,
-                },
-                relative_path("dev_data/test_mcts_root.json"),
-            )
-            yield json.dumps(
-                {
-                    "node_dict": {
-                        k: v.model_dump(mode="json") for k, v in node_dict.items()
-                    },
-                    "next_node": next_selection.model_dump(mode="json"),
-                    "max_value_path": max_value_path,
-                }
-            ) + "\n"
-
-    return StreamingResponse(
-        iter_response(user_root, node_dict, goal, next_selection),
-        media_type="application/json",
-    )
+                    relative_path("dev_data/test_mcts_root.json"),
+                )
+                yield json.dumps(
+                    {
+                        "node_dict": {
+                            k: v.model_dump(mode="json") for k, v in node_dict.items()
+                        },
+                        "next_node": next_selection.model_dump(mode="json"),
+                        "max_value_path": max_value_path,
+                    }
+                ) + "\n"
+            except Exception as exception:
+                print(f"Error inside iter_response loop: {exception}")
+                pass
+    try:
+        return StreamingResponse(
+            iter_response(user_root, node_dict, goal, next_selection),
+            media_type="application/json",
+        )
+    except Exception as e:
+        print(f"Error in iter_response: {e}")
 
 
 @app.post("/goal_decomposition/beam_search/stepped/")

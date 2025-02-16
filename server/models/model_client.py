@@ -114,12 +114,15 @@ class ModelClient:
         # sleep 2s to avoid rate limiting from Google
         sleep(2)
         """Initiate chat session with context management"""
-        result = self.user_proxy.initiate_chat(
-            self.assistant,
-            message=message,
-            max_turns=1,
-            clear_history=not self.overrides.get("keep_context", False)
-        )
+        try:
+            result = self.user_proxy.initiate_chat(
+                self.assistant,
+                message=message,
+                max_turns=1,
+                clear_history=not self.overrides.get("keep_context", False)
+            )
+        except Exception as e:
+            print(e)
         # If all return are JSON, we can potentially just do:
         # return extract_json_content(result.chat_history[1].get('content'))
         return result.chat_history[1].get('content')

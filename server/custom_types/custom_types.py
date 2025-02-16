@@ -33,6 +33,7 @@ class MCT_Node(SemanticTaskResponse):
     visits: int = 0
     value: float = 0.0
     children_all_ends: bool = False
+    level: int = 0
     llm_evaluation: Evaluation = Evaluation()
     user_evaluation: Evaluation = Evaluation()
 
