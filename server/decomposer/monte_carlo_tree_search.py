@@ -41,6 +41,7 @@ async def stream_MCTS(
     model: str,
     api_key: str,
     next_selection=None,
+    eval_definitions=None,
 ):
     try:
         while True:
@@ -48,6 +49,7 @@ async def stream_MCTS(
                 root,
                 node_dict,
                 next_selection=next_selection,
+                eval_definitions=eval_definitions,
                 goal=goal,
                 model=model,
                 api_key=api_key,
@@ -70,7 +72,7 @@ async def MCTS_step(
     model: str,
     api_key: str,
     next_selection=None,
-    evaluator_definitions=None,
+    eval_definitions=None,
 ) -> MCT_Node:
     try:
         # select a node to expand
@@ -87,7 +89,7 @@ async def MCTS_step(
             node_dict,
             model=model,
             api_key=api_key,
-            evaluator_definitions=evaluator_definitions,
+            eval_definitions=eval_definitions,
         )
         # backpropagate the reward values
         for child, reward_value in zip(children, reward_value_list):
@@ -185,7 +187,7 @@ async def reward(
     node_dict,
     model: str,
     api_key: str,
-    evaluator_definitions=None,
+    eval_definitions=None,
 ) -> float:
     """Evaluates the children nodes and returns the reward value for each child in parallel"""
     try:
@@ -200,6 +202,7 @@ async def reward(
         # runs evaluation on all children in parallel
         eval_results = await evaluator.run_all_evaluations(
             eval_params=eval_params,
+            eval_definitions=eval_definitions,
             model=model,
             api_key=api_key,
         )

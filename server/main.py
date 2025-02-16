@@ -16,6 +16,7 @@ import asyncio
 import server.custom_types as custom_types
 import server.decomposer as decomposer
 import server.executor as executor
+import server.evaluator as evaluator
 
 app = FastAPI()
 origins = ["*"]
@@ -66,6 +67,11 @@ async def create_session(request: Request):
         "execution_graph": {},
         "execution_state": {},
         "execution_results": {},
+        "eval_definitions": {
+            "complexity": evaluator.complexity_definition,
+            "coherence": evaluator.coherence_definition,
+            "importance": evaluator.importance_definition,
+        },
     }
     return {"session_id": session_id}
 
@@ -79,28 +85,48 @@ async def get_documents(request: Request):
     return json.load(open(relative_path("executor/docs.json")))
 
 
-@app.post("/goal_decomposition/")
-async def goal_decomposition(request: Request) -> list[custom_types.Node]:
+@app.post("/eval/definitions/")
+async def get_eval_definitions(request: Request):
     request = await request.body()
     request = json.loads(request)
-    goal = request["goal"]
     session_id = request["session_id"]
     assert session_id in user_sessions
-    user_sessions[session_id]["goal"] = goal
-    if dev:
-        decomposed_steps = json.load(
-            open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
-        )
-    else:
-        decomposed_steps = await decomposer.goal_decomposition(
-            goal, model=default_model, api_key=api_key
-        )
-        save_json(
-            decomposed_steps,
-            relative_path("dev_data/test_decomposed_steps_w_children.json"),
-        )
-    user_sessions[session_id]["semantic_tasks"] = decomposed_steps
-    return decomposed_steps
+    return user_sessions[session_id]["eval_definitions"]
+
+
+@app.post("/eval/definitions/update/")
+async def update_eval_definitions(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    updated_eval_definitions = request["eval_definitions"]
+    user_sessions[session_id]["eval_definitions"] = updated_eval_definitions
+    return "success"
+
+
+# @app.post("/goal_decomposition/")
+# async def goal_decomposition(request: Request) -> list[custom_types.Node]:
+#     request = await request.body()
+#     request = json.loads(request)
+#     goal = request["goal"]
+#     session_id = request["session_id"]
+#     assert session_id in user_sessions
+#     user_sessions[session_id]["goal"] = goal
+#     if dev:
+#         decomposed_steps = json.load(
+#             open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
+#         )
+#     else:
+#         decomposed_steps = await decomposer.goal_decomposition(
+#             goal, model=default_model, api_key=api_key
+#         )
+#         save_json(
+#             decomposed_steps,
+#             relative_path("dev_data/test_decomposed_steps_w_children.json"),
+#         )
+#     user_sessions[session_id]["semantic_tasks"] = decomposed_steps
+#     return decomposed_steps
 
 
 @app.post("/goal_decomposition/mcts/stepped/")
@@ -112,6 +138,7 @@ async def goal_decomposition_MCTS_stepped(request: Request):
     assert session_id in user_sessions
     user_sessions[session_id]["goal"] = goal
     semantic_tasks = request["semantic_tasks"] if "semantic_tasks" in request else None
+    eval_definitions = user_sessions[session_id]["eval_definitions"]
     next_selection = (
         custom_types.MCT_Node.model_validate(request["next_expansion"])
         if "next_expansion" in request
@@ -128,12 +155,15 @@ async def goal_decomposition_MCTS_stepped(request: Request):
 
     # node_dict = decomposer.collect_MCT_node_dict(user_root)
 
-    async def iter_response(root, node_dict, goal, next_selection):  # (1)
+    async def iter_response(
+        root, node_dict, goal, next_selection, eval_definitions
+    ):  # (1)
         async for new_root, next_selection, max_value_path in decomposer.stream_MCTS(
             root,
             node_dict,
             goal,
             next_selection=next_selection,
+            eval_definitions=eval_definitions,
             model=default_model,
             api_key=api_key,
         ):
@@ -166,51 +196,11 @@ async def goal_decomposition_MCTS_stepped(request: Request):
 
     try:
         return StreamingResponse(
-            iter_response(user_root, node_dict, goal, next_selection),
+            iter_response(user_root, node_dict, goal, next_selection, eval_definitions),
             media_type="application/json",
         )
     except Exception as e:
         print(f"Error in iter_response: {e}")
-
-
-@app.post("/goal_decomposition/beam_search/stepped/")
-async def goal_decomposition_beam_search_stepped(request: Request):
-    request = await request.body()
-    request = json.loads(request)
-    goal = request["goal"]
-    session_id = request["session_id"]
-    assert session_id in user_sessions
-    user_sessions[session_id]["goal"] = goal
-    user_steps = request["user_steps"]
-    print("user_steps", user_steps)
-    k, n = 2, 2
-    if False:
-        decomposed_steps = json.load(
-            open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
-        )
-        user_sessions[session_id]["semantic_tasks"] = decomposed_steps
-        return decomposed_steps
-    else:
-
-        async def iter_response(candidate_steps):  # (1)
-            if len(candidate_steps) == 0:
-                candidate_steps = await decomposer.goal_decode_n_samples(
-                    goal, [], default_model, api_key, n=n
-                )
-                yield json.dumps({"semantic_tasks": candidate_steps}) + "\n"
-            async for steps in decomposer.stream_goal_beam_search(
-                goal, candidate_steps, default_model, api_key, k=k, n=n
-            ):
-                candidate_steps = steps
-                save_json(
-                    candidate_steps,
-                    relative_path("dev_data/test_beam_search_candidate_steps.json"),
-                )
-                yield json.dumps({"semantic_tasks": candidate_steps}) + "\n"
-
-        return StreamingResponse(
-            iter_response(user_steps), media_type="application/json"
-        )
 
 
 @app.post("/semantic_task/update/")
@@ -396,3 +386,42 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run("server.main:app", host="127.0.0.1", port=8000, reload=True)
+
+# @app.post("/goal_decomposition/beam_search/stepped/")
+# async def goal_decomposition_beam_search_stepped(request: Request):
+#     request = await request.body()
+#     request = json.loads(request)
+#     goal = request["goal"]
+#     session_id = request["session_id"]
+#     assert session_id in user_sessions
+#     user_sessions[session_id]["goal"] = goal
+#     user_steps = request["user_steps"]
+#     print("user_steps", user_steps)
+#     k, n = 2, 2
+#     if False:
+#         decomposed_steps = json.load(
+#             open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
+#         )
+#         user_sessions[session_id]["semantic_tasks"] = decomposed_steps
+#         return decomposed_steps
+#     else:
+
+#         async def iter_response(candidate_steps):  # (1)
+#             if len(candidate_steps) == 0:
+#                 candidate_steps = await decomposer.goal_decode_n_samples(
+#                     goal, [], default_model, api_key, n=n
+#                 )
+#                 yield json.dumps({"semantic_tasks": candidate_steps}) + "\n"
+#             async for steps in decomposer.stream_goal_beam_search(
+#                 goal, candidate_steps, default_model, api_key, k=k, n=n
+#             ):
+#                 candidate_steps = steps
+#                 save_json(
+#                     candidate_steps,
+#                     relative_path("dev_data/test_beam_search_candidate_steps.json"),
+#                 )
+#                 yield json.dumps({"semantic_tasks": candidate_steps}) + "\n"
+
+#         return StreamingResponse(
+#             iter_response(user_steps), media_type="application/json"
+#         )

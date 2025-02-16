@@ -4,9 +4,17 @@
 
   let {
     title,
+    definition = $bindable(""),
     few_shot_examples,
     icon,
-  }: { title: string; few_shot_examples: any; icon: Snippet } = $props();
+    handleDefinitionChanged = () => {},
+  }: {
+    title: string;
+    definition: string;
+    few_shot_examples: any;
+    icon: Snippet;
+    handleDefinitionChanged: Function;
+  } = $props();
   let show = $state(false);
 </script>
 
@@ -27,7 +35,12 @@
 
   {#if show}
     <div in:slide class="flex flex-col gap-y-2">
-      Definition here!
+      <div
+        contenteditable
+        onblur={(e) => handleDefinitionChanged(e.target.textContent.trim())}
+      >
+        {definition}
+      </div>
       {#each few_shot_examples as example}
         <div class="flex gap-x-2 items-center text-gray-500">
           <div class="font-mono text-sm min-w-[4rem]">{example.task_label}</div>
