@@ -8,6 +8,8 @@ import itertools
 
 
 # import json
+
+
 # def save_json(data, filename):
 #     with open(filename, "w") as f:
 #         json.dump(data, f, indent=4, ensure_ascii=False)
@@ -15,27 +17,32 @@ import itertools
 
 async def run_all_evaluations(
     eval_params: list[tuple[str, str, str]],  # [goal, node_str, parent_node_str]
+    eval_definitions: dict[str, str],
     model: str,
     api_key: str,
-    evaluations: list = [],
 ):
     """Run all evaluation agents for all nodes. Each node is evaluated for complexity, coherence, and importance."""
     nested_tasks = [
         [
             run_complexity_evaluation_agent(
-                text=node_str, model=model, api_key=api_key
+                text=node_str,
+                model=model,
+                api_key=api_key,
+                complexity_definition=eval_definitions["complexity"],
             ),
             run_coherence_evaluation_agent(
                 parent_part=parent_node_str,
                 child_part=node_str,
                 model=model,
                 api_key=api_key,
+                coherence_definition=eval_definitions["coherence"],
             ),
             run_importance_evaluation_agent(
                 final_goal=goal,
                 subtask_description=node_str,
                 model=model,
                 api_key=api_key,
+                importance_definition=eval_definitions["importance"],
             ),
         ]
         for goal, node_str, parent_node_str in eval_params
@@ -54,15 +61,7 @@ async def run_all_evaluations(
 
 
 async def run_complexity_evaluation_agent(
-    text: str,
-    model: str,
-    api_key: str,
-    complexity_definition: str = (
-        "A text is considered complex if it requires advanced knowledge "
-        "or expertise, contains multiple layered or specialized concepts, or "
-        "requires multi-step reasoning to understand or accomplish the described goal. "
-        "Otherwise, it's considered not complex."
-    ),
+    text: str, model: str, api_key: str, complexity_definition: str
 ):
 
     model_client = OpenAIChatCompletionClient(
@@ -110,11 +109,7 @@ async def run_coherence_evaluation_agent(
     child_part: str,
     model: str,
     api_key: str,
-    coherence_definition: str = (
-        "Two text pieces are considered coherent in a sequence if the second "
-        "logically or thematically follows from the first, maintains consistency with it, "
-        "and does not present a contradictory or unrelated concept."
-    ),
+    coherence_definition: str,
 ):
 
     model_client = OpenAIChatCompletionClient(
@@ -169,11 +164,7 @@ async def run_importance_evaluation_agent(
     subtask_description: str,
     model: str,
     api_key: str,
-    importance_definition: str = (
-        "A subtask is considered important if it is critical, essential, "
-        "or significantly beneficial to achieving the final goal. If it is tangential, "
-        "optional, or has minimal impact, then it is not important."
-    ),
+    importance_definition: str,
 ):
 
     model_client = OpenAIChatCompletionClient(
