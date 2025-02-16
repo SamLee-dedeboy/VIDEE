@@ -180,6 +180,7 @@
       : [...task_card_show_explanation, task_id];
   }
 
+  // TODO: decide how a task should be initialized: Should we allow adding a task during Monte Carlo Tree search?
   // handlers with server-side updates
   function handleAddTask() {
     semantic_tasks.push({
@@ -190,35 +191,54 @@
       parentIds: [],
       sub_tasks: [],
       children: [],
-      complexity: false,
-      coherence: false,
-      importance: false,
     });
     update_with_server();
   }
 
   function handleDeleteTask(task: tSemanticTask) {
-    semantic_tasks = semantic_tasks.filter((_task) => _task.id !== task.id);
     const task_dict = semantic_tasks.reduce((acc, task) => {
-      acc[task.id] = task;
+      acc[task[id_key]] = task;
       return acc;
     }, {});
+
+    //
+    // update the dependencies
+    //
     // update the parentIds of the children
-    task.children?.forEach((child_task_id) => {
-      task_dict[child_task_id].parentIds = task_dict[
-        child_task_id
-      ].parentIds.filter((id) => id !== task.id);
-    });
+    // task.children?.forEach((child_task_id) => {
+    //   task_dict[child_task_id].parentIds = task_dict[
+    //     child_task_id
+    //   ].parentIds.filter((id) => id !== task.id);
+    // });
 
     // update the childrenIds of the parent
-    task.parentIds.forEach((parent_task_id) => {
-      task_dict[parent_task_id].children = task_dict[
-        parent_task_id
-      ].children.filter((id) => id !== task.id);
-    });
-    if (task[id_key] === next_expansion?.[id_key]) {
-      next_expansion = undefined;
+    // task.parentIds.forEach((parent_task_id) => {
+    //   task_dict[parent_task_id].children = task_dict[
+    //     parent_task_id
+    //   ].children.filter((id) => id !== task.id);
+    // });
+    // if (task[id_key] === next_expansion?.[id_key]) {
+    //   next_expansion = undefined;
+    // }
+
+    // delete this node from its parent's children_ids
+    const parent = task_dict[task["MCT_parent_id"]];
+    parent.MCT_children_ids = parent.MCT_children_ids.filter(
+      (id) => id !== task[id_key]
+    );
+    task_dict[task["MCT_parent_id"]] = parent;
+
+    // delete the branch in the Monte Carlo Tree
+    let queue = [task];
+    while (queue.length) {
+      const task = queue.shift()!;
+      const children = task.MCT_children_ids.map((id) => task_dict[id]);
+      queue.push(...children);
+      semantic_tasks = semantic_tasks.filter(
+        (_task) => _task[id_key] !== task[id_key]
+      );
     }
+
     update_with_server();
   }
 
