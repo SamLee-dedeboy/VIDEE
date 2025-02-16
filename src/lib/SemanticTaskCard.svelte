@@ -92,7 +92,7 @@
         <span class="card-label mr-2 capitalize select-none" class:end={isEnd}
           >{task.label}</span
         >
-        {#if !expand}
+        {#if !expand && task[id_key] !== "-1"}
           <div class="absolute left-0 bottom-[calc(100%+5px)] flex gap-x-1">
             {#if controllers.show_complexity}
               <div transition:scale class="flex">

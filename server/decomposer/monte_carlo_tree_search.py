@@ -4,6 +4,10 @@ import math
 import random
 from server.AutoGenUtils import query
 from server.custom_types.custom_types import MCT_Node
+import server.evaluator as evaluator
+
+
+MAX_STEPS = 10
 
 
 def init_MCTS():
@@ -38,20 +42,24 @@ async def stream_MCTS(
     api_key: str,
     next_selection=None,
 ):
-    while True:
-        root = await MCTS_step(
-            root,
-            node_dict,
-            next_selection=next_selection,
-            goal=goal,
-            model=model,
-            api_key=api_key,
-        )
-        next_selection = select(root, node_dict)
-        max_value_path = get_max_value_path(root, node_dict)
-        yield root, next_selection, max_value_path
-        if all_END(root, node_dict):
-            break
+    try:
+        while True:
+            root = await MCTS_step(
+                root,
+                node_dict,
+                next_selection=next_selection,
+                goal=goal,
+                model=model,
+                api_key=api_key,
+            )
+            next_selection = select(root, node_dict)
+            max_value_path = get_max_value_path(root, node_dict)
+            yield root, next_selection, max_value_path
+            if all_END(root, node_dict):
+                yield root, None, None
+    except Exception as e:
+        print(f"Error in stream_MCTS: {e}")
+        yield root, None, None
     pass
 
 
@@ -62,17 +70,27 @@ async def MCTS_step(
     model: str,
     api_key: str,
     next_selection=None,
+    evaluator_definitions=None,
 ) -> MCT_Node:
-    if next_selection is None:
-        node = select(root, node_dict)
-    else:
-        node = node_dict[next_selection.MCT_id]
-    # node = select(root, node_dict)
-    print(f"Selected node: {node.label}")
-    child = await expand(node, node_dict, goal, model, api_key)
-    reward_value = await reward(child)
-    backpropagate(child, reward_value, node_dict)
-    return root
+    try:
+        if next_selection is None:
+            node = select(root, node_dict)
+        else:
+            node = node_dict[next_selection.MCT_id]
+        child = await expand(node, node_dict, goal, model, api_key)
+        reward_value = await reward(
+            goal,
+            child,
+            node_dict,
+            model=model,
+            api_key=api_key,
+            evaluator_definitions=evaluator_definitions,
+        )
+        backpropagate(child, reward_value, node_dict)
+        return root
+    except Exception as e:
+        print(f"Error in MCTS_step: {e}")
+        return root
 
 
 def UCT(node: MCT_Node, parent_node: MCT_Node | None, exploration_weight=1.41) -> float:
@@ -98,6 +116,8 @@ def select(node: MCT_Node, node_dict: dict) -> MCT_Node:
                 lambda id: not node_dict[id].children_all_ends, node.MCT_children_ids
             )
         )
+        if not candidate_children_ids:
+            break  # this means the MCTS simulation is finished
         node = max(
             list(map(lambda node_id: node_dict[node_id], candidate_children_ids)),
             key=lambda node: UCT(node, parent_node),
@@ -114,23 +134,33 @@ async def expand(
     # node_dict[new_node.MCT_id] = new_node
     # parent_node.MCT_children_ids.append(new_node.MCT_id)
     # return new_node
-    previous_steps = get_previous_steps(parent_node, node_dict)
-    if not is_END(parent_node):
-        children = await query.run_goal_decomposition_agent_stepped(
-            goal, previous_steps, model=model, api_key=api_key, temperature=1.0, n=n
-        )
-        for index, child_node in enumerate(children):
-            child_as_MCT_node = MCT_Node(
-                **child_node,
-                MCT_id=f"{parent_node.MCT_id}/{index}",
-                print_label=f"{child_node['label']} (0/0)",
-                MCT_parent_id=parent_node.MCT_id,
+    try:
+        previous_steps = get_previous_steps(parent_node, node_dict)
+        if not is_END(parent_node):
+            children = await query.run_goal_decomposition_agent_stepped(
+                goal,
+                previous_steps,
+                model=model,
+                api_key=api_key,
+                temperature=1.0,
+                n=n,
+                remain_steps=MAX_STEPS - parent_node.level,
             )
-            node_dict[child_as_MCT_node.MCT_id] = child_as_MCT_node
-            parent_node.MCT_children_ids.append(child_as_MCT_node.MCT_id)
-        update_end_paths(parent_node, node_dict)
-        return node_dict[random.choice(parent_node.MCT_children_ids)]
-    return parent_node  # No expansion if node is terminal
+            for index, child_node in enumerate(children):
+                child_as_MCT_node = MCT_Node(
+                    **child_node,
+                    MCT_id=f"{parent_node.MCT_id}/{index}",
+                    print_label=f"{child_node['label']} (0/0)",
+                    MCT_parent_id=parent_node.MCT_id,
+                    level=parent_node.level + 1,
+                )
+                node_dict[child_as_MCT_node.MCT_id] = child_as_MCT_node
+                parent_node.MCT_children_ids.append(child_as_MCT_node.MCT_id)
+            update_end_paths(parent_node, node_dict)
+            return node_dict[random.choice(parent_node.MCT_children_ids)]
+        return parent_node  # No expansion if node is terminal
+    except Exception as e:
+        print(f"Error in expand: {e}")
 
 
 def update_end_paths(node: MCT_Node, node_dict: dict):
@@ -142,16 +172,45 @@ def update_end_paths(node: MCT_Node, node_dict: dict):
         node = node_dict[node.MCT_parent_id] if node.MCT_parent_id else None
 
 
-async def reward(node: MCT_Node) -> float:
-    node.llm_evaluation.complexity = bool(random.randint(0, 1))
-    node.llm_evaluation.coherence = bool(random.randint(0, 1))
-    node.llm_evaluation.importance = bool(random.randint(0, 1))
-    node.user_evaluation.complexity = node.llm_evaluation.complexity
-    node.user_evaluation.coherence = node.llm_evaluation.coherence
-    node.user_evaluation.importance = node.llm_evaluation.importance
-    return random.random()
-    # evaluation_score = await run_decomposition_self_evaluation_agent(goal, all_steps, node, model, api_key)
-    return evaluation_score
+async def reward(
+    goal: str,
+    node: MCT_Node,
+    node_dict,
+    model: str,
+    api_key: str,
+    evaluator_definitions=None,
+) -> float:
+    try:
+        node_str = task_def_toString(node, goal)
+        parent_node_str = task_def_toString(node_dict[node.MCT_parent_id], goal)
+        [
+            node.llm_evaluation.complexity,
+            node.llm_evaluation.coherence,
+            node.llm_evaluation.importance,
+        ] = await evaluator.run_all_evaluations(
+            goal=goal,
+            node_str=node_str,
+            parent_node_str=parent_node_str,
+            model=model,
+            api_key=api_key,
+        )
+        reward_value = (
+            node.llm_evaluation.complexity
+            + node.llm_evaluation.coherence
+            + node.llm_evaluation.importance
+        ) / 3
+
+        node.llm_evaluation.complexity = bool(node.llm_evaluation.complexity)
+        node.llm_evaluation.coherence = bool(node.llm_evaluation.coherence)
+        node.llm_evaluation.importance = bool(node.llm_evaluation.importance)
+
+        node.user_evaluation.complexity = node.llm_evaluation.complexity
+        node.user_evaluation.coherence = node.llm_evaluation.coherence
+        node.user_evaluation.importance = node.llm_evaluation.importance
+        return reward_value
+
+    except Exception as e:
+        print(f"Error in reward: {e}")
 
 
 def backpropagate(node: MCT_Node, reward: float, node_dict: dict) -> None:
@@ -205,6 +264,17 @@ def all_END(node: MCT_Node, node_dict: dict):
     if not node.MCT_children_ids:
         return is_END(node)
     return all(all_END(node_dict[child], node_dict) for child in node.MCT_children_ids)
+
+
+def task_def_toString(task: MCT_Node, goal: str):
+    if task.MCT_id == "-1":
+        return goal
+    return """
+    Task: {label}
+    Description: {description}
+    """.format(
+        label=task.label, description=task.description
+    )
 
 
 from treelib import Node, Tree

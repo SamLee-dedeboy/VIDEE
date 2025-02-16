@@ -48,12 +48,14 @@ The library loads model details, like model name, type, API key, etc., from a JS
 1. Install new dependencies with `pip install -r server/requirements.txt`
 2. Setting Up API Keys
   - OpenAI: Add your API key in the api_key field under the openai model configuration
+```json
 {
   "name": "openai_gpt35",
   "api_type": "openai",
   "model": "gpt-3.5-turbo",
   "api_key": "YOUR_OPENAI_API_KEY" // or omit and rely on OPENAI_API_KEY env variable
 }
+```
 
 3. Replacing Your Current Code
 
@@ -101,7 +103,7 @@ client = ModelClient(
     system_message="** Context ** .."
 )
 
-user_message = "My goal is I need to construct a knowledge graph from a collection of documents from wikipedia")
+user_message = "My goal is I need to construct a knowledge graph from a collection of documents from wikipedia"
 # do chat
 result = client.chat(user_message)
 # parse it to json
@@ -148,7 +150,7 @@ client = ModelClient(
     system_message="** Context ** .."
 )
 
-user_message = "My goal is I need to construct a knowledge graph from a collection of documents from wikipedia")
+user_message = "My goal is I need to construct a knowledge graph from a collection of documents from wikipedia"
 # do chat
 result = client.chat(user_message)
 # parse it to json
@@ -181,7 +183,7 @@ client = ModelClient(
      system_message="** Context ** .."
   )
 
-user_message = "My goal is I need to construct a knowledge graph from a collection of documents from wikipedia")
+user_message = "My goal is I need to construct a knowledge graph from a collection of documents from wikipedia"
 # do chat
 result = client.chat(user_message)
 # parse it to json
