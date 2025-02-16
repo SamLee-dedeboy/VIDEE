@@ -82,8 +82,12 @@ async def run_goal_decomposition_agent(goal: str, model: str, api_key: str):
 
 
 async def run_goal_decomposition_agent_stepped(
-    goal: str, previous_steps: list, model: str, api_key: str, temperature=0.0, n=1
+    goal: str, previous_steps: list, model: str, api_key: str, temperature=0.0, n=1, remain_steps=10
 ):
+    if remain_steps <= 0:
+        ids = list(map(lambda step: step["id"], previous_steps))
+        return [{'id': 'END_PATH_'+str(ids), 'label': 'END', 'description': 'END', 'explanation': 'END', 'parentIds': ids}]
+
     model_client = OpenAIChatCompletionClient(
         model=model,
         api_key=api_key,
@@ -102,7 +106,7 @@ async def run_goal_decomposition_agent_stepped(
         You are a text analytics task planner. 
         Users have collected a dataset of documents. The user will describe a goal to achieve through some text analytics, and what they have done already.
         ** Task **
-        Your task is to provide a single next step based on what the user have done so far.
+        Your task is to provide a single next step based on what the user have done so far and the remaining steps to finish the task.
         ** Requirements **
         Please specify the logical next step to take.
         Ignore the practical steps such as data collection, cleaning or visualization.
@@ -127,6 +131,11 @@ async def run_goal_decomposition_agent_stepped(
         ),
     )
     user_message = "My goal is: {goal}".format(goal=goal) + "\n"
+    user_message += (
+        "There are {remaining_steps} steps remaining until you have to finish the task.\n".format(
+            remaining_steps=remain_steps
+        )
+    )
     if len(previous_steps) > 0:
         previous_steps_str = "\n".join(
             list(
