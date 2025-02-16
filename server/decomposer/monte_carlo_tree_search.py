@@ -4,9 +4,11 @@ import math
 import random
 from server.AutoGenUtils import query
 from server.custom_types.custom_types import MCT_Node
+import server.evaluator as evaluator
 
 
 MAX_STEPS = 10
+
 
 def init_MCTS():
     root = MCT_Node(
@@ -68,16 +70,22 @@ async def MCTS_step(
     model: str,
     api_key: str,
     next_selection=None,
+    evaluator_definitions=None,
 ) -> MCT_Node:
     try:
         if next_selection is None:
             node = select(root, node_dict)
         else:
             node = node_dict[next_selection.MCT_id]
-        # node = select(root, node_dict)
-        print(f"Selected node: {node.label}")
         child = await expand(node, node_dict, goal, model, api_key)
-        reward_value = await reward(child)
+        reward_value = await reward(
+            goal,
+            child,
+            node_dict,
+            model=model,
+            api_key=api_key,
+            evaluator_definitions=evaluator_definitions,
+        )
         backpropagate(child, reward_value, node_dict)
         return root
     except Exception as e:
@@ -130,7 +138,13 @@ async def expand(
         previous_steps = get_previous_steps(parent_node, node_dict)
         if not is_END(parent_node):
             children = await query.run_goal_decomposition_agent_stepped(
-                goal, previous_steps, model=model, api_key=api_key, temperature=1.0, n=n, remain_steps=MAX_STEPS-parent_node.level
+                goal,
+                previous_steps,
+                model=model,
+                api_key=api_key,
+                temperature=1.0,
+                n=n,
+                remain_steps=MAX_STEPS - parent_node.level,
             )
             for index, child_node in enumerate(children):
                 child_as_MCT_node = MCT_Node(
@@ -158,17 +172,43 @@ def update_end_paths(node: MCT_Node, node_dict: dict):
         node = node_dict[node.MCT_parent_id] if node.MCT_parent_id else None
 
 
-async def reward(node: MCT_Node) -> float:
+async def reward(
+    goal: str,
+    node: MCT_Node,
+    node_dict,
+    model: str,
+    api_key: str,
+    evaluator_definitions=None,
+) -> float:
     try:
-        node.llm_evaluation.complexity = bool(random.randint(0, 1))
-        node.llm_evaluation.coherence = bool(random.randint(0, 1))
-        node.llm_evaluation.importance = bool(random.randint(0, 1))
+        node_str = task_def_toString(node, goal)
+        parent_node_str = task_def_toString(node_dict[node.MCT_parent_id], goal)
+        [
+            node.llm_evaluation.complexity,
+            node.llm_evaluation.coherence,
+            node.llm_evaluation.importance,
+        ] = await evaluator.run_all_evaluations(
+            goal=goal,
+            node_str=node_str,
+            parent_node_str=parent_node_str,
+            model=model,
+            api_key=api_key,
+        )
+        reward_value = (
+            node.llm_evaluation.complexity
+            + node.llm_evaluation.coherence
+            + node.llm_evaluation.importance
+        ) / 3
+
+        node.llm_evaluation.complexity = bool(node.llm_evaluation.complexity)
+        node.llm_evaluation.coherence = bool(node.llm_evaluation.coherence)
+        node.llm_evaluation.importance = bool(node.llm_evaluation.importance)
+
         node.user_evaluation.complexity = node.llm_evaluation.complexity
         node.user_evaluation.coherence = node.llm_evaluation.coherence
         node.user_evaluation.importance = node.llm_evaluation.importance
-        return random.random()
-        # evaluation_score = await run_decomposition_self_evaluation_agent(goal, all_steps, node, model, api_key)
-        return evaluation_score
+        return reward_value
+
     except Exception as e:
         print(f"Error in reward: {e}")
 
@@ -224,6 +264,17 @@ def all_END(node: MCT_Node, node_dict: dict):
     if not node.MCT_children_ids:
         return is_END(node)
     return all(all_END(node_dict[child], node_dict) for child in node.MCT_children_ids)
+
+
+def task_def_toString(task: MCT_Node, goal: str):
+    if task.MCT_id == "-1":
+        return goal
+    return """
+    Task: {label}
+    Description: {description}
+    """.format(
+        label=task.label, description=task.description
+    )
 
 
 from treelib import Node, Tree

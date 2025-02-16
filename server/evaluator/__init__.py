@@ -1,3 +1,4 @@
 from .criteria import run_importance_evaluation_agent
 from .criteria import run_complexity_evaluation_agent
 from .criteria import run_coherence_evaluation_agent
+from .criteria import run_all_evaluations

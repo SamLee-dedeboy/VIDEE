@@ -117,7 +117,6 @@ async def goal_decomposition_MCTS_stepped(request: Request):
         if "next_expansion" in request
         else None
     )
-    print("User next selection", next_selection)
     if semantic_tasks is None or semantic_tasks == []:
         user_root = decomposer.init_MCTS()
         node_dict = {user_root.MCT_id: user_root}
@@ -164,6 +163,7 @@ async def goal_decomposition_MCTS_stepped(request: Request):
             except Exception as exception:
                 print(f"Error inside iter_response loop: {exception}")
                 pass
+
     try:
         return StreamingResponse(
             iter_response(user_root, node_dict, goal, next_selection),
