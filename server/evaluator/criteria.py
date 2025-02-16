@@ -4,6 +4,8 @@ from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.messages import TextMessage
 from tqdm import tqdm
 import asyncio
+import itertools
+
 
 # import json
 # def save_json(data, filename):
@@ -12,28 +14,43 @@ import asyncio
 
 
 async def run_all_evaluations(
-    goal: str,
-    node_str: str,
-    parent_node_str: str,
+    eval_params: list[tuple[str, str, str]],  # [goal, node_str, parent_node_str]
     model: str,
     api_key: str,
     evaluations: list = [],
 ):
-    tasks = [
-        run_complexity_evaluation_agent(text=node_str, model=model, api_key=api_key),
-        run_coherence_evaluation_agent(
-            parent_part=parent_node_str,
-            child_part=node_str,
-            model=model,
-            api_key=api_key,
-        ),
-        run_importance_evaluation_agent(
-            final_goal=goal, subtask_description=node_str, model=model, api_key=api_key
-        ),
+    """Run all evaluation agents for all nodes. Each node is evaluated for complexity, coherence, and importance."""
+    nested_tasks = [
+        [
+            run_complexity_evaluation_agent(
+                text=node_str, model=model, api_key=api_key
+            ),
+            run_coherence_evaluation_agent(
+                parent_part=parent_node_str,
+                child_part=node_str,
+                model=model,
+                api_key=api_key,
+            ),
+            run_importance_evaluation_agent(
+                final_goal=goal,
+                subtask_description=node_str,
+                model=model,
+                api_key=api_key,
+            ),
+        ]
+        for goal, node_str, parent_node_str in eval_params
     ]
-
-    results = await asyncio.gather(*tasks)
-    return results
+    tasks = list(itertools.chain(*nested_tasks))
+    # must use asyncio.gather to ensure order of results is the same as the order of tasks
+    # this is importance for the next step, where we group results by node
+    results_sequence = await asyncio.gather(*tasks)
+    # group results so that each group contains results for a single node
+    num_of_evaluators = 3
+    results_grouped = [
+        results_sequence[i : i + num_of_evaluators]
+        for i in range(0, len(results_sequence), num_of_evaluators)
+    ]
+    return results_grouped
 
 
 async def run_complexity_evaluation_agent(
