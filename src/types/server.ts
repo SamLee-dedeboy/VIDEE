@@ -4,15 +4,11 @@ export type tNode = {
     data: any;
     bbox?: DOMRect;
 }
-export type tSemanticTask = {
-    id: string;
-    label: string;
-    description: string;
-    explanation: string;
-    // depend_on: string[];
-    parentIds: string[]
-    children: string[];
-    sub_tasks: tSemanticTask[] | undefined; 
+export type tMCT_Node = {
+    MCT_id: string;
+    MCT_parent_id: string;
+    MCT_children_ids: string[];
+    level: number;
     llm_evaluation: {
         complexity: boolean;
         coherence: boolean;
@@ -23,7 +19,21 @@ export type tSemanticTask = {
         coherence: boolean;
         importance: boolean;
     }
+    value: number;
+    visits: number;
 }
+
+export type tSemanticTaskDescription = {
+    id: string;
+    label: string;
+    description: string;
+    explanation: string;
+    // depend_on: string[];
+    parentIds: string[]
+    children: string[];
+    sub_tasks: tSemanticTask[] | undefined; 
+} 
+export type tSemanticTask = tSemanticTaskDescription & tMCT_Node
 
 export type tPrimitiveTaskDescription = {
     id: string;

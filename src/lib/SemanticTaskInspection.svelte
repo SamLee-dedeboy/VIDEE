@@ -128,7 +128,7 @@
       {/if}
     </div>
   </div>
-  <div class="flex flex-col gap-y-1">
+  <div class="flex flex-col gap-y-2">
     <div
       class="text-[1.5rem] text-slate-600 font-semibold italic bg-orange-100 flex justify-center"
     >

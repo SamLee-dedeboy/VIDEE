@@ -139,6 +139,9 @@ async def goal_decomposition_MCTS_stepped(request: Request):
     user_sessions[session_id]["goal"] = goal
     semantic_tasks = request["semantic_tasks"] if "semantic_tasks" in request else None
     eval_definitions = user_sessions[session_id]["eval_definitions"]
+    eval_few_shot_examples = (
+        request["eval_few_shot_examples"] if "eval_few_shot_examples" in request else []
+    )
     next_selection = (
         custom_types.MCT_Node.model_validate(request["next_expansion"])
         if "next_expansion" in request
@@ -156,7 +159,7 @@ async def goal_decomposition_MCTS_stepped(request: Request):
     # node_dict = decomposer.collect_MCT_node_dict(user_root)
 
     async def iter_response(
-        root, node_dict, goal, next_selection, eval_definitions
+        root, node_dict, goal, next_selection, eval_definitions, eval_few_shot_examples
     ):  # (1)
         async for new_root, next_selection, max_value_path in decomposer.stream_MCTS(
             root,
@@ -164,6 +167,7 @@ async def goal_decomposition_MCTS_stepped(request: Request):
             goal,
             next_selection=next_selection,
             eval_definitions=eval_definitions,
+            eval_few_shot_examples=eval_few_shot_examples,
             model=default_model,
             api_key=api_key,
         ):
@@ -196,7 +200,14 @@ async def goal_decomposition_MCTS_stepped(request: Request):
 
     try:
         return StreamingResponse(
-            iter_response(user_root, node_dict, goal, next_selection, eval_definitions),
+            iter_response(
+                root=user_root,
+                node_dict=node_dict,
+                goal=goal,
+                next_selection=next_selection,
+                eval_definitions=eval_definitions,
+                eval_few_shot_examples=eval_few_shot_examples,
+            ),
             media_type="application/json",
         )
     except Exception as e:

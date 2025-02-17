@@ -40,7 +40,10 @@
         ) {
           if (!examples[evaluation]) examples[evaluation] = [];
           examples[evaluation].push({
-            task_label: task.label,
+            node: task,
+            parent_node: semantic_tasks.find(
+              (t) => t["MCT_id"] === task["MCT_parent_id"]
+            ),
             user_evaluation: task.user_evaluation[evaluation],
             llm_evaluation: task.llm_evaluation[evaluation],
           });
@@ -83,60 +86,60 @@
       });
   }
 
-  async function fetchStream() {
-    stream_controller = new AbortController();
-    const signal = stream_controller.signal;
-    try {
-      const response = await fetch(`${server_address}/test/stream/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          session_id,
-        }),
+  // async function fetchStream() {
+  //   stream_controller = new AbortController();
+  //   const signal = stream_controller.signal;
+  //   try {
+  //     const response = await fetch(`${server_address}/test/stream/`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         session_id,
+  //       }),
 
-        signal,
-      });
-      if (!response.body) {
-        throw new Error("Stream error");
-      }
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
+  //       signal,
+  //     });
+  //     if (!response.body) {
+  //       throw new Error("Stream error");
+  //     }
+  //     const reader = response.body.getReader();
+  //     const decoder = new TextDecoder();
 
-      let buffer = "";
+  //     let buffer = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+  //     while (true) {
+  //       const { done, value } = await reader.read();
+  //       if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
+  //       buffer += decoder.decode(value, { stream: true });
 
-        // Process complete JSON objects line by line
-        let lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
+  //       // Process complete JSON objects line by line
+  //       let lines = buffer.split("\n");
+  //       buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
 
-        for (let line of lines) {
-          if (line) {
-            const obj = JSON.parse(line);
-            console.log("Received:", obj);
-            // You can update UI here
-          }
-        }
-      }
-    } catch (error: any) {
-      if (error.name === "AbortError") {
-        streaming_states.paused = true;
-        console.log("Stream aborted");
-      } else {
-        console.error("Error:", error);
-      }
-    } finally {
-      stream_controller = null;
-    }
+  //       for (let line of lines) {
+  //         if (line) {
+  //           const obj = JSON.parse(line);
+  //           console.log("Received:", obj);
+  //           // You can update UI here
+  //         }
+  //       }
+  //     }
+  //   } catch (error: any) {
+  //     if (error.name === "AbortError") {
+  //       streaming_states.paused = true;
+  //       console.log("Stream aborted");
+  //     } else {
+  //       console.error("Error:", error);
+  //     }
+  //   } finally {
+  //     stream_controller = null;
+  //   }
 
-    console.log("Stream finished");
-  }
+  //   console.log("Stream finished");
+  // }
 
   function createSession() {
     let random_session_id = Math.random().toString(36).substring(2, 15);
@@ -159,25 +162,25 @@
   /**
    * Decompose the goal into semantic tasks
    */
-  function handleDecomposeGoal(goal: string) {
-    decomposing_goal = true;
-    fetch(`${server_address}/goal_decomposition/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ goal, session_id }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log({ data });
-        semantic_tasks = data;
-        decomposing_goal = false;
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
+  // function handleDecomposeGoal(goal: string) {
+  //   decomposing_goal = true;
+  //   fetch(`${server_address}/goal_decomposition/`, {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({ goal, session_id }),
+  //   })
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       console.log({ data });
+  //       semantic_tasks = data;
+  //       decomposing_goal = false;
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error:", error);
+  //     });
+  // }
 
   async function handleDecomposeGoalStepped_MCTS(goal: string) {
     streaming_states.started = true;
@@ -197,6 +200,7 @@
             session_id,
             semantic_tasks,
             next_expansion,
+            eval_few_shot_examples: few_shot_examples_semantic_tasks,
           }),
           signal,
         }
@@ -250,69 +254,69 @@
     }
   }
 
-  async function handleDecomposeGoalStepped_BeamSearch(goal: string) {
-    streaming_states.started = true;
-    streaming_states.paused = false;
-    stream_controller = new AbortController();
-    const signal = stream_controller.signal;
-    try {
-      const response = await fetch(
-        `${server_address}/goal_decomposition/beam_search/stepped/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            goal,
-            session_id,
-            user_steps:
-              semantic_tasks === undefined ? [] : [[semantic_tasks, 5]],
-          }),
-          signal,
-        }
-      );
-      if (!response.body) {
-        throw new Error("Stream error");
-      }
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
+  // async function handleDecomposeGoalStepped_BeamSearch(goal: string) {
+  //   streaming_states.started = true;
+  //   streaming_states.paused = false;
+  //   stream_controller = new AbortController();
+  //   const signal = stream_controller.signal;
+  //   try {
+  //     const response = await fetch(
+  //       `${server_address}/goal_decomposition/beam_search/stepped/`,
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify({
+  //           goal,
+  //           session_id,
+  //           user_steps:
+  //             semantic_tasks === undefined ? [] : [[semantic_tasks, 5]],
+  //         }),
+  //         signal,
+  //       }
+  //     );
+  //     if (!response.body) {
+  //       throw new Error("Stream error");
+  //     }
+  //     const reader = response.body.getReader();
+  //     const decoder = new TextDecoder();
 
-      let buffer = "";
+  //     let buffer = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+  //     while (true) {
+  //       const { done, value } = await reader.read();
+  //       if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
+  //       buffer += decoder.decode(value, { stream: true });
 
-        // Process complete JSON objects line by line
-        let lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
+  //       // Process complete JSON objects line by line
+  //       let lines = buffer.split("\n");
+  //       buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
 
-        for (let line of lines) {
-          if (line) {
-            const obj = JSON.parse(line);
-            console.log("Received:", obj);
-            semantic_tasks = obj["semantic_tasks"][0][0];
-          }
-        }
-      }
-      console.log("Stream finished");
-      streaming_states.started = false;
-      streaming_states.paused = false;
-      streaming_states.finished = true;
-    } catch (error: any) {
-      if (error.name === "AbortError") {
-        streaming_states.paused = true;
-        console.log("Stream aborted");
-      } else {
-        console.error("Error:", error);
-      }
-    } finally {
-      stream_controller = undefined;
-    }
-  }
+  //       for (let line of lines) {
+  //         if (line) {
+  //           const obj = JSON.parse(line);
+  //           console.log("Received:", obj);
+  //           semantic_tasks = obj["semantic_tasks"][0][0];
+  //         }
+  //       }
+  //     }
+  //     console.log("Stream finished");
+  //     streaming_states.started = false;
+  //     streaming_states.paused = false;
+  //     streaming_states.finished = true;
+  //   } catch (error: any) {
+  //     if (error.name === "AbortError") {
+  //       streaming_states.paused = true;
+  //       console.log("Stream aborted");
+  //     } else {
+  //       console.error("Error:", error);
+  //     }
+  //   } finally {
+  //     stream_controller = undefined;
+  //   }
+  // }
 
   /**
    * convert the semantic tasks to primitive tasks
