@@ -42,6 +42,7 @@ async def stream_MCTS(
     api_key: str,
     next_selection=None,
     eval_definitions=None,
+    eval_few_shot_examples=[],
 ):
     try:
         while True:
@@ -50,6 +51,7 @@ async def stream_MCTS(
                 node_dict,
                 next_selection=next_selection,
                 eval_definitions=eval_definitions,
+                eval_few_shot_examples=eval_few_shot_examples,
                 goal=goal,
                 model=model,
                 api_key=api_key,
@@ -73,6 +75,7 @@ async def MCTS_step(
     api_key: str,
     next_selection=None,
     eval_definitions=None,
+    eval_few_shot_examples=[],
 ) -> MCT_Node:
     try:
         # select a node to expand
@@ -90,6 +93,7 @@ async def MCTS_step(
             model=model,
             api_key=api_key,
             eval_definitions=eval_definitions,
+            eval_few_shot_examples=eval_few_shot_examples,
         )
         # backpropagate the reward values
         for child, reward_value in zip(children, reward_value_list):
@@ -188,6 +192,7 @@ async def reward(
     model: str,
     api_key: str,
     eval_definitions=None,
+    eval_few_shot_examples=[],
 ) -> float:
     """Evaluates the children nodes and returns the reward value for each child in parallel"""
     try:
@@ -195,14 +200,14 @@ async def reward(
         eval_params = []
         # collect execution parameters for all children
         for node in children:
-            node_str = task_def_toString(node, goal)
-            parent_node_str = task_def_toString(node_dict[node.MCT_parent_id], goal)
-            eval_params.append((goal, node_str, parent_node_str))
+            eval_params.append((goal, node, node_dict[node.MCT_parent_id]))
 
         # runs evaluation on all children in parallel
         eval_results = await evaluator.run_all_evaluations(
+            goal=goal,
             eval_params=eval_params,
             eval_definitions=eval_definitions,
+            eval_few_shot_examples=eval_few_shot_examples,
             model=model,
             api_key=api_key,
         )
@@ -284,17 +289,6 @@ def all_END(node: MCT_Node, node_dict: dict):
     if not node.MCT_children_ids:
         return is_END(node)
     return all(all_END(node_dict[child], node_dict) for child in node.MCT_children_ids)
-
-
-def task_def_toString(task: MCT_Node, goal: str):
-    if task.MCT_id == "-1":
-        return goal
-    return """
-    Task: {label}
-    Description: {description}
-    """.format(
-        label=task.label, description=task.description
-    )
 
 
 from treelib import Node, Tree
