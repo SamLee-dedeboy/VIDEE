@@ -41,6 +41,8 @@ async def stream_MCTS(
     model: str,
     api_key: str,
     next_selection=None,
+    eval_definitions=None,
+    eval_few_shot_examples=[],
 ):
     try:
         while True:
@@ -48,6 +50,8 @@ async def stream_MCTS(
                 root,
                 node_dict,
                 next_selection=next_selection,
+                eval_definitions=eval_definitions,
+                eval_few_shot_examples=eval_few_shot_examples,
                 goal=goal,
                 model=model,
                 api_key=api_key,
@@ -70,23 +74,30 @@ async def MCTS_step(
     model: str,
     api_key: str,
     next_selection=None,
-    evaluator_definitions=None,
+    eval_definitions=None,
+    eval_few_shot_examples=[],
 ) -> MCT_Node:
     try:
+        # select a node to expand
         if next_selection is None:
             node = select(root, node_dict)
         else:
             node = node_dict[next_selection.MCT_id]
-        child = await expand(node, node_dict, goal, model, api_key)
-        reward_value = await reward(
+        # expand the node with children
+        children = await expand(node, node_dict, goal, model, api_key)
+        # run evaluation on *ALL* the children
+        reward_value_list = await reward(
             goal,
-            child,
+            children,
             node_dict,
             model=model,
             api_key=api_key,
-            evaluator_definitions=evaluator_definitions,
+            eval_definitions=eval_definitions,
+            eval_few_shot_examples=eval_few_shot_examples,
         )
-        backpropagate(child, reward_value, node_dict)
+        # backpropagate the reward values
+        for child, reward_value in zip(children, reward_value_list):
+            backpropagate(child, reward_value, node_dict)
         return root
     except Exception as e:
         print(f"Error in MCTS_step: {e}")
@@ -157,7 +168,9 @@ async def expand(
                 node_dict[child_as_MCT_node.MCT_id] = child_as_MCT_node
                 parent_node.MCT_children_ids.append(child_as_MCT_node.MCT_id)
             update_end_paths(parent_node, node_dict)
-            return node_dict[random.choice(parent_node.MCT_children_ids)]
+
+            return [node_dict[child_id] for child_id in parent_node.MCT_children_ids]
+            # return node_dict[random.choice(parent_node.MCT_children_ids)]
         return parent_node  # No expansion if node is terminal
     except Exception as e:
         print(f"Error in expand: {e}")
@@ -174,41 +187,53 @@ def update_end_paths(node: MCT_Node, node_dict: dict):
 
 async def reward(
     goal: str,
-    node: MCT_Node,
+    children: list[MCT_Node],
     node_dict,
     model: str,
     api_key: str,
-    evaluator_definitions=None,
+    eval_definitions=None,
+    eval_few_shot_examples=[],
 ) -> float:
+    """Evaluates the children nodes and returns the reward value for each child in parallel"""
     try:
-        node_str = task_def_toString(node, goal)
-        parent_node_str = task_def_toString(node_dict[node.MCT_parent_id], goal)
-        [
-            node.llm_evaluation.complexity,
-            node.llm_evaluation.coherence,
-            node.llm_evaluation.importance,
-        ] = await evaluator.run_all_evaluations(
+        reward_value_list = []
+        eval_params = []
+        # collect execution parameters for all children
+        for node in children:
+            eval_params.append((goal, node, node_dict[node.MCT_parent_id]))
+
+        # runs evaluation on all children in parallel
+        eval_results = await evaluator.run_all_evaluations(
             goal=goal,
-            node_str=node_str,
-            parent_node_str=parent_node_str,
+            eval_params=eval_params,
+            eval_definitions=eval_definitions,
+            eval_few_shot_examples=eval_few_shot_examples,
             model=model,
             api_key=api_key,
         )
-        reward_value = (
-            node.llm_evaluation.complexity
-            + node.llm_evaluation.coherence
-            + node.llm_evaluation.importance
-        ) / 3
 
-        node.llm_evaluation.complexity = bool(node.llm_evaluation.complexity)
-        node.llm_evaluation.coherence = bool(node.llm_evaluation.coherence)
-        node.llm_evaluation.importance = bool(node.llm_evaluation.importance)
+        # update the eval results for each child
+        for node, eval_result in zip(children, eval_results):
+            [
+                node.llm_evaluation.complexity,
+                node.llm_evaluation.coherence,
+                node.llm_evaluation.importance,
+            ] = eval_result
+            reward_value = (
+                node.llm_evaluation.complexity
+                + node.llm_evaluation.coherence
+                + node.llm_evaluation.importance
+            ) / 3
 
-        node.user_evaluation.complexity = node.llm_evaluation.complexity
-        node.user_evaluation.coherence = node.llm_evaluation.coherence
-        node.user_evaluation.importance = node.llm_evaluation.importance
-        return reward_value
+            node.llm_evaluation.complexity = bool(node.llm_evaluation.complexity)
+            node.llm_evaluation.coherence = bool(node.llm_evaluation.coherence)
+            node.llm_evaluation.importance = bool(node.llm_evaluation.importance)
 
+            node.user_evaluation.complexity = node.llm_evaluation.complexity
+            node.user_evaluation.coherence = node.llm_evaluation.coherence
+            node.user_evaluation.importance = node.llm_evaluation.importance
+            reward_value_list.append(reward_value)
+        return reward_value_list
     except Exception as e:
         print(f"Error in reward: {e}")
 
@@ -264,17 +289,6 @@ def all_END(node: MCT_Node, node_dict: dict):
     if not node.MCT_children_ids:
         return is_END(node)
     return all(all_END(node_dict[child], node_dict) for child in node.MCT_children_ids)
-
-
-def task_def_toString(task: MCT_Node, goal: str):
-    if task.MCT_id == "-1":
-        return goal
-    return """
-    Task: {label}
-    Description: {description}
-    """.format(
-        label=task.label, description=task.description
-    )
 
 
 from treelib import Node, Tree

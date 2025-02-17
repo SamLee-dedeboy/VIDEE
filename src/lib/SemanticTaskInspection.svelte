@@ -13,6 +13,12 @@
     $props();
   const session_id = (getContext("session_id") as Function)();
   let documents: any[] = $state([]);
+  let eval_definitions: Record<string, string> = $state({
+    complexity: "The complexity of the task",
+    coherence: "The coherence of the task",
+    importance: "The importance of the task",
+  });
+
   let show_documents = $state(false);
 
   function getDocuments() {
@@ -31,9 +37,44 @@
         console.error("Error:", error);
       });
   }
+  function getEvalDefinitions() {
+    fetch(`${server_address}/eval/definitions/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ session_id }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log({ eval_definitions: data });
+        eval_definitions = data;
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
+
+  function updateEvalDefinitions(_eval_definitions: Record<string, string>) {
+    fetch(`${server_address}/eval/definitions/update/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ session_id, eval_definitions: _eval_definitions }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
 
   onMount(() => {
     getDocuments();
+    getEvalDefinitions();
   });
 </script>
 
@@ -87,7 +128,7 @@
       {/if}
     </div>
   </div>
-  <div class="flex flex-col gap-y-1">
+  <div class="flex flex-col gap-y-2">
     <div
       class="text-[1.5rem] text-slate-600 font-semibold italic bg-orange-100 flex justify-center"
     >
@@ -95,18 +136,33 @@
     </div>
     <Evaluator
       title="Complexity"
+      definition={eval_definitions["complexity"]}
       icon={complexity_icon}
       few_shot_examples={few_shot_examples["complexity"]}
+      handleDefinitionChanged={(new_definition) => {
+        eval_definitions["complexity"] = new_definition;
+        updateEvalDefinitions(eval_definitions);
+      }}
     />
     <Evaluator
       title="Coherence"
+      definition={eval_definitions["coherence"]}
       icon={coherence_icon}
       few_shot_examples={few_shot_examples["coherence"]}
+      handleDefinitionChanged={(new_definition) => {
+        eval_definitions["coherence"] = new_definition;
+        updateEvalDefinitions(eval_definitions);
+      }}
     />
     <Evaluator
       title="Importance"
+      definition={eval_definitions["importance"]}
       icon={importance_icon}
       few_shot_examples={few_shot_examples["importance"]}
+      handleDefinitionChanged={(new_definition) => {
+        eval_definitions["importance"] = new_definition;
+        updateEvalDefinitions(eval_definitions);
+      }}
     />
   </div>
 </div>
