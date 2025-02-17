@@ -49,7 +49,7 @@ export class DAG {
         console.log("init done")
     }
 
-    update(data: tNode[], expanded_nodes: string[], max_value_path_ids: string[] = [], controllers: tControllers ) {
+    update(data: tNode[], max_value_path_ids: string[] = [], controllers?: tControllers, mcts=true) {
         const self = this
         console.log("dag update", data)
         const svg = d3.select(`#${this.svgId}`);
@@ -61,24 +61,14 @@ export class DAG {
         const stratify = d3_dag.graphStratify();
         this.dag = stratify(data);
 
-
-        // const rect_size: [number, number] = [320, 250]
         const rect_size: [number, number] = this.nodeRadius
         const layout = d3_dag
         .sugiyama()
         .coord(d3_dag.coordQuad())
-        // .grid()
-        // .lane(d3_dag.laneOpt())
-        // .coord(d3_dag.coordGreedy())
-        // .nodeSize(this.nodeRadius)
         .nodeSize((node: any) => {
             return [(node.data.bbox?.width || rect_size[0])  , (node.data.bbox?.height || rect_size[1])]
         })
-        // .nodeSize(rect_size)
         .gap([50, 50])
-        // .tweaks([d3_dag.tweakSize({width: max_width, height: max_height})])
-        // .tweaks([d3_dag.tweakShape(rect_size, d3_dag.shapeRect)])
-        // .tweaks([d3_dag.tweakShape(rect_size, d3_dag.shapeRect), d3_dag.tweakSize({width: max_width, height: max_height})])
 
         const { width, height } = layout(this.dag);
 
@@ -157,7 +147,8 @@ export class DAG {
                 )
 
         // plot edges
-        this.update_links(max_value_path_ids, controllers.show_max_value_path)
+        this.update_links(max_value_path_ids, controllers?.show_max_value_path, mcts)
+
 
         // translate to make new nodes in the center
         if(enter_nodes.length !== 0) {
@@ -167,17 +158,17 @@ export class DAG {
                 d3.mean(new_nodes_bboxes.map(d => d.y))
             ]
             // move the current zoom to the center of the new nodes
-            svg.transition().duration(500).delay(0).call(this.zoom.translateTo, new_nodes_center[0], new_nodes_center[1]).on("end", () => {
-            })
+            svg.transition().duration(500).delay(0).call(this.zoom.translateTo, new_nodes_center[0], new_nodes_center[1])
             this.new_nodes = enter_nodes
         }
 
-        // console.log("new nodes", this.new_nodes)
+        if(mcts) {
+
         // add new node class to the divs
         document.querySelectorAll(this.selection_card).forEach((div) => {
             const id = (div as HTMLElement).dataset.id
             if(id === undefined || id === "-1") return;
-            if(!controllers.show_new_nodes) {
+            if(controllers && !controllers.show_new_nodes) {
                 div.classList.remove("new-node")
                 return
             }
@@ -188,6 +179,7 @@ export class DAG {
             }
         })
         this.update_next_expansion_link(this.next_expansion_id)
+    }
 
         // plot edges between decomposed tasks
         // const expansion_links = data.filter(d => expanded_nodes.includes(d.id)).map(d => {
@@ -237,7 +229,7 @@ export class DAG {
 
     }
 
-    update_links(max_value_path_ids: string[] = [], show_max_value_path: boolean = false) {
+    update_links(max_value_path_ids: string[] = [], show_max_value_path: boolean | undefined = false, mcts=true) {
         const svg = d3.select(`#${this.svgId}`);
         svg.select("g.links")
             .selectAll("path.link")
@@ -250,7 +242,7 @@ export class DAG {
             .attr("stroke-width", 2)
             .attr("stroke", "gray")
             .attr("stroke-dasharray", "8,8")
-            .filter(({source, target}) => show_max_value_path && max_value_path_ids.includes(source.data.id) && max_value_path_ids.includes(target.data.id))
+            .filter(({source, target}) => mcts && show_max_value_path && max_value_path_ids.includes(source.data.id) && max_value_path_ids.includes(target.data.id))
             .attr("stroke", "black")
             .attr("stroke-width", 4)
             .attr("stroke-dasharray", "unset")

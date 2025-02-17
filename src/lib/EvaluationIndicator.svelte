@@ -6,16 +6,16 @@
   let {
     value,
     label,
-    streaming,
+    streaming = false,
     icon,
     handleToggle = () => {},
     show_transition = true,
   }: {
     value: boolean;
     label: string;
-    streaming: boolean;
+    streaming?: boolean;
     icon: Snippet;
-    handleToggle: Function;
+    handleToggle?: Function;
     show_transition: boolean;
   } = $props();
 </script>

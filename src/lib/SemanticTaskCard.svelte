@@ -23,6 +23,7 @@
     handleToggleShowSubTasks = () => {},
     handleDeleteSubTasks = () => {},
     handleDeleteTask = () => {},
+    handleSelectPath = () => {},
     complexity_icon,
     coherence_icon,
     importance_icon,
@@ -43,6 +44,7 @@
     handleToggleShowSubTasks?: Function;
     handleDeleteSubTasks?: Function;
     handleDeleteTask?: Function;
+    handleSelectPath?: Function;
     complexity_icon: Snippet;
     coherence_icon: Snippet;
     importance_icon: Snippet;
@@ -213,6 +215,7 @@
               {handleDeleteTask}
               {handleDeleteSubTasks}
               {handleSetAsNextExpansion}
+              {handleSelectPath}
             />
           </div>
         {/if}
@@ -246,6 +249,7 @@
         {handleDeleteTask}
         {handleDeleteSubTasks}
         {handleSetAsNextExpansion}
+        {handleSelectPath}
       />
     </div>
   {/if}
@@ -304,7 +308,7 @@
     }
   }
   .on-max-value-path {
-    @apply outline-black outline-4 border-none rounded-none shadow-md;
+    @apply !outline-black outline-4 border-none rounded-none shadow-md;
     & .card-label {
       @apply font-bold;
     }

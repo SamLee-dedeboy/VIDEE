@@ -1,6 +1,6 @@
 <script lang="ts">
   import GoalConversation from "lib/GoalConversation.svelte";
-  import SemanticTasks from "lib/SemanticTasks.svelte";
+  import SemanticTaskPlan from "lib/SemanticTaskPlan.svelte";
   import SemanticTasksTree from "lib/SemanticTasksTree.svelte";
   import PrimitiveTasks from "lib/PrimitiveTasks.svelte";
   import { server_address } from "constants";
@@ -29,29 +29,38 @@
 
   let semantic_tasks: tSemanticTask[] = $state([]);
   let next_expansion: tSemanticTask | undefined = $state(undefined);
-  let max_value_path: [string[], number] = $state([[], 0]);
-  let few_shot_examples_semantic_tasks = $derived.by(() => {
+  let selected_semantic_task_path: tSemanticTask[] = $state([]);
+  let few_shot_examples_semantic_tasks: Record<string, any> = $state({});
+  /**
+   * updates the few shot examples every time semantic tasks are updated
+   */
+  $effect(() => {
     const evaluations = ["complexity", "coherence", "importance"];
-    const examples: Record<string, any> = {};
     semantic_tasks.forEach((task) => {
       evaluations.forEach((evaluation) => {
         if (
           task.user_evaluation[evaluation] !== task.llm_evaluation[evaluation]
         ) {
-          if (!examples[evaluation]) examples[evaluation] = [];
-          examples[evaluation].push({
-            node: task,
-            parent_node: semantic_tasks.find(
-              (t) => t["MCT_id"] === task["MCT_parent_id"]
-            ),
-            user_evaluation: task.user_evaluation[evaluation],
-            llm_evaluation: task.llm_evaluation[evaluation],
-          });
+          if (!few_shot_examples_semantic_tasks[evaluation])
+            few_shot_examples_semantic_tasks[evaluation] = [];
+          if (
+            !few_shot_examples_semantic_tasks[evaluation].find(
+              (t) => t.node.label === task.label
+            )
+          ) {
+            few_shot_examples_semantic_tasks[evaluation].push({
+              node: task,
+              parent_node: semantic_tasks.find(
+                (t) => t.MCT_id === task.MCT_parent_id
+              ),
+              user_evaluation: task.user_evaluation[evaluation],
+              llm_evaluation: task.llm_evaluation[evaluation],
+            });
+          }
         }
       });
     });
-    console.log({ examples });
-    return examples;
+    console.log({ few_shot_examples_semantic_tasks });
   });
   let primitive_tasks:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)[]
@@ -65,9 +74,9 @@
 
   /**
    * Stores the state of the dag
-   * @value semantic | primitive
+   * @value semantic | primitive | mcts
    */
-  let show_dag = $state("semantic");
+  let show_dag = $state("mcts");
 
   async function init() {
     await fetchTest();
@@ -229,7 +238,9 @@
             console.log("Received:", obj);
             semantic_tasks = Object.values(obj["node_dict"]) as any[];
             next_expansion = obj["next_node"];
-            max_value_path = obj["max_value_path"];
+            selected_semantic_task_path = obj["max_value_path"][0].map(
+              (id: string) => semantic_tasks.find((t) => t["MCT_id"] === id)!
+            );
             if (mode === "step" && stream_controller !== undefined) {
               stream_controller.abort(); // Stop streaming
               stream_controller = undefined;
@@ -376,15 +387,31 @@
         <button
           id="stop"
           class="outline-2 outline-red-300 p-2 bg-red-100 rounded hover:bg-red-200"
-          class:disabled={!(
-            streaming_states.started && !streaming_states.paused
-          )}
+          class:hidden={!(streaming_states.started && !streaming_states.paused)}
           onclick={() => {
             if (stream_controller !== undefined) {
               stream_controller.abort(); // Stop streaming
               stream_controller = undefined;
             }
           }}>Stop Streaming</button
+        >
+        <button
+          class="min-6-[6rem] px-2 py-1 font-mono rounded shadow-[0px_0px_2px_2px_#e3e3e3] text-slate-700 outline-orange-300 hover:outline-2"
+          class:disabled={streaming_states.started && !streaming_states.paused}
+          style={`${show_dag === "mcts" ? "background-color: oklch(0.954 0.038 75.164); opacity: 1;" : "background-color: #fafafa; opacity: 0.5"}`}
+          onclick={() => (show_dag = "mcts")}>Searching</button
+        >
+        <button
+          class="min-w-[6rem] px-2 py-1 font-mono rounded shadow-[0px_0px_2px_2px_#e3e3e3] text-slate-700 outline-orange-300 hover:outline-2"
+          class:disabled={streaming_states.started && !streaming_states.paused}
+          style={`${show_dag === "semantic" ? "background-color: oklch(0.954 0.038 75.164); opacity: 1;" : "background-color: #fafafa; opacity: 0.5"}`}
+          onclick={() => (show_dag = "semantic")}>Plan</button
+        >
+        <button
+          class="min-w-[6rem] px-2 py-1 font-mono rounded shadow-[0px_0px_2px_2px_#e3e3e3] text-slate-700 outline-blue-300 hover:outline-2"
+          class:disabled={streaming_states.started && !streaming_states.paused}
+          style={`${show_dag === "primitive" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa; opacity: 0.5"}`}
+          onclick={() => (show_dag = "primitive")}>Execution</button
         >
       </div>
       <div class="flex flex-[2_2_0%] gap-x-2">
@@ -396,20 +423,20 @@
           <div
             class="absolute top-0 left-0 right-0 bottom-0 flex overflow-hidden"
           >
-            {#if show_dag === "semantic"}
+            {#if show_dag === "mcts"}
               <SemanticTasksTree
                 {decomposing_goal}
-                {semantic_tasks}
+                bind:semantic_tasks
                 {streaming_states}
                 bind:next_expansion
-                {max_value_path}
-                {handleConvert}
+                bind:selected_semantic_task_path
               ></SemanticTasksTree>
-              <!-- <SemanticTasks
+            {:else if show_dag == "semantic"}
+              <SemanticTaskPlan
                 {decomposing_goal}
-                semantic_tasks={semantic_tasks || []}
+                semantic_tasks={selected_semantic_task_path || []}
                 {handleConvert}
-              ></SemanticTasks> -->
+              ></SemanticTaskPlan>
             {:else if show_dag === "primitive"}
               <PrimitiveTasks
                 primitive_tasks={primitive_tasks || []}
@@ -419,7 +446,7 @@
               ></PrimitiveTasks>
             {/if}
           </div>
-          <button
+          <!-- <button
             class="absolute top-0.5 left-0.5 py-1 px-2 min-w-[10rem] flex items-center justify-center rounded outline-2 outline-gray-200 shadow-md z-20 gap-x-2 text-slate-700 italic"
             class:disabled={primitive_tasks === undefined}
             style:color={show_dag === "semantic"
@@ -447,7 +474,7 @@
                 Semantic Tasks
               {/if}
             </div>
-          </button>
+          </button> -->
         </div>
         <!-- <div class="max-w-[30vw] min-w-[10rem] flex">
           <GoalConversation
@@ -457,7 +484,7 @@
         </div> -->
       </div>
     </div>
-    {#if show_dag == "semantic"}
+    {#if show_dag == "semantic" || show_dag == "mcts"}
       <div class="flex-1">
         <SemanticTaskInspection
           few_shot_examples={few_shot_examples_semantic_tasks}
@@ -474,8 +501,10 @@
 
 <style lang="postcss">
   .disabled {
-    /* @apply opacity-50 pointer-events-none; */
-    @apply invisible pointer-events-none;
+    @apply !opacity-50 pointer-events-none;
+  }
+  .hidden {
+    @apply hidden;
   }
 
   /* #fbf2b4 20%,

@@ -12,9 +12,8 @@
     semantic_tasks = $bindable([]),
     next_expansion = $bindable(undefined),
     streaming_states,
-    max_value_path,
+    selected_semantic_task_path = $bindable([]),
     decomposing_goal,
-    handleConvert,
   }: {
     semantic_tasks: tSemanticTask[];
     next_expansion: tSemanticTask | undefined;
@@ -23,9 +22,8 @@
       paused: boolean;
       finished: boolean;
     };
-    max_value_path: [string[], number];
+    selected_semantic_task_path: tSemanticTask[];
     decomposing_goal: boolean;
-    handleConvert: Function;
   } = $props();
   const session_id = (getContext("session_id") as Function)();
   const id_key = "MCT_id"; // id key for the semantic task
@@ -40,6 +38,9 @@
   let semantic_tasks_flattened: tSemanticTask[] = $derived(
     flatten(semantic_tasks, semantic_tasks_show_sub_tasks)
   );
+  let max_value_path: string[] = $derived(
+    selected_semantic_task_path.map((t) => t[id_key])
+  );
   let controllers: tControllers = $state({
     show_max_value_path: false,
     show_next_expansion: true,
@@ -53,7 +54,6 @@
       !streaming_states.paused &&
       !streaming_states.finished
   );
-  let hovered_task_id: string = $state("");
 
   $effect(() => {
     update_dag(semantic_tasks_flattened, max_value_path, controllers);
@@ -116,7 +116,7 @@
    */
   async function update_dag(
     _semantic_tasks_flattened: tSemanticTask[],
-    _max_value_path: [string[], number],
+    _best_path: string[],
     _controllers: tControllers
   ) {
     console.log("updating semantic dag:", _semantic_tasks_flattened);
@@ -133,10 +133,8 @@
           ? 1
           : d3.zoomTransform(d3.select(`#${svgId}`).node()).k;
       return {
-        id: node_data["MCT_id"],
-        parentIds: node_data["MCT_parent_id"]
-          ? [node_data["MCT_parent_id"]]
-          : [],
+        id: node_data.MCT_id,
+        parentIds: node_data.MCT_parent_id ? [node_data.MCT_parent_id] : [],
         data: node_data,
         bbox: {
           ...div.getBoundingClientRect(),
@@ -150,7 +148,7 @@
     dag_renderer.update(
       dag_data,
       semantic_tasks_show_sub_tasks,
-      _max_value_path[0],
+      _best_path,
       _controllers
     );
   }
@@ -222,11 +220,11 @@
     // }
 
     // delete this node from its parent's children_ids
-    const parent = task_dict[task["MCT_parent_id"]];
+    const parent = task_dict[task.MCT_parent_id];
     parent.MCT_children_ids = parent.MCT_children_ids.filter(
       (id) => id !== task[id_key]
     );
-    task_dict[task["MCT_parent_id"]] = parent;
+    task_dict[task.MCT_parent_id] = parent;
 
     // delete the branch in the Monte Carlo Tree
     let queue = [task];
@@ -278,9 +276,17 @@
     update_hovered_path(hovered_path_ids);
     dag_renderer.update_links(
       controllers.show_max_value_path
-        ? hovered_path_ids.concat(max_value_path[0])
+        ? hovered_path_ids.concat(max_value_path)
         : hovered_path_ids,
       true
+    );
+  }
+
+  function handleSelectPath(task: tSemanticTask) {
+    console.log("handle select path", task);
+    const path_ids = trace_path(semantic_tasks, task[id_key]);
+    selected_semantic_task_path = path_ids.map(
+      (id) => semantic_tasks.find((task) => task[id_key] === id)!
     );
   }
 
@@ -353,7 +359,7 @@
     <span
       class="canvas-header text-[1.5rem] text-slate-600 font-semibold italic"
     >
-      Semantic Tasks
+      Semantic Tasks - Searching Tree
     </span>
     <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
@@ -488,6 +494,7 @@
             {handleDeleteSubTasks}
             {handleToggleShowSubTasks}
             {handleDeleteTask}
+            {handleSelectPath}
             handleToggleExpand={() => handleToggleExpand(task[id_key])}
             handleToggleExplain={() => handleToggleExplain(task[id_key])}
             {complexity_icon}
@@ -497,7 +504,7 @@
         </div>
       {/each}
     </div>
-    {#if semantic_tasks_flattened.length > 0}
+    <!-- {#if semantic_tasks_flattened.length > 0}
       <button
         class="self-end py-1 mx-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10"
         tabindex="0"
@@ -506,7 +513,7 @@
       >
         Convert
       </button>
-    {/if}
+    {/if} -->
   </div>
 </div>
 
