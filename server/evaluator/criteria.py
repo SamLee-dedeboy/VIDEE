@@ -7,8 +7,8 @@ import asyncio
 import itertools
 from server.custom_types import MCT_Node
 
-
 import json
+import re
 
 
 def save_json(data, filename):
@@ -134,15 +134,14 @@ async def run_complexity_evaluation_agent(
 Your job is to evaluate whether the text is 'complex' or 'not complex' based on the following definition:
 {complexity_definition}
 
-If the text meets the complexity definition, respond with:
-"Yes"
+You must output your reasoning in a <REASONING>...</REASONING> block, then provide your final decision in a <RESULT>...</RESULT> block. The <RESULT> block must contain EXACTLY "Yes" or "No" (nothing else).
 
-Otherwise, respond with:
-"No"
-
-Output must be EXACTLY one of these words, with no additional formatting, punctuation, or explanation.
+Example format:
+<REASONING>This is my reasoning about complexity.</REASONING>
+<RESULT>Yes</RESULT>
 """,
     )
+
     few_shot_messages = []
     if len(few_shot_examples) > 0:
         for example in few_shot_examples:
@@ -156,17 +155,31 @@ Output must be EXACTLY one of these words, with no additional formatting, punctu
             )
             few_shot_messages.append(
                 TextMessage(
-                    content="Yes" if example["user_evaluation"] else "No",
+                    content=(
+                        f"<REASONING>{example['user_reasoning']}</REASONING>\n"
+                        f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>"
+                    ),
                     source="assistant",
                 )
             )
 
-    node_text = task_def_toString(node, goal)
+    user_message = task_def_toString(node, goal)
+    messages = few_shot_messages + [TextMessage(content=user_message, source="user")]
+
     response = await complexity_evaluation_agent.on_messages(
-        few_shot_messages + [TextMessage(content=node_text, source="user")],
+        messages,
         cancellation_token=CancellationToken(),
     )
-    result = response.chat_message.content.strip()
+
+    result_text = response.chat_message.content.strip()
+
+    reasoning_match = re.search(r"<REASONING>(.*?)</REASONING>", result_text, re.DOTALL)
+    reasoning = reasoning_match.group(1).strip() if reasoning_match else ""
+
+    result_match = re.search(r"<RESULT>(.*?)</RESULT>", result_text, re.DOTALL)
+    final_result = result_match.group(1).strip() if result_match else "No"
+
+    complexity_value = 1 if final_result == "Yes" else 0 if final_result == "No" else -1
 
     # save_json(
     #     {
@@ -178,7 +191,8 @@ Output must be EXACTLY one of these words, with no additional formatting, punctu
     #     },
     #     "complexity_evaluation.json",
     # )
-    return 1 if result == "Yes" else 0
+
+    return complexity_value
 
 
 async def run_coherence_evaluation_agent(
@@ -212,16 +226,14 @@ async def run_coherence_evaluation_agent(
         model_client=model_client,
         # temperature=0.5,
         system_message=f"""You are a coherence evaluator. You will be given two parts of a sequence: a parent part and a child part.
-Evaluate whether Child Part logically or thematically follows from Parent Part, consistent with the following definition of coherence:
+Evaluate whether the child part logically or thematically follows from the parent part according to the following definition of coherence:
 {coherence_definition}
 
-If they are coherent, respond with:
-"Yes"
+You must output your reasoning in a <REASONING>...</REASONING> block, then provide your final decision in a <RESULT>...</RESULT> block. The <RESULT> block must contain EXACTLY "Yes" or "No" (nothing else).
 
-If they are not coherent, respond with:
-"No"
-
-Output must be EXACTLY one of these words, with no additional formatting, punctuation, or explanation.
+Example format:
+<REASONING>This is my reasoning about coherence.</REASONING>
+<RESULT>Yes/No</RESULT>
 """,
     )
     user_message_generator = lambda _parent_node, _child_node: """
@@ -235,6 +247,9 @@ Output must be EXACTLY one of these words, with no additional formatting, punctu
     few_shot_messages = []
     if len(few_shot_examples) > 0:
         for example in few_shot_examples:
+            example_reasoning = example["user_reasoning"]
+            example_eval = example["user_evaluation"]
+
             few_shot_messages.append(
                 TextMessage(
                     content=user_message_generator(
@@ -244,21 +259,34 @@ Output must be EXACTLY one of these words, with no additional formatting, punctu
                     source="user",
                 )
             )
+
             few_shot_messages.append(
                 TextMessage(
-                    content="Yes" if example["user_evaluation"] else "No",
+                    content=(
+                        f"<REASONING>{example_reasoning}</REASONING>\n"
+                        f"<RESULT>{'Yes' if example_eval else 'No'}</RESULT>"
+                    ),
                     source="assistant",
                 )
             )
 
     user_message = user_message_generator(parent_node, child_node)
+    messages = few_shot_messages + [TextMessage(content=user_message, source="user")]
 
     response = await coherence_evaluation_agent.on_messages(
-        [TextMessage(content=user_message, source="user")],
+        messages,
         cancellation_token=CancellationToken(),
     )
 
-    result = response.chat_message.content.strip()
+    result_text = response.chat_message.content.strip()
+
+    reasoning_match = re.search(r"<REASONING>(.*?)</REASONING>", result_text, re.DOTALL)
+    reasoning = reasoning_match.group(1).strip() if reasoning_match else ""
+
+    result_match = re.search(r"<RESULT>(.*?)</RESULT>", result_text, re.DOTALL)
+    final_result = result_match.group(1).strip() if result_match else "No"
+
+    coherence_value = 1 if final_result == "Yes" else 0 if final_result == "No" else -1
 
     # save_json(
     #     {
@@ -270,7 +298,8 @@ Output must be EXACTLY one of these words, with no additional formatting, punctu
     #     },
     #     "coherence_evaluation.json",
     # )
-    return 1 if result == "Yes" else 0
+
+    return coherence_value
 
 
 async def run_importance_evaluation_agent(
@@ -301,18 +330,16 @@ async def run_importance_evaluation_agent(
         name="importance_evaluation_agent",
         model_client=model_client,
         # temperature=0.5,
-        system_message=f"""You are an importance evaluator. You will be given a final task goal and a subtask description.
-        Evaluate whether the subtask is important using the following definition:
-        {importance_definition}
+        system_message=f"""You are an importance evaluator. You will be given a final task goal and a subtask description. 
+Evaluate whether the subtask is important using the following definition:
+{importance_definition}
 
-        If they are important, respond with:
-        "Yes"
+You must output your reasoning in a <REASONING>...</REASONING> block, then provide your final decision in a <RESULT>...</RESULT> block. The <RESULT> block must contain EXACTLY "Yes" or "No" (nothing else).
 
-        Otherwise, respond with:
-        "No"
-
-        Output must be EXACTLY one of these words, with no additional formatting, punctuation, or explanation.
-        """,
+Example format:
+<REASONING>This is my reasoning about importance.</REASONING>
+<RESULT>Yes/No</RESULT>
+""",
     )
 
     user_message_generator = lambda _goal, _node: """
@@ -321,31 +348,50 @@ async def run_importance_evaluation_agent(
     """.format(
         final_goal=_goal, subtask_description=task_def_toString(_node, goal)
     )
+
     few_shot_messages = []
     if len(few_shot_examples) > 0:
         for example in few_shot_examples:
+            example_reasoning = example["user_reasoning"]
+            example_evaluation = example["user_evaluation"]
             few_shot_messages.append(
                 TextMessage(
                     content=user_message_generator(
                         goal, MCT_Node.model_validate(example["node"])
                     ),
                     source="user",
+                    source="user",
                 )
             )
+
             few_shot_messages.append(
                 TextMessage(
-                    content="Yes" if example["user_evaluation"] else "No",
+                    content=(
+                        f"<REASONING>{example_reasoning}</REASONING>\n"
+                        f"<RESULT>{'Yes' if example_evaluation else 'No'}</RESULT>"
+                    ),
                     source="assistant",
                 )
             )
 
     user_message = user_message_generator(goal, node)
+    messages = few_shot_messages + [TextMessage(content=user_message, source="user")]
+
     response = await importance_evaluation_agent.on_messages(
-        [TextMessage(content=user_message, source="user")],
+        messages,
         cancellation_token=CancellationToken(),
     )
 
-    result = response.chat_message.content.strip()
+    result_text = response.chat_message.content.strip()
+
+    reasoning_match = re.search(r"<REASONING>(.*?)</REASONING>", result_text, re.DOTALL)
+    reasoning = reasoning_match.group(1).strip() if reasoning_match else ""
+
+    result_match = re.search(r"<RESULT>(.*?)</RESULT>", result_text, re.DOTALL)
+    final_result = result_match.group(1).strip() if result_match else "No"
+
+    importance_value = 1 if final_result == "Yes" else 0 if final_result == "No" else -1
+
     # save_json(
     #     {
     #         "system_message": importance_evaluation_agent._system_messages[0].content,
@@ -356,4 +402,5 @@ async def run_importance_evaluation_agent(
     #     },
     #     "importance_evaluation.json",
     # )
-    return 1 if result == "Yes" else 0
+
+    return importance_value
