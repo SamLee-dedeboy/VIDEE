@@ -162,25 +162,6 @@ export class DAG {
             this.new_nodes = enter_nodes
         }
 
-        if(mcts) {
-
-        // add new node class to the divs
-        document.querySelectorAll(this.selection_card).forEach((div) => {
-            const id = (div as HTMLElement).dataset.id
-            if(id === undefined || id === "-1") return;
-            if(controllers && !controllers.show_new_nodes) {
-                div.classList.remove("new-node")
-                return
-            }
-            if(this.new_nodes.includes(id)) {
-                div.classList.add("new-node")
-            } else {
-                div.classList.remove("new-node")
-            }
-        })
-        this.update_next_expansion_link(this.next_expansion_id)
-    }
-
         // plot edges between decomposed tasks
         // const expansion_links = data.filter(d => expanded_nodes.includes(d.id)).map(d => {
         //     const first_child_coord = self.bbox_dict[d.sub_tasks?.[0].id]

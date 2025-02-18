@@ -85,6 +85,7 @@
     class:on-max-value-path={on_max_value_path &&
       controllers.show_max_value_path}
     class:not-expand={!expand}
+    class:new-node={task.new_node}
   >
     <div class="flex flex-col grow">
       <div
@@ -291,10 +292,10 @@
       width 0.3s ease,
       height 0.3s ease;
   }
-  :global(.new-node) {
-    & .task-card.not-expand {
-      @apply bg-orange-200;
-    }
+  .new-node.not-expand {
+    @apply bg-orange-200;
+  }
+  .new-node {
     & .header-container {
       @apply bg-orange-200;
     }
@@ -302,9 +303,15 @@
   :global(.on-hovered-path) {
     & .task-card {
       @apply outline-black outline-4 border-none rounded-none shadow-md;
+      /* @apply opacity-100; */
       & .card-label {
         @apply font-bold;
       }
+    }
+  }
+  :global(.not-on-hovered-path) {
+    & .task-card {
+      @apply opacity-50;
     }
   }
   .on-max-value-path {

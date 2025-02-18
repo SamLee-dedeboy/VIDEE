@@ -18,6 +18,7 @@ def init_MCTS():
         print_label="Root",
         description="Root node",
         explanation="Root node",
+        new_node=False,
         parentIds=[],
         MCT_parent_id=None,
     )
@@ -83,6 +84,11 @@ async def MCTS_step(
             node = select(root, node_dict)
         else:
             node = node_dict[next_selection.MCT_id]
+
+        # update node status
+        for node_id, node in node_dict.items():
+            node.new_node = False
+            node_dict[node_id] = node
         # expand the node with children
         children = await expand(node, node_dict, goal, model, api_key)
         # run evaluation on *ALL* the children
@@ -164,6 +170,7 @@ async def expand(
                     print_label=f"{child_node['label']} (0/0)",
                     MCT_parent_id=parent_node.MCT_id,
                     level=parent_node.level + 1,
+                    new_node=True,
                 )
                 node_dict[child_as_MCT_node.MCT_id] = child_as_MCT_node
                 parent_node.MCT_children_ids.append(child_as_MCT_node.MCT_id)

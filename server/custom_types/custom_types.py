@@ -34,6 +34,7 @@ class MCT_Node(Node):
     value: float = 0.0
     children_all_ends: bool = False
     level: int = 0
+    new_node: bool = True
     llm_evaluation: Evaluation = Evaluation()
     user_evaluation: Evaluation = Evaluation()
 

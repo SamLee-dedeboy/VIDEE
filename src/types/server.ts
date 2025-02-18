@@ -8,6 +8,7 @@ export type tMCT_Node = {
     MCT_id: string;
     MCT_parent_id: string;
     MCT_children_ids: string[];
+    new_node: boolean;
     level: number;
     llm_evaluation: {
         complexity: boolean;
