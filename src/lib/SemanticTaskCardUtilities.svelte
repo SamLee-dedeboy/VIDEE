@@ -36,16 +36,16 @@
   >
     Delete
   </button>
-  <button
+  <!-- <button
     class="action-button border-y-2 border-l-1 border-r-2 border-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
     class:disabled={task.sub_tasks === undefined || task.sub_tasks.length === 0}
     tabindex="0"
     onclick={() => handleDeleteSubTasks(task)}
   >
     Delete SubTasks
-  </button>
+  </button> -->
   <button
-    class="action-button border-y-2 border-l-1 border-r-2 border-orange-300 bg-orange-200 hover:bg-orange-300 ml-auto right-0"
+    class="action-button border-2 border-black bg-[#fbfaec] hover:bg-orange-100 ml-auto right-0"
     tabindex="0"
     onclick={() => {
       console.log("Choose Path clicked", task);

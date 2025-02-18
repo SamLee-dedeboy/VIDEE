@@ -145,12 +145,7 @@
     });
 
     // call renderer
-    dag_renderer.update(
-      dag_data,
-      semantic_tasks_show_sub_tasks,
-      _best_path,
-      _controllers
-    );
+    dag_renderer.update(dag_data, _best_path, _controllers, true);
   }
 
   // UI handlers
@@ -240,14 +235,6 @@
     update_with_server();
   }
 
-  function handleDeleteSubTasks(task: tSemanticTask) {
-    task.sub_tasks = [];
-    semantic_tasks = semantic_tasks.map((_task) =>
-      _task.id === task.id ? task : _task
-    );
-    update_with_server();
-  }
-
   function handleDecompose(task: tSemanticTask) {
     fetch(`${server_address}/semantic_task/task_decomposition/`, {
       method: "POST",
@@ -295,8 +282,10 @@
       .querySelectorAll(".semantic-task-card-container")
       .forEach((div) => {
         const id = (div as HTMLElement).dataset.id || "";
+        div.classList.remove("not-on-hovered-path");
         div.classList.remove("on-hovered-path");
         if (path_ids.includes(id)) {
+          div.classList.remove("not-on-hovered-path");
           div.classList.add("on-hovered-path");
         }
       });
@@ -491,7 +480,6 @@
             handleSetAsNextExpansion={() => handleSetAsNextExpansion(task)}
             {handleTaskHovered}
             {handleDecompose}
-            {handleDeleteSubTasks}
             {handleToggleShowSubTasks}
             {handleDeleteTask}
             {handleSelectPath}
