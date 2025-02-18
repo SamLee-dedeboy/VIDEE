@@ -363,83 +363,83 @@
         }
       });
   }
+  // stream convert
+  // async function _handleConvert() {
+  //   converting = true;
+  //   if (show_dag === "semantic") {
+  //     show_dag = "primitive";
+  //   }
+  //   streaming_states.started = true;
+  //   streaming_states.paused = false;
+  //   stream_controller = new AbortController();
+  //   const signal = stream_controller.signal;
+  //   console.log({ selected_semantic_task_path });
+  //   try {
+  //     const response = await fetch(
+  //       `${server_address}/semantic_task/decomposition_to_primitive_tasks/`,
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify(
+  //           { semantic_tasks: selected_semantic_task_path },
+  //           signal
+  //         ),
+  //       }
+  //     );
+  //     if (!response.body) {
+  //       throw new Error("Stream error");
+  //     }
 
-  async function _handleConvert() {
-    converting = true;
-    if (show_dag === "semantic") {
-      show_dag = "primitive";
-    }
-    streaming_states.started = true;
-    streaming_states.paused = false;
-    stream_controller = new AbortController();
-    const signal = stream_controller.signal;
-    console.log({ selected_semantic_task_path });
-    try {
-      const response = await fetch(
-        `${server_address}/semantic_task/decomposition_to_primitive_tasks/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(
-            { semantic_tasks: selected_semantic_task_path },
-            signal
-          ),
-        }
-      );
-      if (!response.body) {
-        throw new Error("Stream error");
-      }
+  //     const reader = response.body.getReader();
+  //     const decoder = new TextDecoder();
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
+  //     let buffer = "";
 
-      let buffer = "";
+  //     while (true) {
+  //       const { done, value } = await reader.read();
+  //       if (done) break;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+  //       buffer += decoder.decode(value, { stream: true });
 
-        buffer += decoder.decode(value, { stream: true });
+  //       // Process complete JSON objects line by line
+  //       let lines = buffer.split("\n");
+  //       buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
 
-        // Process complete JSON objects line by line
-        let lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
+  //       for (let line of lines) {
+  //         if (line) {
+  //           const obj = JSON.parse(line);
+  //           console.log("Received:", obj);
+  //           if (!primitive_tasks) primitive_tasks = [];
+  //           primitive_tasks = primitive_tasks.concat(
+  //             obj["primitive_tasks"] as any[]
+  //           );
+  //           const semantic_task = obj["semantic_task"]; // the semantic task that was converted
 
-        for (let line of lines) {
-          if (line) {
-            const obj = JSON.parse(line);
-            console.log("Received:", obj);
-            if (!primitive_tasks) primitive_tasks = [];
-            primitive_tasks = primitive_tasks.concat(
-              obj["primitive_tasks"] as any[]
-            );
-            const semantic_task = obj["semantic_task"]; // the semantic task that was converted
-
-            if (mode === "step" && stream_controller !== undefined) {
-              stream_controller.abort(); // Stop streaming
-              stream_controller = undefined;
-            }
-          }
-        }
-      }
-      console.log("Stream finished");
-      streaming_states.started = false;
-      streaming_states.paused = false;
-      streaming_states.finished = true;
-      converting = false;
-    } catch (error: any) {
-      if (error.name === "AbortError") {
-        streaming_states.paused = true;
-        console.log("Stream aborted");
-      } else {
-        console.error("Error:", error);
-      }
-    } finally {
-      stream_controller = undefined;
-    }
-  }
+  //           if (mode === "step" && stream_controller !== undefined) {
+  //             stream_controller.abort(); // Stop streaming
+  //             stream_controller = undefined;
+  //           }
+  //         }
+  //       }
+  //     }
+  //     console.log("Stream finished");
+  //     streaming_states.started = false;
+  //     streaming_states.paused = false;
+  //     streaming_states.finished = true;
+  //     converting = false;
+  //   } catch (error: any) {
+  //     if (error.name === "AbortError") {
+  //       streaming_states.paused = true;
+  //       console.log("Stream aborted");
+  //     } else {
+  //       console.error("Error:", error);
+  //     }
+  //   } finally {
+  //     stream_controller = undefined;
+  //   }
+  // }
 
   function handleUserFeedback(
     task_id: string,
@@ -482,24 +482,29 @@
             }
           }}>Stop Streaming</button
         >
-        <button
-          class="min-6-[6rem] px-2 py-1 font-mono rounded shadow-[0px_0px_2px_2px_#e3e3e3] text-slate-700 outline-orange-300 hover:outline-2"
-          class:disabled={streaming_states.started && !streaming_states.paused}
-          style={`${show_dag === "mcts" ? "background-color: oklch(0.954 0.038 75.164); opacity: 1;" : "background-color: #fafafa; opacity: 0.5"}`}
-          onclick={() => (show_dag = "mcts")}>Searching</button
-        >
-        <button
-          class="min-w-[6rem] px-2 py-1 font-mono rounded shadow-[0px_0px_2px_2px_#e3e3e3] text-slate-700 outline-orange-300 hover:outline-2"
-          class:disabled={streaming_states.started && !streaming_states.paused}
-          style={`${show_dag === "semantic" ? "background-color: oklch(0.954 0.038 75.164); opacity: 1;" : "background-color: #fafafa; opacity: 0.5"}`}
-          onclick={() => (show_dag = "semantic")}>Plan</button
-        >
-        <button
-          class="min-w-[6rem] px-2 py-1 font-mono rounded shadow-[0px_0px_2px_2px_#e3e3e3] text-slate-700 outline-blue-300 hover:outline-2"
-          class:disabled={streaming_states.started && !streaming_states.paused}
-          style={`${show_dag === "primitive" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa; opacity: 0.5"}`}
-          onclick={() => (show_dag = "primitive")}>Execution</button
-        >
+        <div class="flex">
+          <button
+            class="min-6-[6rem] px-2 py-1 font-mono rounded-l outline-1 outline-gray-400 text-slate-700 hover:outline-orange-300 hover:outline-2 hover:z-20 hover:!text-slate-700"
+            class:disabled={streaming_states.started &&
+              !streaming_states.paused}
+            style={`${show_dag === "mcts" ? "background-color: oklch(0.901 0.076 70.697); opacity: 1;" : "background-color: #fafafa; color: rgba(0, 0, 0, 0.2)"}`}
+            onclick={() => (show_dag = "mcts")}>Searching</button
+          >
+          <button
+            class="min-w-[6rem] px-2 py-1 font-mono text-slate-700 outline-1 outline-gray-400 hover:outline-orange-200 hover:outline-2 hover: z-10 hover:!text-slate-700"
+            class:disabled={streaming_states.started &&
+              !streaming_states.paused}
+            style={`${show_dag === "semantic" ? "background-color: oklch(0.954 0.038 75.164); opacity: 1;" : "background-color: #fafafa; color: rgba(0, 0, 0, 0.2) "}`}
+            onclick={() => (show_dag = "semantic")}>Plan</button
+          >
+          <button
+            class="min-w-[6rem] px-2 py-1 font-mono rounded-r outline-1 outline-gray-400 text-slate-700 hover:outline-blue-300 hover:outline-2 hover:z-10 hover:!text-slate-700"
+            class:disabled={streaming_states.started &&
+              !streaming_states.paused}
+            style={`${show_dag === "primitive" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa;  color: rgba(0, 0, 0, 0.2)"}`}
+            onclick={() => (show_dag = "primitive")}>Execution</button
+          >
+        </div>
       </div>
       <div class="flex flex-[2_2_0%] gap-x-2">
         <div

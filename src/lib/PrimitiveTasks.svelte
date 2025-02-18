@@ -197,7 +197,7 @@
 <div class="flex flex-col gap-y-1 grow">
   <div class="relative bg-[#f2f8fd] w-full flex justify-center z-10">
     <span class="text-[1.5rem] text-slate-600 font-semibold italic">
-      Primitive Tasks
+      Primitive Tasks - Execution Plan
     </span>
     <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
