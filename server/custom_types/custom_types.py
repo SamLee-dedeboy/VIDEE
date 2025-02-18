@@ -12,7 +12,7 @@ class SemanticTaskResponse(BaseModel):
 
 
 class Node(SemanticTaskResponse):
-    children: list[str]
+    children: list[str] = []
     sub_tasks: list["Node"] = []
 
     class Config:
@@ -25,7 +25,7 @@ class Evaluation(BaseModel):
     importance: bool = False
 
 
-class MCT_Node(SemanticTaskResponse):
+class MCT_Node(Node):
     print_label: str = "N/A"
     MCT_id: str
     MCT_parent_id: Optional[str]

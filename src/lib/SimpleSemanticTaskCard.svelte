@@ -39,7 +39,7 @@
 {/snippet}
 
 <div
-  class="task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline-2 outline-[#FFCFB1] bg-[#fbfaec] shadow rounded relative flex gap-y-1 gap-x-2"
+  class="container task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline-2 outline-[#FFCFB1] bg-[#fbfaec] shadow rounded relative flex gap-y-1 gap-x-2"
 >
   <div class="flex flex-col grow px-2 gap-y-2">
     <div
@@ -112,14 +112,14 @@
                 onclick={() => handleDecompose(task)}>Decompose</button
               >
               <button
-                class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+                class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
                 onclick={() => handleDeleteTask(task)}
               >
                 <!-- <img src="close.svg" alt="x" /> -->
                 Delete
               </button>
               <button
-                class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+                class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
                 tabindex="0"
                 class:disabled={task.sub_tasks === undefined ||
                   task.sub_tasks.length === 0}
@@ -149,12 +149,49 @@
       </div>
     </div>
   {/if}
+  {#if !expand}
+    <div
+      in:slide
+      class="more-actions hidden absolute top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
+    >
+      <div class="flex gap-x-0 relative grow">
+        <div class="more-actions">
+          <div class="flex gap-x-2">
+            <button
+              class="action-button outline-orange-200 bg-orange-100 hover:bg-orange-200"
+              onclick={() => handleDecompose(task)}>Decompose</button
+            >
+            <button
+              class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
+              onclick={() => handleDeleteTask(task)}
+            >
+              <!-- <img src="close.svg" alt="x" /> -->
+              Delete
+            </button>
+            <button
+              class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
+              tabindex="0"
+              class:disabled={task.sub_tasks === undefined ||
+                task.sub_tasks.length === 0}
+              onclick={() => handleDeleteSubTasks(task)}
+            >
+              <!-- <img src="close.svg" alt="x" /> -->
+              Delete SubTasks
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style lang="postcss">
   @reference "../app.css";
+  .container:hover > .more-actions {
+    @apply flex flex-wrap;
+  }
   .action-button {
-    @apply outline-2 rounded px-1 py-0.5 text-sm font-mono;
+    @apply outline-2 px-1 py-0.5 text-sm font-mono;
   }
   .showing-actions {
     @apply bg-green-300 outline-gray-500;

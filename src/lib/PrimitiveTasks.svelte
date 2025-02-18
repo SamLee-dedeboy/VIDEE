@@ -78,10 +78,12 @@
   }
 
   // UI handlers
-  function handleToggleExpand(task_id: string) {
+  async function handleToggleExpand(task_id: string) {
     task_card_expanded = task_card_expanded.includes(task_id)
       ? task_card_expanded.filter((id) => id !== task_id)
       : [...task_card_expanded, task_id];
+    await tick();
+    update_dag(primitive_tasks);
   }
 
   // handlers with server-side updates
@@ -244,19 +246,6 @@
             handleInspectTask={handleInspectPrimitiveTask}
             handleToggleExpand={() => handleToggleExpand(task.id)}
           ></PrimitiveTaskCard>
-          {#if !task_card_expanded.includes(task.id)}
-            <button
-              class="flex p-0.5 hover:bg-blue-400 justify-center"
-              onclick={() =>
-                (task_card_expanded = [...task_card_expanded, task.id])}
-            >
-              <img
-                src="chevron_right.svg"
-                class="mt-0.5 w-5 h-4 pointer-events-none"
-                alt="handle"
-              />
-            </button>
-          {/if}
         </div>
       {/each}
     </div>

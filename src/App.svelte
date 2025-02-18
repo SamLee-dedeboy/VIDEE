@@ -62,9 +62,8 @@
     });
     console.log({ few_shot_examples_semantic_tasks });
   });
-  let primitive_tasks:
-    | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)[]
-    | undefined = $state(undefined);
+  let primitive_tasks: (tPrimitiveTaskDescription &
+    Partial<tPrimitiveTaskExecution>)[] = $state([]);
   let inspected_primitive_task:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
     | undefined = $state(undefined);
@@ -190,6 +189,18 @@
   //       console.error("Error:", error);
   //     });
   // }
+  async function dev_handleDecomposeGoalStepped_MCTS(goal: string) {
+    fetch(`${server_address}/dev/semantic_task/plan`)
+      .then((response) => response.json())
+      .then((obj) => {
+        console.log({ obj });
+        semantic_tasks = Object.values(obj["node_dict"]) as any[];
+        next_expansion = obj["next_node"];
+        selected_semantic_task_path = obj["max_value_path"][0].map(
+          (id: string) => semantic_tasks.find((t) => t["MCT_id"] === id)!
+        );
+      });
+  }
 
   async function handleDecomposeGoalStepped_MCTS(goal: string) {
     streaming_states.started = true;
@@ -332,26 +343,102 @@
   /**
    * convert the semantic tasks to primitive tasks
    */
+
   function handleConvert() {
     converting = true;
-    if (show_dag === "semantic") {
-      show_dag = "primitive";
-    }
     fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ task: {}, current_steps: semantic_tasks }),
+      body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
     })
       .then((response) => response.json())
       .then((data) => {
+        console.log("decomposition to primitive tasks: ", { data });
         primitive_tasks = data;
         converting = false;
-      })
-      .catch((error) => {
-        console.error("Error:", error);
+        if (show_dag === "semantic") {
+          show_dag = "primitive";
+        }
       });
+  }
+
+  async function _handleConvert() {
+    converting = true;
+    if (show_dag === "semantic") {
+      show_dag = "primitive";
+    }
+    streaming_states.started = true;
+    streaming_states.paused = false;
+    stream_controller = new AbortController();
+    const signal = stream_controller.signal;
+    console.log({ selected_semantic_task_path });
+    try {
+      const response = await fetch(
+        `${server_address}/semantic_task/decomposition_to_primitive_tasks/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(
+            { semantic_tasks: selected_semantic_task_path },
+            signal
+          ),
+        }
+      );
+      if (!response.body) {
+        throw new Error("Stream error");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete JSON objects line by line
+        let lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
+
+        for (let line of lines) {
+          if (line) {
+            const obj = JSON.parse(line);
+            console.log("Received:", obj);
+            if (!primitive_tasks) primitive_tasks = [];
+            primitive_tasks = primitive_tasks.concat(
+              obj["primitive_tasks"] as any[]
+            );
+            const semantic_task = obj["semantic_task"]; // the semantic task that was converted
+
+            if (mode === "step" && stream_controller !== undefined) {
+              stream_controller.abort(); // Stop streaming
+              stream_controller = undefined;
+            }
+          }
+        }
+      }
+      console.log("Stream finished");
+      streaming_states.started = false;
+      streaming_states.paused = false;
+      streaming_states.finished = true;
+      converting = false;
+    } catch (error: any) {
+      if (error.name === "AbortError") {
+        streaming_states.paused = true;
+        console.log("Stream aborted");
+      } else {
+        console.error("Error:", error);
+      }
+    } finally {
+      stream_controller = undefined;
+    }
   }
 
   function handleUserFeedback(
@@ -417,8 +504,8 @@
       <div class="flex flex-[2_2_0%] gap-x-2">
         <div
           class="relative grow px-2 py-1"
-          class:loading-canvas={streaming_states.started &&
-            !streaming_states.paused}
+          class:loading-canvas={converting ||
+            (streaming_states.started && !streaming_states.paused)}
         >
           <div
             class="absolute top-0 left-0 right-0 bottom-0 flex overflow-hidden"
@@ -439,7 +526,7 @@
               ></SemanticTaskPlan>
             {:else if show_dag === "primitive"}
               <PrimitiveTasks
-                primitive_tasks={primitive_tasks || []}
+                {primitive_tasks}
                 {converting}
                 handleInspectPrimitiveTask={(task) =>
                   (inspected_primitive_task = task)}

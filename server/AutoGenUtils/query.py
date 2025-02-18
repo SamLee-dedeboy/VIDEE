@@ -280,6 +280,96 @@ async def run_decomposition_self_evaluation_agent(
         return responses
 
 
+async def run_decomposition_to_primitive_task_agent(
+    tree: list[Node],
+    primitive_task_list: list[PrimitiveTaskDescription],
+    model: str,
+    api_key: str,
+) -> None:
+    primitive_task_defs_str = ""
+    for primitive_task in primitive_task_list:
+        primitive_task_defs_str += "<primitive_task>\n"
+        for key, value in primitive_task.items():
+            primitive_task_defs_str += f"<{key}>{value}</{key}>\n"
+        primitive_task_defs_str += "</primitive_task>\n"
+    model_client = OpenAIChatCompletionClient(
+        model=model,
+        api_key=api_key,
+        response_format={"type": "json_object"},
+        temperature=0.0,
+        model_capabilities={
+            "vision": False,
+            "function_calling": False,
+            "json_output": True,
+        },
+    )
+    decomposition_to_primitive_task_agent = AssistantAgent(
+        name="decomposition_to_primitive_task_agent",
+        model_client=model_client,
+        system_message="""
+        ** Context **
+        You are a Natural Language Processing (NLP) assistant. You are given a list of primitive NLP tasks that could be used.
+        Here is the list of primitive NLP tasks:
+        {primitive_task_defs}
+        ** Task **
+        The user will describe a series of real-world tasks for you. 
+        For each of the task, decide if it can be formulated as an NLP task. If yes, you need to find the proper primitive NLP tasks and arrange them to accomplish user's goal. 
+        You can ignore the need to handle formats or evaluate outputs.
+        ** Requirements **
+        The ids of each formulated NLP task must be unique, even if the labels are the same. This will help users correctly identify the dependent steps.
+        If the same label appears multiple times, use the ids to differentiate them.
+        For example, use 'Information Extraction-1' and 'Information Extraction-2' as ids.
+        The label must be one of the primitive NLP tasks provided above.
+        The labels of the primitive task must match exactly as those provided above. 
+        Reply with the following JSON format: 
+        {{ "primitive_tasks": [ 
+                {{ 
+                    "solves": (string) id of the user-provided task that this primitive task solves
+                    "label": (string) (one of the NLP task labels above)
+                    "id": (str) (a unique id for the task),
+                    "description": (string, describe implementation procedure)
+                    "explanation": (string, explain why this task is needed)
+                    "depend_on": (str[], ids of the task that this step depends on)
+                }}, 
+                {{ 
+                    "solves": (string) which user-provided task this primitive task solves
+                    "label": (string) (one of the NLP task labels above)
+                    "id": (str) (a unique id for the task),
+                    "description": (string, describe implementation procedure)
+                    "explanation": (string, explain why this task is needed)
+                    "depend_on": (str[], ids of the task that this step depends on)
+                }}, 
+                ... 
+            ] 
+        }}
+        """.format(
+            primitive_task_defs=primitive_task_defs_str
+        ),
+    )
+    task_to_string = (
+        lambda _task: f"""
+        <task>
+            <id> {_task.id} </name>
+            <name> {_task.label} </name>
+            <description> {_task.description} <description>
+            <depend_on> {_task.parentIds} </depend_on>
+        </task>
+        """
+    )
+    tree_str = "\n".join(list(map(task_to_string, tree)))
+
+    user_message_content = """
+    Here are my tasks: {tree_str}
+    """.format(
+        tree_str=tree_str
+    )
+    response = await decomposition_to_primitive_task_agent.on_messages(
+        [TextMessage(content=user_message_content, source="user")],
+        cancellation_token=CancellationToken(),
+    )
+    return json.loads(response.chat_message.content)["primitive_tasks"]
+
+
 async def run_task_decomposition_agent(task: Node, model: str, api_key: str):
     # Create a countdown agent.
     model_client = OpenAIChatCompletionClient(
@@ -327,9 +417,9 @@ async def run_task_decomposition_agent(task: Node, model: str, api_key: str):
     return json.loads(response.chat_message.content)["steps"]
 
 
-async def run_decomposition_to_primitive_task_agent(
+async def _run_decomposition_to_primitive_task_agent(
     task: Node,
-    tree: list[Node],
+    done_tasks: list[Node],
     primitive_task_list: list[PrimitiveTaskDescription],
     model: str,
     api_key: str,
@@ -360,14 +450,15 @@ async def run_decomposition_to_primitive_task_agent(
         Here is the list of primitive NLP tasks:
         {primitive_task_defs}
         ** Task **
-        The user will describe a series of real-world tasks for you. First, for each of the task, decide if it can be formulated as an NLP task. If yes, you need to find the proper primitive NLP tasks and arrange them to accomplish user's goal. 
+        The user will describe a series of real-world tasks for you. The user might have completed some of the tasks already, but they need help with a following task.
+        The target task will be specified with <target_task> tags.
+        First, decide if the target task can be formulated as an NLP task. If yes, you need to find the proper primitive NLP tasks and arrange them to accomplish user's goal. 
+        If not, return "N/A".
         You can ignore the need to handle formats or evaluate outputs.
         ** Requirements **
-        The ids of each step must be unique, even if the labels are the same. This will help users correctly identify the dependent steps.
+        You only need to consider the target task.
+        The ids of each formulated NLP task must be unique, even if the labels are the same. This will help users correctly identify the dependent steps.
         The labels of the primitive task must match exactly as those provided above. 
-        If the same label appears multiple times, use the ids to differentiate them.
-        For example, use 'Information Extraction-1' and 'Information Extraction-2' as ids.
-        The label must be one of the primitive NLP tasks provided above.
         Reply with the following JSON format: 
         {{ "primitive_tasks": [ 
                 {{ 
@@ -391,7 +482,22 @@ async def run_decomposition_to_primitive_task_agent(
             primitive_task_defs=primitive_task_defs_str
         ),
     )
-    user_message_content = json.dumps(tree)
+    task_to_string = (
+        lambda _task: f"""
+        <target_task>
+            <name> {_task.label} </name>
+            <description> {_task.description} <description>
+        </target_task
+        """
+    )
+    user_message_content = """
+    I have done the following tasks: {done_tasks}
+    I want to know if and how this task can be formulated as one or more NLP task: {task}
+    """.format(
+        # list_of_tasks=list(map(lambda t: t.label, tree)),
+        done_tasks="\n".join(map(lambda t: t.label, done_tasks)),
+        task=task_to_string(task),
+    )
     response = await decomposition_to_primitive_task_agent.on_messages(
         [TextMessage(content=user_message_content, source="user")],
         cancellation_token=CancellationToken(),

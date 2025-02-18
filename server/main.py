@@ -105,30 +105,6 @@ async def update_eval_definitions(request: Request):
     return "success"
 
 
-# @app.post("/goal_decomposition/")
-# async def goal_decomposition(request: Request) -> list[custom_types.Node]:
-#     request = await request.body()
-#     request = json.loads(request)
-#     goal = request["goal"]
-#     session_id = request["session_id"]
-#     assert session_id in user_sessions
-#     user_sessions[session_id]["goal"] = goal
-#     if dev:
-#         decomposed_steps = json.load(
-#             open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
-#         )
-#     else:
-#         decomposed_steps = await decomposer.goal_decomposition(
-#             goal, model=default_model, api_key=api_key
-#         )
-#         save_json(
-#             decomposed_steps,
-#             relative_path("dev_data/test_decomposed_steps_w_children.json"),
-#         )
-#     user_sessions[session_id]["semantic_tasks"] = decomposed_steps
-#     return decomposed_steps
-
-
 @app.post("/goal_decomposition/mcts/stepped/")
 async def goal_decomposition_MCTS_stepped(request: Request):
     request = await request.body()
@@ -247,32 +223,81 @@ async def task_decomposition(request: Request) -> list[custom_types.Node]:
     return current_steps
 
 
+# @app.get("/dev/semantic_task/plan/")
+# def get_dev_plan():
+#     return json.load(open(relative_path("dev_data/test_mcts_root.json")))
+
+
 @app.post("/semantic_task/decomposition_to_primitive_tasks/")
-async def task_decomposition(request: Request) -> list:
+async def semantic_task_decomposition_to_primitive_task(request: Request):
     request = await request.body()
     request = json.loads(request)
-    task = request["task"]
-    current_steps = request["current_steps"]
+    target_task = request["task"] if "task" in request else None
+    semantic_tasks = request["semantic_tasks"]
+    semantic_tasks = [custom_types.Node.model_validate(t) for t in semantic_tasks]
+    semantic_tasks = list(
+        filter(lambda t: t.label != "END" and t.id != "root", semantic_tasks)
+    )
     primitive_task_list = json.load(
         open(relative_path("decomposer/primitive_task_defs.json"))
     )
-    if dev:
-        decomposed_primitive_tasks = json.load(
-            open(relative_path("dev_data/test_primitive_tasks.json"))
-        )
+    return await decomposer.one_shot_decomposition_to_primitive_task(
+        semantic_tasks=semantic_tasks,
+        primitive_task_list=primitive_task_list,
+        model=default_model,
+        api_key=api_key,
+    )
+
+    async def iter_response(semantic_tasks, primitive_task_list):  # (1)
+        async for (
+            semantic_task,
+            primitive_tasks,
+        ) in decomposer.stream_decomposition_to_primitive_tasks(
+            semantic_tasks=semantic_tasks,
+            primitive_task_list=primitive_task_list,
+            model=default_model,
+            api_key=api_key,
+        ):
+            try:
+                save_json(
+                    {
+                        "semantic_task": semantic_task.model_dump(mode="json"),
+                        "primitive_tasks": primitive_tasks,
+                    },
+                    relative_path(
+                        f"dev_data/test_decomposition_to_primitive_tasks/{semantic_task.label}.json"
+                    ),
+                )
+                yield json.dumps(
+                    {
+                        "semantic_task": semantic_task.model_dump(mode="json"),
+                        "primitive_tasks": primitive_tasks,
+                    }
+                ) + "\n"
+            except Exception as exception:
+                print(f"Error inside iter_response loop: {exception}")
+                pass
+
+    if target_task is None:
+        try:
+            return StreamingResponse(
+                iter_response(
+                    semantic_tasks=semantic_tasks,
+                    primitive_task_list=primitive_task_list,
+                ),
+                media_type="application/json",
+            )
+        except Exception as e:
+            print(f"Error in iter_response: {e}")
     else:
-        decomposed_primitive_tasks = await decomposer.decomposition_to_primitive_task(
-            task,
-            current_steps,
-            primitive_task_list,
+        return decomposer.regenerate_decomposition_to_primitive_task(
+            target_task=target_task,
+            semantic_tasks=semantic_tasks,
+            primitive_task_list=primitive_task_list,
             model=default_model,
             api_key=api_key,
         )
-        save_json(
-            decomposed_primitive_tasks,
-            relative_path("dev_data/test_primitive_tasks.json"),
-        )
-    return decomposed_primitive_tasks
+    pass
 
 
 @app.post("/primitive_task/update/")

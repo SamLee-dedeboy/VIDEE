@@ -354,7 +354,7 @@
   <img src="cpu.svg" alt="importance" class="pointer-events-none" />
 {/snippet}
 
-<div class="flex flex-col grow">
+<div class="flex flex-col gap-y-1 grow">
   <div class="relative bg-orange-100 w-full flex justify-center z-10">
     <span
       class="canvas-header text-[1.5rem] text-slate-600 font-semibold italic"
