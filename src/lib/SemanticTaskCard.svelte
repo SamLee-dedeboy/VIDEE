@@ -116,14 +116,15 @@
           y="55%"
           fill="black"
           font-size="0.9rem"
+          opacity="0"
           font-weight="normal"
           font-style="italic"
           text-anchor="middle"
           dominant-baseline="middle"
         >
           {path_value}
-        </text></svg
-      >
+        </text>
+      </svg>
     </div>
   {/if}
   <div
@@ -137,8 +138,7 @@
         <span class="card-label mr-2 capitalize select-none" class:end={isEnd}
           >{task.label}
         </span>
-        {#if !expand && task[id_key] !== "-1"}
-          <!-- class="absolute left-0 bottom-[calc(100%+5px)] flex flex-col gap-x-1" -->
+        <!-- {#if !expand && task[id_key] !== "-1"}
           <div
             class="absolute left-0 bottom-[calc(50%+0.5rem)] -translate-x-[calc(100%+0.5rem)] translate-y-1/2 flex flex-col gap-y-1"
           >
@@ -182,7 +182,8 @@
               </div>
             {/if}
           </div>
-        {/if}
+        {/if} -->
+
         {#if !isEnd}
           <button
             class="shrink-0 ml-auto cursor-pointer hover:bg-orange-300 p-0.5 rounded"
@@ -362,13 +363,17 @@
   }
   :global(.on-hovered-path) {
     & .task-card-container {
-      @apply outline-black outline-4 border-none rounded-none shadow-md z-20;
+      /* @apply outline-black outline-4 border-none rounded-none shadow-md z-20; */
+      @apply shadow-[1px_1px_4px_2px_lightgray];
       & .task-card {
         @apply outline-none;
       }
       /* @apply opacity-100; */
       & .card-label {
         @apply font-bold;
+      }
+      & .path-value-bar > svg > text {
+        @apply !opacity-100;
       }
     }
   }
@@ -379,7 +384,7 @@
     }
   }
   .on-max-value-path {
-    @apply !outline-black outline-4 border-none rounded-none shadow-md;
+    @apply !outline-black outline-4 border-none shadow-md;
     & .task-card {
       @apply outline-none;
     }

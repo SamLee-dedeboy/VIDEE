@@ -100,9 +100,7 @@ export class DAG {
                 enter => enter.append("rect").attr("class", "node")
                         .attr("width",  0)
                         .attr("height",  0)
-                        .attr("fill", "white")
-                        .attr("stroke", "black")
-                        .attr("stroke-width", 1)
+                        .attr("fill", "oklch(0.985 0.002 247.839)")
                         .attr("rx", 10)
                         .attr("cursor", "pointer")
                         .on("click", (_, d) => {
@@ -112,8 +110,8 @@ export class DAG {
                             .filter((div_data) => div_data.dataset.id === d)[0].style.visibility = "visible"
                         })
                         // .transition().duration(300)
-                        // .attr("width", (d) => self.bbox_dict[d].width)
-                        // .attr("height", (d) => self.bbox_dict[d].height)
+                        .attr("width", (d) => self.bbox_dict[d].width)
+                        .attr("height", (d) => self.bbox_dict[d].height)
                         .each(function(d) {
                             enter_nodes.push(d)
                         })
