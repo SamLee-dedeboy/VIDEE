@@ -12,7 +12,7 @@ MAX_STEPS = 10
 
 def init_MCTS():
     root = MCT_Node(
-        id="root",
+        id="0",
         label="Root",
         MCT_id="-1",
         print_label="Root",
@@ -162,6 +162,7 @@ async def expand(
             child_as_MCT_node = MCT_Node(
                 **child_node,
                 MCT_id=f"{parent_node.MCT_id}/{index}",
+                id=f"{int(parent_node.id)+1}",
                 print_label=f"{child_node['label']} (0/0)",
                 MCT_parent_id=parent_node.MCT_id,
                 level=parent_node.level + 1,
@@ -232,6 +233,8 @@ async def reward(
             node.user_evaluation.complexity = node.llm_evaluation.complexity
             node.user_evaluation.coherence = node.llm_evaluation.coherence
             node.user_evaluation.importance = node.llm_evaluation.importance
+            node.value = reward_value
+            node.path_value = node_dict[node.MCT_parent_id].path_value * reward_value
             reward_value_list.append(reward_value)
         return reward_value_list
     except Exception as e:
@@ -243,7 +246,7 @@ def backpropagate(node: MCT_Node, reward: float, node_dict: dict) -> None:
     """Updates the tree with the simulation results"""
     while node is not None:
         node.visits += 1
-        node.value += reward  # Should we do some normalization here to avoid inflation?
+        # node.value += reward  # Should we do some normalization here to avoid inflation?
         node.print_label = f"{node.label} ({node.value}/{node.visits})"
         node = node_dict[node.MCT_parent_id] if node.MCT_parent_id else None
 

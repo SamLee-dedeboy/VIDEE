@@ -117,6 +117,7 @@ async def run_goal_decomposition_agent_stepped(
         Your task is to provide a single next step based on what the user have done so far and the remaining steps to finish the task.
         ** Requirements **
         Please specify the logical next step to take.
+        The name of the step should be one concise noun-phrase.
         Ignore the practical steps such as data collection, cleaning or visualization.
         Focus on the conceptual next step. If no further steps are needed, label the next step with "END".
         For the parentIds, provide the ids of the steps that this step **directly** depends on in terms of input-output data.
@@ -126,8 +127,7 @@ async def run_goal_decomposition_agent_stepped(
             {{
                 "next_steps": [
                     {{
-                        "id": (string),
-                        "label": (string) or "END"
+                        "label": (string) name of the step or "END 
                         "description": (string)
                         "explanation": (string, explain why this step is needed)
                         "parentIds": (string[], ids of the steps that this step **directly** depends on)
