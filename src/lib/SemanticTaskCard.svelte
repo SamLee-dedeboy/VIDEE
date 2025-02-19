@@ -56,17 +56,34 @@
     show_subtasks = !show_subtasks;
     handleToggleShowSubTasks(task[id_key]);
   }
+  const path_value = $derived(
+    +Math.pow(task.path_value, 1 / task.level).toFixed(2)
+  );
+  let container = $state();
+  $effect(() => {
+    d3.select(container)
+      .select(".path-value-bar")
+      .select("line")
+      .transition()
+      .duration(500)
+      .attr("x2", path_value * 100 + "%");
+  });
+
   let isEnd = $derived(task.label === "END");
   const handleUserFeedback: Function = getContext("handleUserFeedback");
-  const path_value_color_scale = d3
-    .scaleSequential(d3.interpolateRgb("#fbfaec", "#FF8C00"))
-    .domain([0, 1]);
 </script>
 
 <div
+  bind:this={container}
   role="tooltip"
-  class="container flex flex-col w-min rounded-sm items-center gap-y-0.5"
+  class="task-card-container flex flex-col w-min gap-y-0.5 rounded bg-gray-50"
   class:card-disabled={streaming}
+  class:next-expansion={next_expansion && controllers.show_next_expansion}
+  class:bounce={next_expansion && !expand && controllers.show_next_expansion}
+  class:end={isEnd}
+  class:on-max-value-path={on_max_value_path && controllers.show_max_value_path}
+  class:not-expand={!expand}
+  class:new-node={controllers.show_new_nodes && task.new_node}
   onmouseover={() => {
     if (!expand) handleTaskHovered(task[id_key], true);
   }}
@@ -80,29 +97,51 @@
     if (!expand) handleTaskHovered(task[id_key], false);
   }}
 >
+  <!-- class="path-value-bar absolute left-[-0.125rem] right-[-0.125rem] bottom-[calc(100%+0.125rem)] h-[1rem] bg-slate-200" -->
+  {#if task[id_key] !== "-1"}
+    <div
+      class="path-value-bar h-[1rem] bg-slate-200 outline-2 outline-slate-200"
+      style={`width: ${expand ? "50%" : "100%"}`}
+    >
+      <svg class="w-full h-full">
+        <line
+          x1="0"
+          y1="0"
+          y2="0"
+          stroke={evaluation_colors.path_value_color_scale(path_value)}
+          stroke-width="100"
+        />
+        <text
+          x="50%"
+          y="55%"
+          fill="black"
+          font-size="0.9rem"
+          font-weight="normal"
+          font-style="italic"
+          text-anchor="middle"
+          dominant-baseline="middle"
+        >
+          {path_value}
+        </text></svg
+      >
+    </div>
+  {/if}
   <div
-    class="task-card text-slate-600 w-min min-w-[18rem] transition-all outline-2 outline-[#FFCFB1] shadow rounded relative flex gap-y-1 gap-x-2"
-    style={`background-color: ${path_value_color_scale(task.path_value)}`}
-    class:next-expansion={next_expansion && controllers.show_next_expansion}
-    class:bounce={next_expansion && !expand && controllers.show_next_expansion}
-    class:end={isEnd}
-    class:on-max-value-path={on_max_value_path &&
-      controllers.show_max_value_path}
-    class:not-expand={!expand}
-    class:new-node={controllers.show_new_nodes && task.new_node}
+    class="task-card text-slate-600 w-min transition-all relative flex gap-y-1 gap-x-2 outline-2 outline-[#FFCFB1] rounded-b bg-[#fbfaec] shadow"
   >
-    <div class="flex flex-col grow">
+    <div class="flex flex-col flex-1 w-[18rem]">
       <div
         class="header-container relateive text-[1.3rem] font-mono text-orange-900 flex items-center px-2 border-gray-300"
         style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
       >
         <span class="card-label mr-2 capitalize select-none" class:end={isEnd}
-          >{task.label} - {Math.pow(task.path_value, 1 / task.level).toFixed(
-            2
-          )}</span
-        >
+          >{task.label}
+        </span>
         {#if !expand && task[id_key] !== "-1"}
-          <div class="absolute left-0 bottom-[calc(100%+5px)] flex gap-x-1">
+          <!-- class="absolute left-0 bottom-[calc(100%+5px)] flex flex-col gap-x-1" -->
+          <div
+            class="absolute left-0 bottom-[calc(50%+0.5rem)] -translate-x-[calc(100%+0.5rem)] translate-y-1/2 flex flex-col gap-y-1"
+          >
             {#if controllers.show_complexity}
               <div transition:scale class="flex">
                 <EvaluationIndicator
@@ -229,7 +268,7 @@
       </div>
     </div>
     {#if expand}
-      <div class="flex bg-[#fbfaec] border-y border-r border-gray-200">
+      <div class="flex flex-1 bg-[#fbfaec] border-y border-r border-gray-200">
         <div in:slide class="mt-1 flex flex-col">
           <img
             src="bot.svg"
@@ -276,23 +315,23 @@
   .bounce {
     @apply animate-bounce;
   }
-  .container:hover .next-expansion,
-  .container:hover .more-actions {
+  .task-card-container:hover .next-expansion,
+  .task-card-container:hover .more-actions {
     animation-play-state: paused;
   }
 
-  .container:hover > .more-actions {
+  .task-card-container:hover > .more-actions {
     @apply flex flex-wrap;
   }
-  .action-button {
+  /* .action-button {
     @apply px-1 py-0.5 text-sm font-mono;
-  }
-  .disabled {
+  } */
+  /* .disabled {
     @apply cursor-not-allowed pointer-events-none  outline-gray-200 opacity-50;
   }
   .active {
     @apply outline-gray-600 bg-green-200;
-  }
+  } */
   .task-card {
     transition:
       width 0.3s ease,
@@ -304,8 +343,9 @@
   .new-node::before {
     content: "";
     position: absolute;
-    right: calc(100% + 5px);
-    top: 5px;
+    /* right: calc(100% + 5px); */
+    right: 5px;
+    top: calc(1rem + 10px);
     width: 8px;
     height: 8px;
     background-color: #7e2a0c;
@@ -313,13 +353,19 @@
     transform: translateY(-50%);
   }
   .new-node {
+    & .task-card {
+      @apply outline-orange-900 rounded;
+    }
     & .header-container {
       @apply font-bold;
     }
   }
   :global(.on-hovered-path) {
-    & .task-card {
-      @apply outline-black outline-4 border-none rounded-none shadow-md;
+    & .task-card-container {
+      @apply outline-black outline-4 border-none rounded-none shadow-md z-20;
+      & .task-card {
+        @apply outline-none;
+      }
       /* @apply opacity-100; */
       & .card-label {
         @apply font-bold;
@@ -327,12 +373,16 @@
     }
   }
   :global(.not-on-hovered-path) {
-    & .task-card {
+    & .task-card-container,
+    .path-value-bar {
       @apply opacity-50;
     }
   }
   .on-max-value-path {
     @apply !outline-black outline-4 border-none rounded-none shadow-md;
+    & .task-card {
+      @apply outline-none;
+    }
     & .card-label {
       @apply font-bold;
     }

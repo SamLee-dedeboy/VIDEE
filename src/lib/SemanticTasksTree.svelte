@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { server_address } from "constants";
+  import { evaluation_colors, server_address } from "constants";
   import * as d3 from "d3";
   import { onMount, tick } from "svelte";
   import type { tSemanticTask, tNode, tControllers } from "types";
@@ -260,13 +260,31 @@
 
   function handleTaskHovered(task_id: string, hovered: boolean) {
     const hovered_path_ids = hovered ? trace_path(semantic_tasks, task_id) : [];
-    update_hovered_path(hovered_path_ids);
+    update_hovered_path(hovered_path_ids, hovered);
     dag_renderer.update_links(
       controllers.show_max_value_path
         ? hovered_path_ids.concat(max_value_path)
         : hovered_path_ids,
       true
     );
+  }
+
+  function update_hovered_path(path_ids: string[], hovered: boolean) {
+    document
+      .querySelectorAll(".semantic-task-card-container")
+      .forEach((div) => {
+        const id = (div as HTMLElement).dataset.id || "";
+        if (hovered) {
+          div.classList.add("not-on-hovered-path");
+          if (path_ids.includes(id)) {
+            div.classList.remove("not-on-hovered-path");
+            div.classList.add("on-hovered-path");
+          }
+        } else {
+          div.classList.remove("not-on-hovered-path");
+          div.classList.remove("on-hovered-path");
+        }
+      });
   }
 
   function handleSelectPath(task: tSemanticTask) {
@@ -277,19 +295,6 @@
     );
   }
 
-  function update_hovered_path(path_ids: string[]) {
-    document
-      .querySelectorAll(".semantic-task-card-container")
-      .forEach((div) => {
-        const id = (div as HTMLElement).dataset.id || "";
-        div.classList.remove("not-on-hovered-path");
-        div.classList.remove("on-hovered-path");
-        if (path_ids.includes(id)) {
-          div.classList.remove("not-on-hovered-path");
-          div.classList.add("on-hovered-path");
-        }
-      });
-  }
   function trace_path(
     _semantic_tasks: tSemanticTask[],
     task_id: string
@@ -328,6 +333,9 @@
   onMount(() => {
     dag_renderer.init();
     update_dag(semantic_tasks, max_value_path, controllers);
+    evaluation_colors.create_color_scale_legend(
+      document.querySelector(".color-scale-legend")
+    );
   });
 </script>
 
@@ -402,7 +410,7 @@
         Best Path
       </button>
       <button
-        class="new-node-legend font-bold text-orange-900 font-mono absolute text-xs left-[calc(50%-8rem)] top-2 -translate-x-1/2 px-2 py-1 rounded outline-2 outline-[#FFCFB1] bg-[#fbfaec]"
+        class="new-node-legend font-bold text-orange-900 font-mono absolute text-xs left-[calc(50%-8rem)] top-2 -translate-x-1/2 px-2 py-1 rounded outline-2 outline-orange-900 bg-[#fbfaec]"
         class:inactive={!controllers.show_new_nodes}
         onclick={() => {
           controllers.show_new_nodes = !controllers.show_new_nodes;
@@ -413,15 +421,10 @@
       <div
         class="evaluation-legends-container absolute left-2 top-2 px-2 py-1 rouned flex flex-col gap-y-2"
       >
-        <div class="flex justify-around gap-x-1 italic">
-          <div
-            class="flex text-xs items-center gap-x-1 text-slate-600 select-none"
-          >
-            <svg class="w-6 h-6" viewBox="0 0 10 10">
-              <circle cx="5" cy="5" r="5" fill="lightgreen" />
-            </svg>
-            <span>Good</span>
-          </div>
+        <div class="px-2 w-[12rem] h-[1rem]">
+          <svg class="color-scale-legend w-full h-full overflow-visible"></svg>
+        </div>
+        <div class="flex justify-between gap-x-1 italic mt-1">
           <div
             class="flex text-xs items-center gap-x-1 text-slate-600 select-none"
           >
@@ -429,6 +432,14 @@
               <circle cx="5" cy="5" r="5" fill="#ffa2a2" />
             </svg>
             <span>Bad</span>
+          </div>
+          <div
+            class="flex text-xs items-center gap-x-1 text-slate-600 select-none"
+          >
+            <svg class="w-6 h-6" viewBox="0 0 10 10">
+              <circle cx="5" cy="5" r="5" fill="lightgreen" />
+            </svg>
+            <span>Good</span>
           </div>
         </div>
         <button
@@ -508,7 +519,7 @@
 <style lang="postcss">
   @reference "../app.css";
   .evaluation-legend {
-    @apply flex items-center px-2 py-1 rounded bg-white outline-2 outline-slate-700 text-xs text-slate-700 gap-x-1;
+    @apply flex items-center px-2 py-1 rounded bg-white outline-2 outline-slate-700 text-xs text-slate-700 gap-x-1 max-w-[7.5rem];
   }
   .disabled {
     @apply pointer-events-none opacity-50;
@@ -525,10 +536,10 @@
   .new-node-legend::before {
     content: "";
     position: absolute;
-    right: calc(100% + 5px);
-    top: 5px;
-    width: 8px;
-    height: 8px;
+    right: 3px;
+    top: 4px;
+    width: 5px;
+    height: 5px;
     background-color: #7e2a0c;
     border-radius: 50%;
     transform: translateY(-50%);
