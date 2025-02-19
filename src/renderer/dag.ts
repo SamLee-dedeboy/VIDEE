@@ -102,13 +102,14 @@ export class DAG {
                         .attr("height",  0)
                         .attr("fill", "oklch(0.985 0.002 247.839)")
                         .attr("rx", 10)
+                        .attr("pointer-events", "none")
                         .attr("cursor", "pointer")
-                        .on("click", (_, d) => {
-                            // this.handleClick(d)
-                            d3.selectAll(self.selection_card)
-                            .nodes()
-                            .filter((div_data) => div_data.dataset.id === d)[0].style.visibility = "visible"
-                        })
+                        // .on("click", (_, d) => {
+                        //     // this.handleClick(d)
+                        //     d3.selectAll(self.selection_card)
+                        //     .nodes()
+                        //     .filter((div_data) => div_data.dataset.id === d)[0].style.visibility = "visible"
+                        // })
                         // .transition().duration(300)
                         .attr("width", (d) => self.bbox_dict[d].width)
                         .attr("height", (d) => self.bbox_dict[d].height)
@@ -126,22 +127,15 @@ export class DAG {
                         // .attr("height", rect_size[1])
                         ,
                 update => update.transition().duration(500)
+                        .attr("width", (d) => self.bbox_dict[d].width)
+                        .attr("height", (d) => self.bbox_dict[d].height)
                         .attr("x", function(d) {
-                            return (self.bbox_dict[d].x - self.bbox_dict[d].width/2) / d3.zoomTransform(svg.node()).k
-                            return self.bbox_dict[d].x - self.bbox_dict[d].width/2
-                            return self.bbox_dict[d].x - rect_size[0]/2
-                            // return bbox_dict[d].x * (max_width / width) - rect_size[0]
+                            return (self.bbox_dict[d].x - self.bbox_dict[d].width/2) 
                         })
                         .attr("y", function(d) {
-                            return (self.bbox_dict[d].y - self.bbox_dict[d].height/2) / d3.zoomTransform(svg.node()).k
-                            return self.bbox_dict[d].y - self.bbox_dict[d].height/2
-                            return self.bbox_dict[d].y - rect_size[1]/2
-                            // return bbox_dict[d].y * (max_height / height) - rect_size[1]
+                            return (self.bbox_dict[d].y - self.bbox_dict[d].height/2)
                         }),
-                exit => exit.transition().duration(300)
-                        .attr("width",  0)
-                        .attr("height",  0)
-                        .remove()
+                exit => exit.remove()
                 )
 
         // plot edges

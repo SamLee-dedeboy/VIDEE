@@ -1,12 +1,14 @@
 import * as d3 from "d3"
 
 
-const good_color = "lightgreen"
+const good_color = "#7bf1a8"
 const bad_color = "#ffa2a2"
 export const evaluation_colors = {
     good: good_color,
     bad: bad_color,
-    path_value_color_scale: d3.scaleSequential(d3.interpolateRgb(bad_color, good_color)).domain([0, 1]),
+    // path_value_color_scale: d3.scaleSequential(d3.interpolateRgb(bad_color, good_color)).domain([0, 1]),
+    // path_value_color_scale: d3.scaleDiverging(d3.interpolateRgb(bad_color, good_color)),
+    path_value_color_scale: d3.scaleDiverging([bad_color, "#eae713", good_color]),
     create_color_scale_legend: create_color_scale_legend
 }
 

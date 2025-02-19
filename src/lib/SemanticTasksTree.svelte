@@ -429,7 +429,7 @@
             class="flex text-xs items-center gap-x-1 text-slate-600 select-none"
           >
             <svg class="w-6 h-6" viewBox="0 0 10 10">
-              <circle cx="5" cy="5" r="5" fill="#ffa2a2" />
+              <circle cx="5" cy="5" r="5" fill={evaluation_colors.bad} />
             </svg>
             <span>Bad</span>
           </div>
@@ -437,7 +437,7 @@
             class="flex text-xs items-center gap-x-1 text-slate-600 select-none"
           >
             <svg class="w-6 h-6" viewBox="0 0 10 10">
-              <circle cx="5" cy="5" r="5" fill="lightgreen" />
+              <circle cx="5" cy="5" r="5" fill={evaluation_colors.good} />
             </svg>
             <span>Good</span>
           </div>
@@ -536,7 +536,7 @@
   .new-node-legend::before {
     content: "";
     position: absolute;
-    right: 3px;
+    right: calc(100% + 4px);
     top: 4px;
     width: 5px;
     height: 5px;

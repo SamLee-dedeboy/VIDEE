@@ -83,24 +83,24 @@
   class:end={isEnd}
   class:on-max-value-path={on_max_value_path && controllers.show_max_value_path}
   class:not-expand={!expand}
-  class:new-node={controllers.show_new_nodes && task.new_node}
+  class:expand
   onmouseover={() => {
-    if (!expand) handleTaskHovered(task[id_key], true);
+    handleTaskHovered(task[id_key], true);
   }}
   onmouseout={() => {
-    if (!expand) handleTaskHovered(task[id_key], false);
+    handleTaskHovered(task[id_key], false);
   }}
   onfocus={() => {
-    if (!expand) handleTaskHovered(task[id_key], true);
+    handleTaskHovered(task[id_key], true);
   }}
   onblur={() => {
-    if (!expand) handleTaskHovered(task[id_key], false);
+    handleTaskHovered(task[id_key], false);
   }}
 >
   <!-- class="path-value-bar absolute left-[-0.125rem] right-[-0.125rem] bottom-[calc(100%+0.125rem)] h-[1rem] bg-slate-200" -->
-  {#if task[id_key] !== "-1"}
+  {#if task[id_key] !== "-1" && task["label"] !== "END"}
     <div
-      class="path-value-bar h-[1rem] bg-slate-200 outline-2 outline-slate-200"
+      class="path-value-bar h-[1rem] bg-gray-100 outline-2 outline-gray-300"
       style={`width: ${expand ? "50%" : "100%"}`}
     >
       <svg class="w-full h-full">
@@ -128,19 +128,21 @@
     </div>
   {/if}
   <div
-    class="task-card text-slate-600 w-min transition-all relative flex gap-y-1 gap-x-2 outline-2 outline-[#FFCFB1] rounded-b bg-[#fbfaec] shadow"
+    class="task-card text-slate-600 w-min transition-all flex gap-y-1 gap-x-2 outline-2 outline-[#FFCFB1] rounded-b bg-[#fbfaec] shadow"
+    class:new-node={controllers.show_new_nodes && task.new_node}
   >
-    <div class="flex flex-col flex-1 w-[18rem]">
+    <div class="flex flex-col flex-1 w-[18rem] relative">
       <div
-        class="header-container relateive text-[1.3rem] font-mono text-orange-900 flex items-center px-2 border-gray-300"
+        class="header-container text-[1.3rem] font-mono text-orange-900 flex items-center px-2 border-gray-300"
+        class:new-node-indicator={controllers.show_new_nodes && task.new_node}
         style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
       >
         <span class="card-label mr-2 capitalize select-none" class:end={isEnd}
           >{task.label}
         </span>
-        <!-- {#if !expand && task[id_key] !== "-1"}
+        {#if !expand && task[id_key] !== "-1"}
           <div
-            class="absolute left-0 bottom-[calc(50%+0.5rem)] -translate-x-[calc(100%+0.5rem)] translate-y-1/2 flex flex-col gap-y-1"
+            class="evaluator-indicators hidden absolute left-0 bottom-[calc(50%+0.5rem)] -translate-x-[calc(100%)] px-[0.5rem] translate-y-1/2 flex-col gap-y-1"
           >
             {#if controllers.show_complexity}
               <div transition:scale class="flex">
@@ -182,7 +184,7 @@
               </div>
             {/if}
           </div>
-        {/if} -->
+        {/if}
 
         {#if !isEnd}
           <button
@@ -288,7 +290,6 @@
     <div
       in:slide
       class="more-actions hidden absolute top-[calc(100%+3px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
-      class:bounce={next_expansion && !expand}
     >
       <SemanticTaskCardUtilities
         {task}
@@ -316,13 +317,16 @@
   .bounce {
     @apply animate-bounce;
   }
-  .task-card-container:hover .next-expansion,
+  .task-card-container.next-expansion:hover,
   .task-card-container:hover .more-actions {
     animation-play-state: paused;
   }
 
   .task-card-container:hover > .more-actions {
     @apply flex flex-wrap;
+  }
+  .task-card-container:hover .evaluator-indicators {
+    @apply flex;
   }
   /* .action-button {
     @apply px-1 py-0.5 text-sm font-mono;
@@ -341,32 +345,30 @@
   .new-node.not-expand {
     @apply font-bold;
   }
-  .new-node::before {
+  .new-node-indicator::before {
     content: "";
     position: absolute;
-    /* right: calc(100% + 5px); */
-    right: 5px;
-    top: calc(1rem + 10px);
+    /* right: 2px; */
+    /* left: 1px; */
+    right: calc(100% + 6px);
+    top: 8px;
     width: 8px;
     height: 8px;
     background-color: #7e2a0c;
     border-radius: 50%;
     transform: translateY(-50%);
+    z-index: 20;
   }
   .new-node {
-    & .task-card {
-      @apply outline-orange-900 rounded;
-    }
+    @apply outline-orange-900 outline-3 rounded;
     & .header-container {
       @apply font-bold;
     }
   }
   :global(.on-hovered-path) {
     & .task-card-container {
-      /* @apply outline-black outline-4 border-none rounded-none shadow-md z-20; */
-      @apply shadow-[1px_1px_4px_2px_lightgray];
       & .task-card {
-        @apply outline-none;
+        /* @apply outline-none; */
       }
       /* @apply opacity-100; */
       & .card-label {
@@ -375,6 +377,9 @@
       & .path-value-bar > svg > text {
         @apply !opacity-100;
       }
+    }
+    & .task-card-container.not-expand {
+      @apply shadow-[1px_1px_4px_2px_lightgray];
     }
   }
   :global(.not-on-hovered-path) {
