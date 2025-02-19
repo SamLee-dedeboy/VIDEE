@@ -447,10 +447,41 @@
     value: boolean
   ) {
     const target_task_index = semantic_tasks
-      .map((t) => t["MCT_id"])
+      .map((t) => t.MCT_id)
       .indexOf(task_id);
     if (target_task_index !== -1) {
-      semantic_tasks[target_task_index].user_evaluation[evaluation] = value;
+      const target_task = semantic_tasks[target_task_index];
+      target_task.user_evaluation[evaluation] = value;
+      target_task.value =
+        (+target_task.user_evaluation.complexity +
+          +target_task.user_evaluation.coherence +
+          +target_task.user_evaluation.importance) /
+        3;
+
+      // update the path value
+      const parent_task_index = semantic_tasks
+        .map((t) => t.MCT_id)
+        .indexOf(target_task.MCT_parent_id);
+      if (parent_task_index !== -1) {
+        const parent_task = semantic_tasks[parent_task_index];
+        target_task.path_value = parent_task.path_value * target_task.value;
+      }
+
+      // update the children path values
+      let queue = [target_task];
+      while (queue.length > 0) {
+        const node = queue.shift();
+        node?.MCT_children_ids.forEach((child_id) => {
+          const child_index = semantic_tasks
+            .map((t) => t.MCT_id)
+            .indexOf(child_id);
+          if (child_index !== -1) {
+            const child = semantic_tasks[child_index];
+            child.path_value = node.path_value * child.value;
+            queue.push(child);
+          }
+        });
+      }
     }
   }
   setContext("handleUserFeedback", handleUserFeedback);

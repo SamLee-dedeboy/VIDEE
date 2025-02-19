@@ -22,6 +22,7 @@ export type tMCT_Node = {
     }
     value: number;
     visits: number;
+    path_value: number;
 }
 
 export type tSemanticTaskDescription = {

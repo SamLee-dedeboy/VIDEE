@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { tControllers, tSemanticTask } from "types";
   import type { Snippet } from "svelte";
+  import * as d3 from "d3";
   import { getContext } from "svelte";
   import { slide, scale } from "svelte/transition";
   import EvaluationIndicator from "./EvaluationIndicator.svelte";
@@ -57,7 +58,9 @@
   }
   let isEnd = $derived(task.label === "END");
   const handleUserFeedback: Function = getContext("handleUserFeedback");
-  $inspect(task);
+  const path_value_color_scale = d3
+    .scaleSequential(d3.interpolateRgb("#fbfaec", "#FF8C00"))
+    .domain([0, 1]);
 </script>
 
 <div
@@ -78,14 +81,15 @@
   }}
 >
   <div
-    class="task-card text-slate-600 w-min min-w-[18rem] transition-all outline-2 outline-[#FFCFB1] bg-[#fbfaec] shadow rounded relative flex gap-y-1 gap-x-2"
+    class="task-card text-slate-600 w-min min-w-[18rem] transition-all outline-2 outline-[#FFCFB1] shadow rounded relative flex gap-y-1 gap-x-2"
+    style={`background-color: ${path_value_color_scale(task.path_value)}`}
     class:next-expansion={next_expansion && controllers.show_next_expansion}
     class:bounce={next_expansion && !expand && controllers.show_next_expansion}
     class:end={isEnd}
     class:on-max-value-path={on_max_value_path &&
       controllers.show_max_value_path}
     class:not-expand={!expand}
-    class:new-node={task.new_node}
+    class:new-node={controllers.show_new_nodes && task.new_node}
   >
     <div class="flex flex-col grow">
       <div
@@ -93,7 +97,9 @@
         style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
       >
         <span class="card-label mr-2 capitalize select-none" class:end={isEnd}
-          >{task.label}</span
+          >{task.label} - {Math.pow(task.path_value, 1 / task.level).toFixed(
+            2
+          )}</span
         >
         {#if !expand && task[id_key] !== "-1"}
           <div class="absolute left-0 bottom-[calc(100%+5px)] flex gap-x-1">
@@ -293,11 +299,22 @@
       height 0.3s ease;
   }
   .new-node.not-expand {
-    @apply bg-orange-200;
+    @apply font-bold;
+  }
+  .new-node::before {
+    content: "";
+    position: absolute;
+    right: calc(100% + 5px);
+    top: 5px;
+    width: 8px;
+    height: 8px;
+    background-color: #7e2a0c;
+    border-radius: 50%;
+    transform: translateY(-50%);
   }
   .new-node {
     & .header-container {
-      @apply bg-orange-200;
+      @apply font-bold;
     }
   }
   :global(.on-hovered-path) {

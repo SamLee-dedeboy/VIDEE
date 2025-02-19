@@ -23,8 +23,7 @@
     class="goal-input outline-1 outline-gray-400 rounded shadow-md w-[30rem] h-[5rem] overflow-y-auto px-1 py-0.5"
     contenteditable
   >
-    I need to construct a knowledge graph from a collection of documents from
-    wikipedia.
+    I want to analyze media bias in news articles using knowledge graphs.
   </div>
   <div class="flex flex-col gap-y-1">
     <button

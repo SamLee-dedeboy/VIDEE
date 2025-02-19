@@ -32,6 +32,7 @@ class MCT_Node(Node):
     MCT_children_ids: list[str] = []
     visits: int = 0
     value: float = 0.0
+    path_value: float = 1
     children_all_ends: bool = False
     level: int = 0
     new_node: bool = True

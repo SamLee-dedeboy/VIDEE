@@ -394,21 +394,21 @@
         Next Expansion
       </button>
       <button
-        class="new-node-legend text-orange-900 font-mono absolute text-xs left-[calc(50%+8rem)] top-2 -translate-x-1/2 px-2 py-1 rounded bg-orange-200"
+        class="best-path-legend text-orange-900 font-mono font-bold absolute text-xs left-[calc(50%+8.1rem)] top-1.5 -translate-x-1/2 px-2 py-1 rounded bg-[#fbfaec] border-3 border-black"
+        class:inactive={!controllers.show_max_value_path}
+        onclick={() =>
+          (controllers.show_max_value_path = !controllers.show_max_value_path)}
+      >
+        Best Path
+      </button>
+      <button
+        class="new-node-legend font-bold text-orange-900 font-mono absolute text-xs left-[calc(50%-8rem)] top-2 -translate-x-1/2 px-2 py-1 rounded outline-2 outline-[#FFCFB1] bg-[#fbfaec]"
         class:inactive={!controllers.show_new_nodes}
         onclick={() => {
           controllers.show_new_nodes = !controllers.show_new_nodes;
         }}
       >
         New Nodes
-      </button>
-      <button
-        class="best-path-legend text-orange-900 font-mono font-bold absolute text-xs left-[calc(50%-8.1rem)] top-1.5 -translate-x-1/2 px-2 py-1 rounded bg-[#fbfaec] border-3 border-black"
-        class:inactive={!controllers.show_max_value_path}
-        onclick={() =>
-          (controllers.show_max_value_path = !controllers.show_max_value_path)}
-      >
-        Best Path
       </button>
       <div
         class="evaluation-legends-container absolute left-2 top-2 px-2 py-1 rouned flex flex-col gap-y-2"
@@ -521,5 +521,16 @@
   .next-expansion-legend:hover,
   .evaluation-legend:hover {
     @apply scale-110 transition-all;
+  }
+  .new-node-legend::before {
+    content: "";
+    position: absolute;
+    right: calc(100% + 5px);
+    top: 5px;
+    width: 8px;
+    height: 8px;
+    background-color: #7e2a0c;
+    border-radius: 50%;
+    transform: translateY(-50%);
   }
 </style>
