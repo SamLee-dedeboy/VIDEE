@@ -123,7 +123,7 @@ async def run_goal_decomposition_agent_stepped(
         For the parentIds, provide the ids of the steps that this step **directly** depends on in terms of input-output data.
         You should reply with {n} different next steps, so the user can have more choices.
         The different steps should have varying complexity, coherence with previous steps, and importance.
-        Reply with this JSON format. Do not wrap the json codes in JSON markers.
+        Reply with this JSON format. Do not wrap the json codes in JSON markers. Do not include any comments.
             {{
                 "next_steps": [
                     {{
