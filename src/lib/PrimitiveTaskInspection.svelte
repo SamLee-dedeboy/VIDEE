@@ -8,6 +8,7 @@
   import { onMount } from "svelte";
   import { server_address } from "constants";
   import { getContext } from "svelte";
+  import ExecutionEvaluators from "./ExecutionEvaluators.svelte";
   let {
     task,
   }: {
@@ -43,7 +44,7 @@
   });
 </script>
 
-<div class="flex flex-col px-1">
+<div class="flex flex-col px-1 gap-y-2">
   <div
     class="text-[1.5rem] text-slate-600 font-semibold italic bg-[#f2f8fd] flex justify-center"
   >
@@ -270,6 +271,7 @@
       {/if}
     </div>
   {/if}
+  <ExecutionEvaluators --bg-color={"#f2f8fd"}></ExecutionEvaluators>
 </div>
 
 <style lang="postcss">

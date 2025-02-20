@@ -9,6 +9,7 @@
   import { getContext } from "svelte";
   import DocumentCard from "./DocumentCard.svelte";
   import Evaluator from "./Evaluator.svelte";
+  import ExecutionEvaluators from "./ExecutionEvaluators.svelte";
   let { few_shot_examples }: { few_shot_examples: Record<string, any> } =
     $props();
   const session_id = (getContext("session_id") as Function)();
@@ -128,43 +129,7 @@
       {/if}
     </div>
   </div>
-  <div class="flex flex-col gap-y-2">
-    <div
-      class="text-[1.5rem] text-slate-600 font-semibold italic bg-orange-100 flex justify-center"
-    >
-      Evaluators
-    </div>
-    <Evaluator
-      title="Complexity"
-      definition={eval_definitions["complexity"]}
-      icon={complexity_icon}
-      few_shot_examples={few_shot_examples["complexity"]}
-      handleDefinitionChanged={(new_definition) => {
-        eval_definitions["complexity"] = new_definition;
-        updateEvalDefinitions(eval_definitions);
-      }}
-    />
-    <Evaluator
-      title="Coherence"
-      definition={eval_definitions["coherence"]}
-      icon={coherence_icon}
-      few_shot_examples={few_shot_examples["coherence"]}
-      handleDefinitionChanged={(new_definition) => {
-        eval_definitions["coherence"] = new_definition;
-        updateEvalDefinitions(eval_definitions);
-      }}
-    />
-    <Evaluator
-      title="Importance"
-      definition={eval_definitions["importance"]}
-      icon={importance_icon}
-      few_shot_examples={few_shot_examples["importance"]}
-      handleDefinitionChanged={(new_definition) => {
-        eval_definitions["importance"] = new_definition;
-        updateEvalDefinitions(eval_definitions);
-      }}
-    />
-  </div>
+  <ExecutionEvaluators --bg-color="#ffedd4"></ExecutionEvaluators>
 </div>
 
 <style lang="postcss">

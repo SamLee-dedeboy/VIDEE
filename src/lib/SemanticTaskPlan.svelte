@@ -219,7 +219,7 @@
     <span
       class="canvas-header text-[1.5rem] text-slate-600 font-semibold italic"
     >
-      Semantic Tasks - Final Plan
+      Analytics Plan
     </span>
     <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
