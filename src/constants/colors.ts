@@ -1,7 +1,7 @@
 import * as d3 from "d3"
 
 
-const good_color = "#7bf1a8"
+const good_color = "#9ae600"
 const bad_color = "#ffa2a2"
 export const evaluation_colors = {
     good: good_color,
