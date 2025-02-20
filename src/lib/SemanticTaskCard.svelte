@@ -25,6 +25,7 @@
     handleDeleteSubTasks = () => {},
     handleDeleteTask = () => {},
     handleSelectPath = () => {},
+    handleRegenerate = () => {},
     complexity_icon,
     coherence_icon,
     importance_icon,
@@ -40,6 +41,7 @@
     handleTaskHovered: Function;
     handleSetAsNextExpansion?: Function;
     handleDecompose?: Function;
+    handleRegenerate?: Function;
     handleToggleExplain?: Function;
     handleToggleExpand?: Function;
     handleToggleShowSubTasks?: Function;
@@ -52,6 +54,7 @@
   } = $props();
   let show_subtasks = $state(false);
   let show_actions = $state(false);
+  let regenerating = $state(false);
   function showSubTasks() {
     show_subtasks = !show_subtasks;
     handleToggleShowSubTasks(task[id_key]);
@@ -79,11 +82,15 @@
   class="task-card-container flex flex-col w-min gap-y-0.5 rounded bg-gray-50"
   class:card-disabled={streaming}
   class:next-expansion={next_expansion && controllers.show_next_expansion}
-  class:bounce={next_expansion && !expand && controllers.show_next_expansion}
+  class:bounce={!regenerating &&
+    next_expansion &&
+    !expand &&
+    controllers.show_next_expansion}
   class:end={isEnd}
   class:on-max-value-path={on_max_value_path && controllers.show_max_value_path}
   class:not-expand={!expand}
   class:expand
+  class:regenerating
   onmouseover={() => {
     handleTaskHovered(task[id_key], true);
   }}
@@ -265,6 +272,7 @@
               {handleDeleteSubTasks}
               {handleSetAsNextExpansion}
               {handleSelectPath}
+              {handleRegenerate}
             />
           </div>
         {/if}
@@ -294,6 +302,10 @@
       <SemanticTaskCardUtilities
         {task}
         {handleDecompose}
+        handleRegenerate={(task) => {
+          regenerating = true;
+          handleRegenerate(task, () => (regenerating = false));
+        }}
         {handleDeleteTask}
         {handleDeleteSubTasks}
         {handleSetAsNextExpansion}
@@ -302,9 +314,29 @@
     </div>
   {/if}
 </div>
+<svg id="regenerate-path" height="0" width="0">
+  <defs>
+    <clipPath id="clip-path-id">
+      <polygon points="50,0 100,100 0,100"></polygon>
+    </clipPath>
+  </defs>
+</svg>
 
 <style lang="postcss">
   @reference "../app.css";
+  .regenerating:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: calc(100% + 0.9rem);
+    width: 1.8rem;
+    height: 1.8rem;
+    background: url("/public/loader_circle.svg") no-repeat center center;
+    @apply animate-spin;
+  }
+  /* .regenerating {
+    @apply animate-pulse;
+  } */
   .card-disabled {
     @apply cursor-not-allowed pointer-events-none;
   }

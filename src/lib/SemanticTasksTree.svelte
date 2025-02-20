@@ -11,9 +11,14 @@
   let {
     semantic_tasks = $bindable([]),
     next_expansion = $bindable(undefined),
-    streaming_states,
+    streaming_states = $bindable({
+      started: false,
+      paused: false,
+      finished: false,
+    }),
     selected_semantic_task_path = $bindable([]),
     decomposing_goal,
+    handleRegenerate = () => {},
   }: {
     semantic_tasks: tSemanticTask[];
     next_expansion: tSemanticTask | undefined;
@@ -24,6 +29,7 @@
     };
     selected_semantic_task_path: tSemanticTask[];
     decomposing_goal: boolean;
+    handleRegenerate: Function;
   } = $props();
   const session_id = (getContext("session_id") as Function)();
   const id_key = "MCT_id"; // id key for the semantic task
@@ -295,6 +301,18 @@
     );
   }
 
+  function handleClear() {
+    selected_semantic_task_path = [];
+    semantic_tasks = [];
+    next_expansion = undefined;
+    streaming_states = {
+      started: false,
+      paused: false,
+      finished: false,
+    };
+    update_with_server();
+  }
+
   function trace_path(
     _semantic_tasks: tSemanticTask[],
     task_id: string
@@ -356,7 +374,7 @@
     <span
       class="canvas-header text-[1.5rem] text-slate-600 font-semibold italic"
     >
-      Semantic Tasks - Searching Tree
+      Searching Tree
     </span>
     <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
@@ -417,6 +435,13 @@
         }}
       >
         New Nodes
+      </button>
+      <button
+        class="clear-button font-bold text-slate-500 font-mono absolute text-xs right-0 top-2 -translate-x-1/2 px-2 py-1 rounded outline-2 outline-gray-300 bg-gray-50 hover:bg-gray-200"
+        class:inactive={!controllers.show_new_nodes}
+        onclick={handleClear}
+      >
+        Clear
       </button>
       <div
         class="evaluation-legends-container absolute left-2 top-2 px-2 py-1 rouned flex flex-col gap-y-2"
@@ -490,6 +515,7 @@
             show_explanation={task_card_show_explanation.includes(task[id_key])}
             handleSetAsNextExpansion={() => handleSetAsNextExpansion(task)}
             {handleTaskHovered}
+            {handleRegenerate}
             {handleDecompose}
             {handleToggleShowSubTasks}
             {handleDeleteTask}

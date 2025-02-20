@@ -12,7 +12,9 @@
   } from "types";
   import GoalInput from "lib/GoalInput.svelte";
   import PrimitiveTaskInspection from "lib/PrimitiveTaskInspection.svelte";
-  import SemanticTaskInspection from "lib/SemanticTaskInspection.svelte";
+  import SemanticTaskTreeInspection from "lib/SemanticTaskTreeInspection.svelte";
+  import SemanticTaskPlanInspection from "lib/SemanticTaskPlanInspection.svelte";
+  import ExecutionEvaluators from "lib/ExecutionEvaluators.svelte";
   let session_id: string | undefined = $state(undefined);
   setContext("session_id", () => session_id);
   let decomposing_goal = $state(false);
@@ -31,6 +33,7 @@
   let next_expansion: tSemanticTask | undefined = $state(undefined);
   let selected_semantic_task_path: tSemanticTask[] = $state([]);
   let few_shot_examples_semantic_tasks: Record<string, any> = $state({});
+  let user_goal: string = $state("");
   /**
    * updates the few shot examples every time semantic tasks are updated
    */
@@ -203,6 +206,7 @@
   }
 
   async function handleDecomposeGoalStepped_MCTS(goal: string) {
+    user_goal = goal;
     streaming_states.started = true;
     streaming_states.paused = false;
     stream_controller = new AbortController();
@@ -274,6 +278,39 @@
     } finally {
       stream_controller = undefined;
     }
+  }
+
+  function handleRegenerate(task: tSemanticTask, callback = () => {}) {
+    streaming_states.started = true;
+    streaming_states.paused = false;
+    fetch(`${server_address}/goal_decomposition/mcts/regenerate/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        session_id,
+        goal: user_goal,
+        target_task: task,
+        semantic_tasks,
+        eval_few_shot_examples: few_shot_examples_semantic_tasks,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("task regenerated: ", { data });
+        semantic_tasks = Object.values(data["node_dict"]) as any[];
+        next_expansion = data["next_node"];
+        selected_semantic_task_path = data["max_value_path"][0].map(
+          (id: string) => semantic_tasks.find((t) => t["MCT_id"] === id)!
+        );
+        streaming_states.started = false;
+        streaming_states.paused = false;
+        callback();
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
   }
 
   // async function handleDecomposeGoalStepped_BeamSearch(goal: string) {
@@ -499,6 +536,7 @@
       <div class="bg-white flex gap-x-2">
         <GoalInput
           handleDecomposeGoal={handleDecomposeGoalStepped_MCTS}
+          bind:user_goal
           bind:mode
           {streaming_states}
         />
@@ -549,8 +587,9 @@
             {#if show_dag === "mcts"}
               <SemanticTasksTree
                 {decomposing_goal}
+                {handleRegenerate}
                 bind:semantic_tasks
-                {streaming_states}
+                bind:streaming_states
                 bind:next_expansion
                 bind:selected_semantic_task_path
               ></SemanticTasksTree>
@@ -569,56 +608,23 @@
               ></PrimitiveTasks>
             {/if}
           </div>
-          <!-- <button
-            class="absolute top-0.5 left-0.5 py-1 px-2 min-w-[10rem] flex items-center justify-center rounded outline-2 outline-gray-200 shadow-md z-20 gap-x-2 text-slate-700 italic"
-            class:disabled={primitive_tasks === undefined}
-            style:color={show_dag === "semantic"
-              ? "oklch(0.623 0.214 259.815)"
-              : "oklch(0.705 0.213 47.604)"}
-            tabindex="0"
-            onclick={() =>
-              (show_dag = show_dag === "semantic" ? "primitive" : "semantic")}
-            onkeyup={() => {}}
-          >
-            <div class="flex gap-x-2 items-center">
-              {#if show_dag === "semantic"}
-                <div class="flex items-center justify-center p-1 bg-blue-200">
-                  <img
-                    src="forward.svg"
-                    alt="forward"
-                    class="w-4 h-4 bg-blue-200"
-                  />
-                </div>
-                Primitive Tasks
-              {:else if show_dag === "primitive"}
-                <div class="flex items-center justify-center p-1 bg-orange-200">
-                  <img src="backward.svg" alt="back" class="w-4 h-4" />
-                </div>
-                Semantic Tasks
-              {/if}
-            </div>
-          </button> -->
         </div>
-        <!-- <div class="max-w-[30vw] min-w-[10rem] flex">
-          <GoalConversation
-            {handleDecomposeGoal}
-            semantic_tasks={semantic_tasks || []}
-          />
-        </div> -->
       </div>
     </div>
-    {#if show_dag == "semantic" || show_dag == "mcts"}
-      <div class="flex-1">
-        <SemanticTaskInspection
+    <div class="flex-1 flex flex-col overflow-auto gap-y-2">
+      {#if show_dag === "mcts"}
+        <SemanticTaskTreeInspection
           few_shot_examples={few_shot_examples_semantic_tasks}
-        ></SemanticTaskInspection>
-      </div>
-    {:else if show_dag == "primitive"}
-      <div class="flex-1 overflow-auto">
+        ></SemanticTaskTreeInspection>
+      {:else if show_dag === "semantic"}
+        <SemanticTaskPlanInspection
+          few_shot_examples={few_shot_examples_semantic_tasks}
+        ></SemanticTaskPlanInspection>
+      {:else if show_dag === "primitive"}
         <PrimitiveTaskInspection task={inspected_primitive_task}
         ></PrimitiveTaskInspection>
-      </div>
-    {/if}
+      {/if}
+    </div>
   {/if}
 </main>
 

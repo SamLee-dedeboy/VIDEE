@@ -9,6 +9,7 @@ from .monte_carlo_tree_search import (
     init_MCTS,
     MCTS_step,
     stream_MCTS,
+    MCTS_regenerate,
     # collect_MCT_node_dict,
 )
 
@@ -22,4 +23,5 @@ __all__ = [
     "init_MCTS",
     "MCTS_step",
     "stream_MCTS",
+    "MCTS_regenerate",
 ]

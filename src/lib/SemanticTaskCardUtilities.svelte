@@ -4,6 +4,7 @@
   let {
     task,
     handleSetAsNextExpansion = () => {},
+    handleRegenerate = () => {},
     handleDecompose = () => {},
     handleDeleteTask = () => {},
     handleDeleteSubTasks = () => {},
@@ -12,6 +13,7 @@
     task: tSemanticTask;
     handleSetAsNextExpansion: Function;
     handleDecompose: Function;
+    handleRegenerate: Function;
     handleDeleteTask: Function;
     handleDeleteSubTasks: Function;
     handleSelectPath: Function;
@@ -30,6 +32,12 @@
     class="action-button border-y-2 border-l-2 border-r-1 border-orange-200 bg-orange-100 hover:bg-orange-200"
     onclick={() => handleDecompose(task)}>Decompose</button
   > -->
+  <button
+    class="action-button border-y-2 border-x-1 border-blue-300 bg-blue-100 hover:bg-blue-200 ml-auto right-0"
+    onclick={() => handleRegenerate(task)}
+  >
+    Try Again
+  </button>
   <button
     class="action-button border-y-2 border-x-1 border-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
     onclick={() => handleDeleteTask(task)}

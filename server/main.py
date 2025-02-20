@@ -137,7 +137,12 @@ async def goal_decomposition_MCTS_stepped(request: Request):
     async def iter_response(
         root, node_dict, goal, next_selection, eval_definitions, eval_few_shot_examples
     ):  # (1)
-        async for new_root, next_selection, max_value_path in decomposer.stream_MCTS(
+        async for (
+            new_root,
+            node_dict,
+            next_selection,
+            max_value_path,
+        ) in decomposer.stream_MCTS(
             root,
             node_dict,
             goal,
@@ -188,6 +193,67 @@ async def goal_decomposition_MCTS_stepped(request: Request):
         )
     except Exception as e:
         print(f"Error in iter_response: {e}")
+
+
+@app.post("/goal_decomposition/mcts/regenerate/")
+async def goal_decomposition_MCTS_regenerate(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    goal = request["goal"]
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    user_sessions[session_id]["goal"] = goal
+    semantic_tasks = request["semantic_tasks"] if "semantic_tasks" in request else None
+    target_task = (
+        custom_types.MCT_Node.model_validate(request["target_task"])
+        if "target_task" in request
+        else None
+    )
+    eval_definitions = user_sessions[session_id]["eval_definitions"]
+    eval_few_shot_examples = (
+        request["eval_few_shot_examples"] if "eval_few_shot_examples" in request else []
+    )
+    if semantic_tasks is None or semantic_tasks == []:
+        user_root = decomposer.init_MCTS()
+        node_dict = {user_root.MCT_id: user_root}
+    else:
+        node_dict = {
+            t["MCT_id"]: custom_types.MCT_Node.model_validate(t) for t in semantic_tasks
+        }
+        user_root = node_dict["-1"]
+    new_root, node_dict, next_selection, max_value_path = (
+        await decomposer.MCTS_regenerate(
+            user_root,
+            target_task,
+            node_dict,
+            goal,
+            model=default_model,
+            api_key=api_key,
+            eval_definitions=eval_definitions,
+            eval_few_shot_examples=eval_few_shot_examples,
+        )
+    )
+    try:
+        root = new_root
+        save_json(
+            {
+                "node_dict": {
+                    k: v.model_dump(mode="json") for k, v in node_dict.items()
+                },
+                "next_node": next_selection.model_dump(mode="json"),
+                "max_value_path": max_value_path,
+            },
+            relative_path("dev_data/test_mcts_root.json"),
+        )
+        return {
+            "node_dict": {k: v.model_dump(mode="json") for k, v in node_dict.items()},
+            "next_node": next_selection.model_dump(mode="json"),
+            "max_value_path": max_value_path,
+        }
+
+    except Exception as exception:
+        print(f"Error inside iter_response loop: {exception}")
+        pass
 
 
 @app.post("/semantic_task/update/")

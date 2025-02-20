@@ -59,7 +59,7 @@ async def stream_MCTS(
             )
             next_selection = select(root, node_dict)
             max_value_path = get_max_value_path(root, node_dict)
-            yield root, next_selection, max_value_path
+            yield root, node_dict, next_selection, max_value_path
             if all_END(root, node_dict):
                 yield root, None, None
     except Exception as e:
@@ -108,6 +108,70 @@ async def MCTS_step(
     #     print(f"Error in MCTS_step: {e}")
     #     raise e
     #     return root
+
+
+async def MCTS_regenerate(
+    root: MCT_Node,
+    target_node: MCT_Node,
+    node_dict: dict,
+    goal: str,
+    model: str,
+    api_key: str,
+    eval_definitions=None,
+    eval_few_shot_examples=[],
+):
+    try:
+        # update node status
+        for node_id, node in node_dict.items():
+            node_dict[node_id].new_node = False
+        parent_node = node_dict[target_node.MCT_parent_id]
+        node_dict = remove_branch(target_node, node_dict)
+
+        previous_steps = get_previous_steps(parent_node, node_dict)
+        new_generation = await query.run_goal_decomposition_agent_stepped(
+            goal,
+            previous_steps,
+            model=model,
+            api_key=api_key,
+            temperature=1.0,
+            n=1,
+            remain_steps=MAX_STEPS - parent_node.level,
+        )
+        new_generation = new_generation[0]
+        new_generation_as_MCT_node = MCT_Node(
+            **new_generation,
+            MCT_id=target_node.MCT_id,
+            id=target_node.id,
+            print_label=f"{new_generation['label']} (0/0)",
+            MCT_parent_id=target_node.MCT_parent_id,
+            level=target_node.level,
+            new_node=True,
+        )
+        node_dict[new_generation_as_MCT_node.MCT_id] = new_generation_as_MCT_node
+        parent_node.MCT_children_ids.append(new_generation_as_MCT_node.MCT_id)
+        update_end_paths(parent_node, node_dict)
+
+        # evaluation
+        reward_value = await reward(
+            goal,
+            [new_generation_as_MCT_node],
+            node_dict,
+            model=model,
+            api_key=api_key,
+            eval_definitions=eval_definitions,
+            eval_few_shot_examples=eval_few_shot_examples,
+        )
+        reward_value = reward_value[0]
+        backpropagate(new_generation_as_MCT_node, reward_value, node_dict)
+
+        next_selection = select(root, node_dict)
+        max_value_path = get_max_value_path(root, node_dict)
+        return root, node_dict, next_selection, max_value_path
+
+    except Exception as e:
+        print(f"Error in MCTS_regenerate: {e}")
+        raise e
+        return root
 
 
 def UCT(node: MCT_Node, parent_node: MCT_Node | None, exploration_weight=1.41) -> float:
@@ -293,6 +357,17 @@ def all_END(node: MCT_Node, node_dict: dict):
     if not node.MCT_children_ids:
         return is_END(node)
     return all(all_END(node_dict[child], node_dict) for child in node.MCT_children_ids)
+
+
+def remove_branch(node: MCT_Node, node_dict: dict):
+    # recursively remove the children of the node
+    if not node.MCT_children_ids:
+        del node_dict[node.MCT_id]
+        return node_dict
+    for child_id in node.MCT_children_ids:
+        node_dict = remove_branch(node_dict[child_id], node_dict)
+    node.MCT_children_ids = []
+    return node_dict
 
 
 from treelib import Node, Tree
