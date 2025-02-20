@@ -131,8 +131,14 @@ async def run_complexity_evaluation_agent(
         model_client=model_client,
         # temperature=0.5,
         system_message=f"""You are a text complexity evaluator. The user will provide some text that describes a task.
-Your job is to evaluate whether the text is 'complex' or 'not complex' based on the following definition:
+Your job is to decide if the text is complex (hard) or NOT complex (easy) based on the following definition:
 {complexity_definition}
+
+If the text is complex, respond with:
+"Yes"
+
+If the text is NOT complex, respond with:
+"No"
 
 You must output your reasoning in a <REASONING>...</REASONING> block, then provide your final decision in a <RESULT>...</RESULT> block. The <RESULT> block must contain EXACTLY "Yes" or "No" (nothing else).
 
@@ -177,9 +183,9 @@ Example format:
     reasoning = reasoning_match.group(1).strip() if reasoning_match else ""
 
     result_match = re.search(r"<RESULT>(.*?)</RESULT>", result_text, re.DOTALL)
-    final_result = result_match.group(1).strip() if result_match else "No"
+    final_result = result_match.group(1).strip() if result_match else "ERR"
 
-    complexity_value = 1 if final_result == "Yes" else 0 if final_result == "No" else -1
+    complexity_value = 1 if final_result == "No" else 0 if final_result == "Yes" else -1
 
     # save_json(
     #     {
@@ -284,7 +290,7 @@ Example format:
     reasoning = reasoning_match.group(1).strip() if reasoning_match else ""
 
     result_match = re.search(r"<RESULT>(.*?)</RESULT>", result_text, re.DOTALL)
-    final_result = result_match.group(1).strip() if result_match else "No"
+    final_result = result_match.group(1).strip() if result_match else "ERR"
 
     coherence_value = 1 if final_result == "Yes" else 0 if final_result == "No" else -1
 
@@ -388,7 +394,7 @@ Example format:
     reasoning = reasoning_match.group(1).strip() if reasoning_match else ""
 
     result_match = re.search(r"<RESULT>(.*?)</RESULT>", result_text, re.DOTALL)
-    final_result = result_match.group(1).strip() if result_match else "No"
+    final_result = result_match.group(1).strip() if result_match else "ERR"
 
     importance_value = 1 if final_result == "Yes" else 0 if final_result == "No" else -1
 
