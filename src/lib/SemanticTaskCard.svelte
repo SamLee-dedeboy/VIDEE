@@ -149,15 +149,17 @@
         </span>
         {#if !expand && task[id_key] !== "-1"}
           <div
-            class="evaluator-indicators hidden absolute left-0 bottom-[calc(50%+0.5rem)] -translate-x-[calc(100%)] px-[0.5rem] translate-y-1/2 flex-col gap-y-1"
+            class="evaluator-indicators hidden absolute left-0 bottom-[calc(50%+0.5rem)] -translate-x-[calc(100%)] px-[0.5rem] translate-y-1/2 flex-col gap-y-1 z-20"
           >
             {#if controllers.show_complexity}
               <div transition:scale class="flex">
                 <EvaluationIndicator
                   {streaming}
                   show_transition={true}
+                  {task}
                   value={task.user_evaluation.complexity}
-                  label="Complexity"
+                  llm_value={task.llm_evaluation.complexity}
+                  label="complexity"
                   icon={complexity_icon}
                   handleToggle={(user_value) =>
                     handleUserFeedback(task[id_key], "complexity", user_value)}
@@ -168,9 +170,11 @@
               <div transition:scale class="flex">
                 <EvaluationIndicator
                   {streaming}
+                  {task}
                   show_transition={true}
                   value={task.user_evaluation.coherence}
-                  label="Coherence"
+                  llm_value={task.llm_evaluation.coherence}
+                  label="coherence"
                   icon={coherence_icon}
                   handleToggle={(user_value) =>
                     handleUserFeedback(task[id_key], "coherence", user_value)}
@@ -181,9 +185,11 @@
               <div transition:scale class="flex">
                 <EvaluationIndicator
                   {streaming}
+                  {task}
                   show_transition={true}
                   value={task.user_evaluation.importance}
-                  label="Importance"
+                  llm_value={task.llm_evaluation.importance}
+                  label="importance"
                   icon={importance_icon}
                   handleToggle={(user_value) =>
                     handleUserFeedback(task[id_key], "importance", user_value)}
@@ -210,10 +216,12 @@
           </div>
           <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
             <EvaluationIndicator
+              {task}
               {streaming}
               show_transition={false}
               value={task.user_evaluation.complexity}
-              label="Complexity"
+              llm_value={task.llm_evaluation.complexity}
+              label="complexity"
               icon={complexity_icon}
               handleToggle={(user_value) =>
                 handleUserFeedback(task[id_key], "complexity", user_value)}
@@ -225,10 +233,12 @@
           </div>
           <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
             <EvaluationIndicator
+              {task}
               {streaming}
               value={task.user_evaluation.coherence}
+              llm_value={task.llm_evaluation.coherence}
               show_transition={false}
-              label="Coherence"
+              label="coherence"
               icon={coherence_icon}
               handleToggle={(user_value) =>
                 handleUserFeedback(task[id_key], "coherence", user_value)}
@@ -241,9 +251,11 @@
           <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
             <EvaluationIndicator
               {streaming}
+              {task}
               show_transition={false}
               value={task.user_evaluation.importance}
-              label="Importance"
+              llm_value={task.llm_evaluation.importance}
+              label="importance"
               icon={importance_icon}
               handleToggle={(user_value) =>
                 handleUserFeedback(task[id_key], "importance", user_value)}

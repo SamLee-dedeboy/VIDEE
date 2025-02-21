@@ -18,6 +18,7 @@
       parent_node: tSemanticTask;
       user_evaluation: boolean;
       llm_evaluation: boolean;
+      explanation: string | undefined;
     }[];
     icon: Snippet;
     handleDefinitionChanged: Function;
@@ -69,6 +70,9 @@
           <div class="min-w-[6rem] flex justify-center italic text-slate-500">
             Should be
           </div>
+          <div class="min-w-[6rem] flex justify-center italic text-slate-500">
+            Explanation
+          </div>
         </div>
         <div class="flex flex-col divide-y">
           {#each few_shot_examples as example}
@@ -104,6 +108,11 @@
               </div>
               <div class="min-w-[6rem] flex justify-center">
                 {example.user_evaluation ? "Good" : "Bad"}
+              </div>
+              <div
+                class="min-w-[6rem] flex justify-center italic text-slate-500"
+              >
+                {example.explanation ? example.explanation : "N/A"}
               </div>
             </div>
           {/each}

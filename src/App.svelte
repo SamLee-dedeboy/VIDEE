@@ -15,6 +15,7 @@
   import SemanticTaskTreeInspection from "lib/SemanticTaskTreeInspection.svelte";
   import SemanticTaskPlanInspection from "lib/SemanticTaskPlanInspection.svelte";
   import ExecutionEvaluators from "lib/ExecutionEvaluators.svelte";
+  import type { stringify } from "postcss";
   let session_id: string | undefined = $state(undefined);
   setContext("session_id", () => session_id);
   let decomposing_goal = $state(false);
@@ -33,12 +34,14 @@
   let next_expansion: tSemanticTask | undefined = $state(undefined);
   let selected_semantic_task_path: tSemanticTask[] = $state([]);
   let few_shot_examples_semantic_tasks: Record<string, any> = $state({});
+
   let user_goal: string = $state("");
   /**
    * updates the few shot examples every time semantic tasks are updated
    */
   $effect(() => {
     const evaluations = ["complexity", "coherence", "importance"];
+    console.log({ semantic_tasks });
     semantic_tasks.forEach((task) => {
       evaluations.forEach((evaluation) => {
         if (
@@ -58,13 +61,41 @@
               ),
               user_evaluation: task.user_evaluation[evaluation],
               llm_evaluation: task.llm_evaluation[evaluation],
+              explanation: undefined,
             });
           }
         }
       });
     });
-    console.log({ few_shot_examples_semantic_tasks });
+    console.log(
+      "few shot examples: ",
+      $state.snapshot(few_shot_examples_semantic_tasks)
+    );
   });
+
+  function setFewShotExampleExplanation(
+    task: tSemanticTask,
+    evaluation: string,
+    explanation: string
+  ) {
+    console.log({
+      task,
+      evaluation,
+      explanation,
+      few_shot_examples_semantic_tasks: $state.snapshot(
+        few_shot_examples_semantic_tasks
+      ),
+    });
+    const example_index = few_shot_examples_semantic_tasks[evaluation]
+      .map((t) => t.node.MCT_id)
+      .indexOf(task.MCT_id);
+    console.log({ example_index });
+    if (example_index !== -1) {
+      few_shot_examples_semantic_tasks[evaluation][example_index].explanation =
+        explanation;
+    }
+  }
+  setContext("setFewShotExampleExplanation", setFewShotExampleExplanation);
   let primitive_tasks: (tPrimitiveTaskDescription &
     Partial<tPrimitiveTaskExecution>)[] = $state([]);
   let inspected_primitive_task:
