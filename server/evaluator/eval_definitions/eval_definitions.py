@@ -4,7 +4,7 @@ complexity_definition = (
     "multi-step reasoning, or layered concepts to complete. Otherwise, it's considered not complex."
 )
 coherence_definition = (
-    "Two text pieces are considered coherent in a sequence if the second "
+    "Two tasks are considered coherent in a sequence if the second "
     "logically or thematically follows from the first, maintains consistency with it, "
     "and does not present a contradictory or unrelated concept."
 )
