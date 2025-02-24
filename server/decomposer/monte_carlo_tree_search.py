@@ -148,7 +148,6 @@ async def MCTS_regenerate(
             new_node=True,
         )
         node_dict[new_generation_as_MCT_node.MCT_id] = new_generation_as_MCT_node
-        parent_node.MCT_children_ids.append(new_generation_as_MCT_node.MCT_id)
         update_end_paths(parent_node, node_dict)
 
         # evaluation
@@ -361,12 +360,14 @@ def all_END(node: MCT_Node, node_dict: dict):
 
 def remove_branch(node: MCT_Node, node_dict: dict):
     # recursively remove the children of the node
-    if not node.MCT_children_ids:
-        del node_dict[node.MCT_id]
-        return node_dict
-    for child_id in node.MCT_children_ids:
-        node_dict = remove_branch(node_dict[child_id], node_dict)
-    node.MCT_children_ids = []
+    removed_ids = []
+    stack = [node]
+    while stack:
+        node = stack.pop()
+        removed_ids += node.MCT_children_ids
+        stack += list(map(lambda id: node_dict[id], node.MCT_children_ids))
+    for id in removed_ids:
+        del node_dict[id]
     return node_dict
 
 
