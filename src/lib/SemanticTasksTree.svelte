@@ -371,10 +371,27 @@
 
 <div class="flex flex-col gap-y-1 grow">
   <div class="relative bg-orange-100 w-full flex justify-center z-10">
-    <span
-      class="canvas-header text-[1.5rem] text-slate-600 font-semibold italic"
-    >
-      Searching Tree
+    <span class="flex">
+      <span
+        class="canvas-header text-[1.5rem] text-slate-600 font-semibold italic relative"
+      >
+        Searching Tree
+        <span
+          class="info-trigger cursor-help absolute w-max text-sm left-[calc(100%+1rem)] bottom-0 flex flex-col gap-y-2"
+        >
+          <div class="flex items-center gap-x-1 underline relative">
+            <img src="info.svg" class="w-5 h-5" alt="info" />What is
+            Exploitation vs. Exploration?
+          </div>
+          <div
+            class="info scale-0 absolute top-[calc(100%+0.15rem)] left-[1.5rem] flex flex-wrap min-w-[15rem] max-w-[20rem] text-sm mt-[-0.15rem] pt-[0.15rem]"
+          >
+            <span class="outline-2 outline-slate-700 p-2 rounded bg-gray-50">
+              Explain Exploitation vs. Exploration in more detail...
+            </span>
+          </div>
+        </span>
+      </span>
     </span>
     <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
@@ -544,6 +561,10 @@
 
 <style lang="postcss">
   @reference "../app.css";
+  .info-trigger:hover > .info {
+    @apply scale-100;
+    transition: all 0.3s;
+  }
   .evaluation-legend {
     @apply flex items-center px-2 py-1 rounded bg-white outline-2 outline-slate-700 text-xs text-slate-700 gap-x-1 max-w-[7.5rem];
   }
