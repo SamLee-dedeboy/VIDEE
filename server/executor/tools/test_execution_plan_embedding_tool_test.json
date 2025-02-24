@@ -1,0 +1,25 @@
+[
+    {
+        "solves": "1",
+        "label": "Embedding",
+        "id": "Embedding-1",
+        "description": "Do embedding on a set of documents",
+        "explanation": "Task explanation place holder",
+        "parentIds": [],
+        "children": [],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content"
+        ],
+        "state_output_key": "embedding",
+        "execution": {
+            "tool": "embedding_tool",
+            "parameters": {
+                "name": "Embedding",
+                "model": "text-embedding-ada-002",
+                "api_key": ""
+            }
+        }
+    }
+]

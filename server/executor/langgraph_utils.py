@@ -1,6 +1,9 @@
 import sys
 import os
 
+from server.executor.tools import embedding_tool
+from server.executor.tools.clustering_tool import clustering_tool
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
@@ -316,21 +319,58 @@ def create_node(step, custom_get_input_func=None, custom_reduce_func=None):
         get_input = custom_get_input_func
     # how to produce output
     if custom_reduce_func is None:
-        reduce = lambda combined: reduce_func(
-            combined, state_input_key, state_output_key
-        )
+        if step["execution"]["tool"] in ["clustering_tool", "embedding_tool"]:
+            reduce = lambda combined: tools_reduce_func(
+                combined,
+                state_input_key,
+                state_output_key,
+                state_output_key
+            )
+        else:
+            reduce = lambda combined: reduce_func(
+                combined, state_input_key, state_output_key
+            )
     else:
         reduce = custom_reduce_func
     # create the map-reduce chain
-    map = RunnableAssign(
-        {
-            state_output_key: get_input
-            | RunnableLambda(func=execution_chain.batch, afunc=execution_chain.abatch)
-        }
-    )
+    # for clustering, the input is all documents. We cannot do batch process document by document
+    if step["execution"]["tool"] in ["clustering_tool"]:
+        map = RunnableAssign(
+            {
+                state_output_key: get_input
+                | execution_chain
+            }
+        )
+    else:
+        map = RunnableAssign(
+            {
+                state_output_key: get_input
+                | RunnableLambda(func=execution_chain.batch, afunc=execution_chain.abatch)
+            }
+        )
     map_reduce_chain = map | reduce
     return map_reduce_chain
 
+
+def tools_reduce_func(combined: dict, state_input_key: str, state_output_key: str,
+                      label_key: str = "output"):
+    """
+    Assigns labels to documents in the state.
+    Add as a placeholder for future customization in tools
+
+    Args:
+        combined (dict): State with input and output keys.
+        state_input_key (str): Key for input documents (e.g., "documents").
+        state_output_key (str): Key for cluster labels (e.g., "cluster_label").
+        label_key (str): Key to store labels in each document (default: "cluster_label").
+
+    Returns:
+        dict: Updated state with labels added to documents.
+    """
+    labels = combined[state_output_key]
+    documents = combined[state_input_key]  # List of document dicts
+    updated_documents = [{**doc, label_key: label} for doc, label in zip(documents, labels)]
+    return {state_input_key: updated_documents}
 
 # an empty node that is the root of the graph
 def create_root():
@@ -367,6 +407,20 @@ def convert_spec_to_chain(spec):
             spec["parameters"]["model"],
             spec["parameters"]["api_key"],
             spec["parameters"]["format"],
+        )
+    elif spec["tool"] == "clustering_tool":
+        n_clusters = spec["parameters"].get("n_clusters", 3)
+        feature_key = spec["parameters"].get("feature_key", "embedding")
+        # return custom_tools.clustering_chain.bind(n_clusters=n_clusters, feature_key=feature_key)
+        return RunnableLambda(
+            lambda inputs: clustering_tool(inputs, n_clusters=n_clusters, feature_key=feature_key)
+        )
+    elif spec["tool"] == "embedding_tool":
+        api_key = spec["parameters"]["api_key"]
+        model = spec["parameters"].get("model", "text-embedding-ada-002")
+        feature_key = spec["parameters"].get("feature_key", "content")
+        return RunnableLambda(
+            lambda doc: embedding_tool(doc, api_key, model, feature_key)
         )
     else:
         raise ValueError(f"Unknown execution type: {spec}")
