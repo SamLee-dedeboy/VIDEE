@@ -1,0 +1,28 @@
+[
+    {
+        "solves": "1",
+        "label": "Clustering",
+        "id": "Segmentation-1",
+        "description": "Splits text into meaningful parts like sentences, paragraphs, or topics.",
+        "explanation": "Task explanation place holder",
+        "parentIds": [],
+        "children": [],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "embedding"
+        ],
+        "state_output_key": "cluster_labels",
+        "messages": "calculate 1+1*2*3",
+        "execution": {
+            "tool": "clustering_tool",
+            "parameters": {
+                "name": "Segmentation",
+                "model": "gpt-4o-mini",
+                "n_clusters": 2,
+                "feature_key": "embedding",
+                "api_key": ""
+            }
+        }
+    }
+]

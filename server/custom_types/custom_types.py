@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 from typing import TypedDict, Annotated
 from typing import Optional
-
+from typing import TypedDict, List
+from langchain_core.messages import BaseMessage
 
 class SemanticTaskResponse(BaseModel):
     id: str
@@ -44,6 +45,8 @@ class BaseStateSchema(TypedDict):
     documents: Annotated[list, lambda a, b: b]
     entities: list
 
+class State(TypedDict):
+    messages: List[BaseMessage]
 
 class PrimitiveTaskDescription(BaseModel):
     id: str

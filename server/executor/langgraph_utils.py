@@ -1,6 +1,8 @@
 import sys
 import os
 
+from server.custom_types.custom_types import State
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
@@ -316,21 +318,49 @@ def create_node(step, custom_get_input_func=None, custom_reduce_func=None):
         get_input = custom_get_input_func
     # how to produce output
     if custom_reduce_func is None:
-        reduce = lambda combined: reduce_func(
-            combined, state_input_key, state_output_key
-        )
+        if step["execution"]["tool"] == "clustering_tool":
+            reduce = lambda combined: clustering_reduce_func(combined, state_input_key, state_output_key)
+        else:
+            reduce = lambda combined: reduce_func(
+                combined, state_input_key, state_output_key
+            )
     else:
         reduce = custom_reduce_func
     # create the map-reduce chain
+    # map = RunnableAssign(
+    #     {
+    #         state_output_key: get_input
+    #         | RunnableLambda(func=execution_chain.batch, afunc=execution_chain.abatch)
+    #     }
+    # )
     map = RunnableAssign(
         {
             state_output_key: get_input
-            | RunnableLambda(func=execution_chain.batch, afunc=execution_chain.abatch)
+            | execution_chain
         }
     )
     map_reduce_chain = map | reduce
     return map_reduce_chain
 
+
+def clustering_reduce_func(combined: dict, state_input_key: str, state_output_key: str,
+                           label_key: str = "cluster_label"):
+    """
+    Assigns cluster labels to documents in the state.
+
+    Args:
+        combined (dict): State with input and output keys.
+        state_input_key (str): Key for input documents (e.g., "documents").
+        state_output_key (str): Key for cluster labels (e.g., "cluster_labels").
+        label_key (str): Key to store labels in each document (default: "cluster_label").
+
+    Returns:
+        dict: Updated state with labels added to documents.
+    """
+    labels = combined[state_output_key]  # List of integers
+    documents = combined[state_input_key]  # List of document dicts
+    updated_documents = [{**doc, label_key: label} for doc, label in zip(documents, labels)]
+    return {state_input_key: updated_documents}
 
 # an empty node that is the root of the graph
 def create_root():
@@ -367,6 +397,62 @@ def convert_spec_to_chain(spec):
             spec["parameters"]["model"],
             spec["parameters"]["api_key"],
             spec["parameters"]["format"],
+        )
+    elif spec["tool"] == "agent_with_tools":
+        # Create sub-graph for agent with tools
+        tools = [custom_tools.calculator]  # Can be extended based on spec
+        model = ChatOpenAI(model=spec["parameters"]["model"], api_key=spec["parameters"]["api_key"])
+        model_with_tools = model.bind_tools(tools)
+
+        # Define agent node
+        def agent_node(state: State) -> State:
+            messages = state["messages"]
+            response = model_with_tools.invoke(messages)
+            print("Agent response:", response)
+            return {"messages": messages + [response]}
+
+        # Define tool node
+        tool_node = ToolNode(tools)
+
+        # Define finish node to set state_output_key
+        def finish_node(state: State) -> State:
+            final_output = state["messages"][-1].content
+            return {"messages": final_output}
+
+        # Build sub-graph
+        sub_graph = StateGraph(State)
+        sub_graph.add_node("agent", agent_node)
+        sub_graph.add_node("tools", tool_node)
+        sub_graph.add_node("finish", finish_node)
+
+        # Define condition for continuing
+        def should_continue(state: State):
+            last_message = state["messages"][-1]
+            if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+                return "tools"
+            return "finish"
+
+        sub_graph.set_entry_point("agent")
+        sub_graph.add_conditional_edges("agent", should_continue, {"tools": "tools", "finish": "finish"})
+        # sub_graph.add_edge("tools", "agent")
+        sub_graph.add_edge("finish", END)
+
+        sub_graph_runnable = sub_graph.compile()
+
+        def process_single_input(input, sub_graph_runnable, messages):
+            initial_state = {"messages": [HumanMessage(content="calculate 1+1*2")]}
+            updated_state = sub_graph_runnable.invoke(initial_state)
+            return updated_state["messages"]
+
+        # Return a runnable that processes a single input
+        return RunnableLambda(lambda input: process_single_input(input, sub_graph_runnable, spec["parameters"]["messages"]))
+
+    elif spec["tool"] == "clustering_tool":
+        n_clusters = spec["parameters"].get("n_clusters", 3)
+        feature_key = spec["parameters"].get("feature_key", "embedding")
+        # return custom_tools.clustering_chain.bind(n_clusters=n_clusters, feature_key=feature_key)
+        return RunnableLambda(
+            lambda inputs: custom_tools.clustering_tool(inputs, n_clusters=n_clusters, feature_key=feature_key)
         )
     else:
         raise ValueError(f"Unknown execution type: {spec}")
