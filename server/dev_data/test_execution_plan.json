@@ -1,0 +1,51 @@
+[
+    {
+        "solves": "1",
+        "label": "Embedding",
+        "id": "Embedding-1",
+        "description": "Do embedding on a set of documents",
+        "explanation": "Task explanation place holder",
+        "parentIds": [],
+        "children": ["Clustering-1"],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content"
+        ],
+        "state_output_key": "embedding",
+        "execution": {
+            "tool": "embedding_tool",
+            "parameters": {
+                "name": "Embedding",
+                "model": "text-embedding-ada-002",
+                "api_key": "",
+                "feature_key": "content"
+            }
+        }
+    },
+    {
+        "solves": "1",
+        "label": "Clustering",
+        "id": "Clustering-1",
+        "description": "Do clustering on a set of documents with embeddings as key",
+        "explanation": "Task explanation place holder",
+        "parentIds": ["Embedding-1"],
+        "children": [],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "embedding"
+        ],
+        "state_output_key": "cluster_label",
+        "execution": {
+            "tool": "clustering_tool",
+            "parameters": {
+                "name": "Clustering",
+                "model": "gpt-4o-mini",
+                "n_clusters": 2,
+                "feature_key": "embedding",
+                "api_key": ""
+            }
+        }
+    }
+]
