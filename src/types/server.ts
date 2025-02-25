@@ -63,3 +63,30 @@ export type tExecutionState = {
 }
 
 export type tTask = tSemanticTask | tPrimitiveTaskDescription | tPrimitiveTaskExecution
+
+export type tExecutionEvaluator = {
+    name: string;
+    definition: string;
+    task: string;
+  } & Partial<tExecutionEvaluatorParams>;
+
+export type tExecutionEvaluatorParams = {
+    state_input_key: string;
+    doc_input_key: string;
+    state_output_key: string;
+    parameters: {
+      name: string;
+      model: string;
+      format: string;
+      prompt_template: [
+        {
+          role: string;
+          content: string;
+        },
+        {
+          role: string;
+          content: string;
+        },
+      ];
+    };
+  };

@@ -237,6 +237,8 @@
   }
 
   async function handleDecomposeGoalStepped_MCTS(goal: string) {
+    dev_handleDecomposeGoalStepped_MCTS(goal);
+    return;
     user_goal = goal;
     streaming_states.started = true;
     streaming_states.paused = false;
@@ -414,13 +416,17 @@
 
   function handleConvert() {
     converting = true;
-    fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
-    })
+    // fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
+    fetch(
+      `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
+      }
+    )
       .then((response) => response.json())
       .then((data) => {
         console.log("decomposition to primitive tasks: ", { data });
@@ -599,8 +605,8 @@
           >
           <button
             class="min-w-[6rem] px-2 py-1 font-mono rounded-r outline-1 outline-gray-400 text-slate-700 hover:outline-blue-300 hover:outline-2 hover:z-10 hover:!text-slate-700"
-            class:disabled={streaming_states.started &&
-              !streaming_states.paused}
+            class:disabled={primitive_tasks.length === 0 ||
+              (streaming_states.started && !streaming_states.paused)}
             style={`${show_dag === "primitive" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa;  color: rgba(0, 0, 0, 0.2)"}`}
             onclick={() => (show_dag = "primitive")}>Execution</button
           >
@@ -650,9 +656,12 @@
       {:else if show_dag === "semantic"}
         <SemanticTaskPlanInspection
           few_shot_examples={few_shot_examples_semantic_tasks}
+          semantic_tasks={selected_semantic_task_path}
         ></SemanticTaskPlanInspection>
       {:else if show_dag === "primitive"}
-        <PrimitiveTaskInspection task={inspected_primitive_task}
+        <PrimitiveTaskInspection
+          task={inspected_primitive_task || {}}
+          {primitive_tasks}
         ></PrimitiveTaskInspection>
       {/if}
     </div>

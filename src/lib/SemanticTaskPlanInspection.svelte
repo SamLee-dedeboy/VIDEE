@@ -5,13 +5,19 @@
   import type {
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
+    tSemanticTask,
   } from "types";
   import { getContext } from "svelte";
   import DocumentCard from "./DocumentCard.svelte";
   import Evaluator from "./Evaluator.svelte";
   import ExecutionEvaluators from "./ExecutionEvaluators.svelte";
-  let { few_shot_examples }: { few_shot_examples: Record<string, any> } =
-    $props();
+  let {
+    few_shot_examples,
+    semantic_tasks,
+  }: {
+    few_shot_examples: Record<string, any>;
+    semantic_tasks: tSemanticTask[];
+  } = $props();
   const session_id = (getContext("session_id") as Function)();
   let documents: any[] = $state([]);
   let eval_definitions: Record<string, string> = $state({
@@ -129,7 +135,8 @@
       {/if}
     </div>
   </div>
-  <ExecutionEvaluators --bg-color="#ffedd4"></ExecutionEvaluators>
+  <ExecutionEvaluators --bg-color="#ffedd4" tasks={semantic_tasks}
+  ></ExecutionEvaluators>
 </div>
 
 <style lang="postcss">

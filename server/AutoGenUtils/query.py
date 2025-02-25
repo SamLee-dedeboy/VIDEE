@@ -605,3 +605,59 @@ async def run_input_key_generation_agent(
         cancellation_token=CancellationToken(),
     )
     return json.loads(response.chat_message.content)["required keys"]
+
+
+async def run_result_evaluator_generation_agent(
+    task,
+    user_description: str,
+    model: str,
+    api_key: str,
+):
+    model_client = OpenAIChatCompletionClient(
+        model=model,
+        api_key=api_key,
+        temperature=1.0,
+        model_capabilities={
+            "vision": False,
+            "function_calling": False,
+            "json_output": True,
+        },
+    )
+    prompt_generation_agent = AssistantAgent(
+        name="input_key_generation_agent",
+        model_client=model_client,
+        system_message="""
+        ** Context **
+        You are an expert in generating LLM judges. An LLM judge is an agent that can generate a score using some criteria.
+        ** Task **
+        The user will describe a task that he/she has done, and how he/she wants the llm judge to evaluate the task result. Your task is to generate a specification of the LLM judge.
+        ** Requirements **
+        Some requirements for the prompt_template:
+            The possible scores should be categorical, like "Low", "Mid", "High".
+            The JSON format should be a dictionary with only one key. Put the actual output format as the value of the key. The format (list or dict) should match the requirements of the user.
+        Reply the evaluator specification with this JSON format:
+            {{
+                "evaluator_specification": {{
+                    "name": str,
+                    "definition": str,
+                    "prompt_template": {{
+                            "Context": str,
+                            "Task": str,
+                            "Possible Scores": list[str]
+                            "JSON_format": str
+                    }}
+                }}
+            }}
+        """,
+    )
+    task_message = f"""
+        <task_name> {task['label']} </task_name>
+        <description> {task['description']} </description>
+    """
+    user_message = "This is what I have done: " + task_message + "\n"
+    user_message += "Here's what I want to evaluate: " + user_description
+    response = await prompt_generation_agent.on_messages(
+        [TextMessage(content=user_message, source="user")],
+        cancellation_token=CancellationToken(),
+    )
+    return json.loads(response.chat_message.content)["evaluator_specification"]

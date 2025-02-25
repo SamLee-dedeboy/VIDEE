@@ -72,6 +72,8 @@ async def create_session(request: Request):
             "coherence": evaluator.coherence_definition,
             "importance": evaluator.importance_definition,
         },
+        "result_evaluators": defaultdict(list),
+        "execution_evaluations": defaultdict(list),
     }
     return {"session_id": session_id}
 
@@ -289,9 +291,9 @@ async def task_decomposition(request: Request) -> list[custom_types.Node]:
     return current_steps
 
 
-# @app.get("/dev/semantic_task/plan/")
-# def get_dev_plan():
-#     return json.load(open(relative_path("dev_data/test_mcts_root.json")))
+@app.get("/dev/semantic_task/plan/")
+def get_dev_plan():
+    return json.load(open(relative_path("dev_data/test_mcts_root.json")))
 
 
 @app.post("/semantic_task/decomposition_to_primitive_tasks/")
@@ -412,6 +414,11 @@ async def compile_primitive_tasks(request: Request) -> dict:
     }
 
 
+@app.post("/semantic_task/decomposition_to_primitive_tasks/dev/")
+def dev_convert():
+    return json.load(open(relative_path("dev_data/test_execution_plan.json")))
+
+
 @app.post("/primitive_task/execute/")
 async def execute_primitive_tasks(request: Request):
     request = await request.body()
@@ -460,6 +467,52 @@ async def fetch_primitive_task_result(request: Request):
     return {
         "result": result,
     }
+
+
+@app.post("/primitive_task/evaluators/add/")
+async def add_evaluators(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+
+    task = request["task"]
+    user_description = request["description"]
+
+    evaluator_exec, evaluator_spec = await executor.create_evaluator(
+        task, user_description, default_model, api_key
+    )
+    evaluator_spec["task"] = task["id"]
+    user_sessions[session_id]["result_evaluators"][task["id"]].append(
+        {
+            "spec": evaluator_spec,
+            "exec": evaluator_exec,
+        }
+    )
+
+    return {"result": evaluator_spec}
+
+
+@app.post("/primitive_task/evaluators/run/")
+async def run_evaluators(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+
+    task_id = request["task_id"]
+    execution_result = user_sessions[session_id]["execution_results"][task_id]
+    for evaluator in user_sessions[session_id]["result_evaluators"][task_id]:
+        evaluation_result = evaluator["exec"].invoke(
+            execution_result, config={"configurable": {"thread_id": session_id}}
+        )
+        user_sessions[session_id]["execution_evaluations"][task_id].append(
+            {
+                "name": evaluator["space"]["name"],
+                "result": evaluation_result.model_dump(mode="json"),
+            }
+        )
+    return {"results": user_sessions[session_id]["execution_evaluations"][task_id]}
 
 
 def dfs_find_and_do(task_tree: list[custom_types.Node], task_id: str, action: Callable):
