@@ -15,3 +15,4 @@ langchain-core
 
 langchain-openai
 fastapi[standard]
+scikit-learn
