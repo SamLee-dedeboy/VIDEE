@@ -7,6 +7,8 @@ from autogen_agentchat.messages import TextMessage
 from tqdm import tqdm
 import asyncio
 
+from server.utils import extract_json_content
+
 
 def save_json(data, filename):
     with open(filename, "w") as f:
@@ -72,7 +74,7 @@ async def run_goal_decomposition_agent(goal: str, model: str, api_key: str):
         [TextMessage(content=goal, source="user")],
         cancellation_token=CancellationToken(),
     )
-    return json.loads(response.chat_message.content)["steps"]
+    return extract_json_content(response.chat_message.content)["steps"]
 
 
 async def run_goal_decomposition_agent_stepped(
@@ -170,7 +172,7 @@ async def run_goal_decomposition_agent_stepped(
     retries, max_retries = 0, 5
     while True:
         try:
-            response = json.loads(response.chat_message.content)["next_steps"]
+            response = extract_json_content(response.chat_message.content)["next_steps"]
             break
         except json.JSONDecodeError:
             print(f"Retrying... {retries}/{max_retries}-{retries > max_retries}")
@@ -183,13 +185,13 @@ async def run_goal_decomposition_agent_stepped(
             )
             retries += 1
     return response
-    # return json.loads(response.chat_message.content)["next_steps"]
+    # return extract_json_content(response.chat_message.content)["next_steps"]
     # if n == 1:
     #     response = await goal_decomposition_agent.on_messages(
     #         [TextMessage(content=user_message, source="user")],
     #         cancellation_token=CancellationToken(),
     #     )
-    #     return json.loads(response.chat_message.content)["next_step"]
+    #     return extract_json_content(response.chat_message.content)["next_step"]
     # else:
     #     responses = await parallel_call_agents(
     #         n, goal_decomposition_agent, user_message
@@ -200,7 +202,7 @@ async def run_goal_decomposition_agent_stepped(
     #             try:
     #                 # print("Valid JSON:")
     #                 # print(response.chat_message.content)
-    #                 response = json.loads(response.chat_message.content)["next_step"]
+    #                 response = extract_json_content(response.chat_message.content)["next_step"]
     #                 break
     #             except json.JSONDecodeError:
     #                 print(
@@ -268,13 +270,13 @@ async def run_decomposition_self_evaluation_agent(
             [TextMessage(content=user_message, source="user")],
             cancellation_token=CancellationToken(),
         )
-        return json.loads(response.chat_message.content)["evaluation_score"]
+        return extract_json_content(response.chat_message.content)["evaluation_score"]
     else:
         responses = await parallel_call_agents(
             n, decomposition_self_evaluation_agent, user_message
         )
         responses = [
-            json.loads(response.chat_message.content)["evaluation_score"]
+            extract_json_content(response.chat_message.content)["evaluation_score"]
             for response in responses
         ]
         return responses
@@ -367,7 +369,7 @@ async def run_decomposition_to_primitive_task_agent(
         [TextMessage(content=user_message_content, source="user")],
         cancellation_token=CancellationToken(),
     )
-    return json.loads(response.chat_message.content)["primitive_tasks"]
+    return extract_json_content(response.chat_message.content)["primitive_tasks"]
 
 
 async def run_task_decomposition_agent(task: Node, model: str, api_key: str):
@@ -414,7 +416,7 @@ async def run_task_decomposition_agent(task: Node, model: str, api_key: str):
         [TextMessage(content=user_message_content, source="user")],
         cancellation_token=CancellationToken(),
     )
-    return json.loads(response.chat_message.content)["steps"]
+    return extract_json_content(response.chat_message.content)["steps"]
 
 
 async def _run_decomposition_to_primitive_task_agent(
@@ -502,7 +504,7 @@ async def _run_decomposition_to_primitive_task_agent(
         [TextMessage(content=user_message_content, source="user")],
         cancellation_token=CancellationToken(),
     )
-    return json.loads(response.chat_message.content)["primitive_tasks"]
+    return extract_json_content(response.chat_message.content)["primitive_tasks"]
 
 
 async def run_prompt_generation_agent(
@@ -560,10 +562,10 @@ async def run_prompt_generation_agent(
         cancellation_token=CancellationToken(),
     )
     # save_json(
-    #     json.loads(response.chat_message.content),
+    #     extract_json_content(response.chat_message.content),
     #     f"generated_prompt_{task['label']}.json",
     # )
-    return json.loads(response.chat_message.content)["prompt"]
+    return extract_json_content(response.chat_message.content)["prompt"]
 
 
 async def run_input_key_generation_agent(
@@ -604,7 +606,7 @@ async def run_input_key_generation_agent(
         [TextMessage(content=task_message, source="user")],
         cancellation_token=CancellationToken(),
     )
-    return json.loads(response.chat_message.content)["required keys"]
+    return extract_json_content(response.chat_message.content)["required keys"]
 
 
 async def run_result_evaluator_generation_agent(
@@ -660,4 +662,4 @@ async def run_result_evaluator_generation_agent(
         [TextMessage(content=user_message, source="user")],
         cancellation_token=CancellationToken(),
     )
-    return json.loads(response.chat_message.content)["evaluator_specification"]
+    return extract_json_content(response.chat_message.content)["evaluator_specification"]
