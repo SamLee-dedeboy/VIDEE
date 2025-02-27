@@ -11,20 +11,18 @@
   import DocumentCard from "./DocumentCard.svelte";
   import Evaluator from "./Evaluator.svelte";
   import ExecutionEvaluators from "./ExecutionEvaluators.svelte";
+  import PrimitiveTaskInspection from "./PrimitiveTaskInspection.svelte";
   let {
-    few_shot_examples,
     semantic_tasks,
+    primitive_task,
   }: {
-    few_shot_examples: Record<string, any>;
     semantic_tasks: tSemanticTask[];
+    primitive_task:
+      | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
+      | undefined;
   } = $props();
   const session_id = (getContext("session_id") as Function)();
   let documents: any[] = $state([]);
-  let eval_definitions: Record<string, string> = $state({
-    complexity: "The complexity of the task",
-    coherence: "The coherence of the task",
-    importance: "The importance of the task",
-  });
 
   let show_documents = $state(false);
 
@@ -44,58 +42,10 @@
         console.error("Error:", error);
       });
   }
-  function getEvalDefinitions() {
-    fetch(`${server_address}/eval/definitions/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ session_id }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log({ eval_definitions: data });
-        eval_definitions = data;
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
-
-  function updateEvalDefinitions(_eval_definitions: Record<string, string>) {
-    fetch(`${server_address}/eval/definitions/update/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ session_id, eval_definitions: _eval_definitions }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
-
   onMount(() => {
     getDocuments();
-    getEvalDefinitions();
   });
 </script>
-
-{#snippet complexity_icon()}
-  <img src="network.svg" alt="complexity" class="w-6 h-6 pointer-events-none" />
-{/snippet}
-
-{#snippet coherence_icon()}
-  <img src="waveform.svg" alt="coherence" class="w-6 h-6 pointer-events-none" />
-{/snippet}
-
-{#snippet importance_icon()}
-  <img src="cpu.svg" alt="importance" class="w-6 h-6 pointer-events-none" />
-{/snippet}
 
 <div class="flex flex-col px-1 gap-y-4">
   <div class="flex flex-col gap-y-2">
@@ -135,8 +85,11 @@
       {/if}
     </div>
   </div>
-  <ExecutionEvaluators --bg-color="#ffedd4" tasks={semantic_tasks}
-  ></ExecutionEvaluators>
+  {#if primitive_task}
+    <PrimitiveTaskInspection task={primitive_task}></PrimitiveTaskInspection>
+  {/if}
+  <!-- <ExecutionEvaluators --bg-color="#ffedd4" tasks={semantic_tasks}
+  ></ExecutionEvaluators> -->
 </div>
 
 <style lang="postcss">

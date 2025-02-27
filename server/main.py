@@ -291,11 +291,6 @@ async def task_decomposition(request: Request) -> list[custom_types.Node]:
     return current_steps
 
 
-@app.get("/dev/semantic_task/plan/")
-def get_dev_plan():
-    return json.load(open(relative_path("dev_data/test_mcts_root.json")))
-
-
 @app.post("/semantic_task/decomposition_to_primitive_tasks/")
 async def semantic_task_decomposition_to_primitive_task(request: Request):
     request = await request.body()
@@ -414,11 +409,6 @@ async def compile_primitive_tasks(request: Request) -> dict:
     }
 
 
-@app.post("/semantic_task/decomposition_to_primitive_tasks/dev/")
-def dev_convert():
-    return json.load(open(relative_path("dev_data/test_execution_plan.json")))
-
-
 @app.post("/primitive_task/execute/")
 async def execute_primitive_tasks(request: Request):
     request = await request.body()
@@ -513,6 +503,16 @@ async def run_evaluators(request: Request):
             }
         )
     return {"results": user_sessions[session_id]["execution_evaluations"][task_id]}
+
+
+@app.get("/dev/semantic_task/plan/")
+def get_dev_plan():
+    return json.load(open(relative_path("dev_data/test_mcts_root.json")))
+
+
+@app.post("/semantic_task/decomposition_to_primitive_tasks/dev/")
+def dev_convert():
+    return json.load(open(relative_path("dev_data/test_execution_plan.json")))
 
 
 def dfs_find_and_do(task_tree: list[custom_types.Node], task_id: str, action: Callable):

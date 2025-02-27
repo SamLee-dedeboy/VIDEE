@@ -13,7 +13,7 @@
   import GoalInput from "lib/GoalInput.svelte";
   import PrimitiveTaskInspection from "lib/PrimitiveTaskInspection.svelte";
   import SemanticTaskTreeInspection from "lib/SemanticTaskTreeInspection.svelte";
-  import SemanticTaskPlanInspection from "lib/SemanticTaskPlanInspection.svelte";
+  import ExecutionInspection from "lib/ExecutionInspection.svelte";
   import ExecutionEvaluators from "lib/ExecutionEvaluators.svelte";
   import type { stringify } from "postcss";
   let session_id: string | undefined = $state(undefined);
@@ -107,7 +107,7 @@
 
   /**
    * Stores the state of the dag
-   * @value semantic | primitive | mcts
+   * @value semantic| mcts
    */
   let show_dag = $state("mcts");
 
@@ -427,6 +427,17 @@
         body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
       }
     )
+    // fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
+    fetch(
+      `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
+      }
+    )
       .then((response) => response.json())
       .then((data) => {
         console.log("decomposition to primitive tasks: ", { data });
@@ -569,7 +580,7 @@
   {#if !session_id}
     <div class="self-center">Loading...</div>
   {:else}
-    <div class="flex flex-[2_2_0%] shrink-0 flex-col gap-y-2">
+    <div class="flex flex-[3_3_0%] shrink-0 flex-col gap-y-2">
       <div class="bg-white flex gap-x-2">
         <GoalInput
           handleDecomposeGoal={handleDecomposeGoalStepped_MCTS}
@@ -635,8 +646,19 @@
                 {decomposing_goal}
                 semantic_tasks={selected_semantic_task_path || []}
                 {handleConvert}
-              ></SemanticTaskPlan>
-            {:else if show_dag === "primitive"}
+                {primitive_tasks}
+                {converting}
+                handleInspectPrimitiveTask={(task) => {
+                  console.log("inspecting task", task);
+                  inspected_primitive_task = task;
+                }}
+              ></Execution>
+              <!-- <SemanticTaskPlan
+                {decomposing_goal}
+                semantic_tasks={selected_semantic_task_path || []}
+                {handleConvert}
+              ></SemanticTaskPlan> -->
+              <!-- {:else if show_dag === "primitive"}
               <PrimitiveTasks
                 {primitive_tasks}
                 {converting}
@@ -654,15 +676,15 @@
           few_shot_examples={few_shot_examples_semantic_tasks}
         ></SemanticTaskTreeInspection>
       {:else if show_dag === "semantic"}
-        <SemanticTaskPlanInspection
-          few_shot_examples={few_shot_examples_semantic_tasks}
+        <ExecutionInspection
           semantic_tasks={selected_semantic_task_path}
-        ></SemanticTaskPlanInspection>
-      {:else if show_dag === "primitive"}
+          primitive_task={inspected_primitive_task}
+        ></ExecutionInspection>
+        <!-- {:else if show_dag === "primitive"}
         <PrimitiveTaskInspection
           task={inspected_primitive_task || {}}
           {primitive_tasks}
-        ></PrimitiveTaskInspection>
+        ></PrimitiveTaskInspection> -->
       {/if}
     </div>
   {/if}

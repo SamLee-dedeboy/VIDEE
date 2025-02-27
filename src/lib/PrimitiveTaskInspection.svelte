@@ -12,10 +12,8 @@
   import PromptTemplate from "./PromptTemplate.svelte";
   let {
     task,
-    primitive_tasks,
   }: {
     task: tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>;
-    primitive_tasks: tPrimitiveTaskDescription[];
   } = $props();
   let show_description = $state(true);
   let show_formats = $state(false);
@@ -233,8 +231,8 @@
       {/if}
     </div>
   {/if}
-  <ExecutionEvaluators --bg-color={"#f2f8fd"} tasks={primitive_tasks}
-  ></ExecutionEvaluators>
+  <!-- <ExecutionEvaluators --bg-color={"#f2f8fd"} tasks={primitive_tasks}
+  ></ExecutionEvaluators> -->
 </div>
 
 <style lang="postcss">
