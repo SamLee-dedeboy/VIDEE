@@ -16,3 +16,9 @@ langchain-core
 langchain-openai
 fastapi[standard]
 scikit-learn
+networkx
+transformers
+torch
+hdbscan
+bertopic
+umap
