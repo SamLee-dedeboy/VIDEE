@@ -22,3 +22,4 @@ torch
 hdbscan
 bertopic
 umap
+sentence_transformers

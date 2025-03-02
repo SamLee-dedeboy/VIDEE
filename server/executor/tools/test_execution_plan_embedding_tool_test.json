@@ -17,8 +17,10 @@
             "tool": "embedding_tool",
             "parameters": {
                 "name": "Embedding",
-                "model": "text-embedding-ada-002",
-                "api_key": ""
+                "model": "all-MiniLM-L6-v2",
+                "provider": "sentence_transformers",
+                "api_key": "",
+                "feature_key": "content"
             }
         }
     }

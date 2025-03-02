@@ -424,8 +424,9 @@ def convert_spec_to_chain(spec):
         api_key = spec["parameters"]["api_key"]
         model = spec["parameters"].get("model", "text-embedding-ada-002")
         feature_key = spec["parameters"].get("feature_key", "content")
+        provider = spec["parameters"].get("provider", "openai")
         return RunnableLambda(
-            lambda doc: embedding_tool(doc, api_key, model, feature_key)
+            lambda doc: embedding_tool(doc, api_key, model, feature_key, provider)
         )
     else:
         raise ValueError(f"Unknown execution type: {spec}")
