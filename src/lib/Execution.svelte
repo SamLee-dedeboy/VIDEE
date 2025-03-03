@@ -57,6 +57,7 @@
     plan_component?.rerender_plan();
     execution_component?.rerender_execution();
     evaluation_component?.rerender_evaluation();
+    await tick();
     updateLinks(semantic_tasks, primitive_tasks, evaluators);
   }
 
@@ -67,12 +68,6 @@
     _evaluator_nodes: tExecutionEvaluator[]
   ) {
     await tick();
-    console.log(
-      "updating global links",
-      _semantic_tasks,
-      _primitive_tasks,
-      _evaluator_nodes
-    );
     const svg = d3.select(`#${svgId}`);
     // links between plan and execution
     if (controllers.show_plan && controllers.show_execution) {

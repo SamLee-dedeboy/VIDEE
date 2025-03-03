@@ -19,6 +19,7 @@ export class DAG {
     dag: any
     zoom: any
     handleClick: Function
+    updateGlobalLinks: Function
     next_expansion_id: string | undefined
     new_nodes: string[] = []
     constructor(svgId: string, node_radius: [number,number]=[100, 100], selection_card: string, selection_container: string) {
@@ -35,8 +36,9 @@ export class DAG {
         this.selection_container = selection_container
         this.bbox_dict = {}
         this.handleClick = () => {}
+        this.updateGlobalLinks = () => {}
     }
-    init (handleClick=() => {}) {
+    init (updateGlobalLinks: Function) {
         const svg = d3.select(`#${this.svgId}`)
         svg.append("g").attr("class", "next_expansion_link");
         svg.append("g").attr("class", "links");
@@ -44,7 +46,8 @@ export class DAG {
         svg.append("g").attr("class", "bubbles");
         svg.call(this.zoom)
         // .call(this.zoom.transform, d3.zoomIdentity);
-        this.handleClick = handleClick
+        // this.handleClick = handleClick
+        this.updateGlobalLinks = updateGlobalLinks
 
         console.log("init done")
     }
@@ -231,12 +234,14 @@ export class DAG {
         document.querySelectorAll(self.selection_card).forEach(div => {
             applyTransform(div, e.transform)
         })
+
         const next_expansion_node = self.bbox_dict[self.next_expansion_id]
         if(next_expansion_node) {
             svg.select("g.next_expansion_link").select("line.next_expansion_link")
                 .attr("x1", e.transform.apply([next_expansion_node.x, next_expansion_node.y])[0])
                 .attr("y1", e.transform.apply([next_expansion_node.x, next_expansion_node.y])[1])
         }
+        if(self.updateGlobalLinks) self.updateGlobalLinks()
       }
 }
 

@@ -33,7 +33,6 @@
       contenteditable
       class="user-description grow text-slate-600 italic px-2 min-h-[3rem] max-h-[6rem] overflow-auto flex flex-wrap outline-1 outline-gray-300 rounded"
       onkeydown={(e: any) => {
-        console.log(e.key === "Enter", selected_task !== undefined);
         if (e.key === "Enter" && selected_task !== undefined) {
           const text = e.target.innerText;
           handleGenerateEvaluator(text, selected_task);

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { server_address } from "constants";
-  import { onMount, tick } from "svelte";
+  import { onMount, setContext, tick } from "svelte";
   import type {
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
@@ -30,7 +30,7 @@
   let compiling = $state(false);
   const session_id = (getContext("session_id") as Function)();
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
-  const svgId = "dag-svg";
+  const svgId = "execution-dag-svg";
   const node_size: [number, number] = [150, 80];
   let dag_renderer = new DAG(
     svgId,
@@ -42,6 +42,10 @@
   $effect(() => {
     update_dag(primitive_tasks);
   });
+
+  export function rerender_execution() {
+    update_dag(primitive_tasks);
+  }
 
   /**
    * Prepare the data for the dag renderer
@@ -72,7 +76,6 @@
         },
       };
     });
-
     // call renderer
     dag_renderer.update(dag_data, []);
   }
@@ -187,8 +190,9 @@
       });
   }
 
+  const updateGlobalLinks: Function = getContext("updateGlobalLinks");
   onMount(() => {
-    dag_renderer.init();
+    dag_renderer.init(updateGlobalLinks);
     update_dag(primitive_tasks);
     console.log({ execution_states });
   });
@@ -200,7 +204,7 @@
     class:loading-canvas={converting}
   >
     <span class="text-[1.5rem] text-slate-600 font-semibold italic">
-      Execution Details
+      Execution
     </span>
     <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
@@ -216,7 +220,7 @@
       primitive_tasks.length * 2 * node_size[1] * 1.5,
       800
     ) + "px"} -->
-  <div class="relative bg-gray-50 flex flex-col gap-y-1 grow">
+  <div class="relative flex flex-col gap-y-1 grow">
     {#if converting}
       <div
         class="absolute top-0 left-0 right-0 flex items-center justify-center"

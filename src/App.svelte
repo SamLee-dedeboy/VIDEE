@@ -16,6 +16,7 @@
   import SemanticTaskTreeInspection from "lib/SemanticTaskTreeInspection.svelte";
   import ExecutionInspection from "lib/ExecutionInspection.svelte";
   import ExecutionEvaluators from "lib/ExecutionEvaluators.svelte";
+  import Execution from "lib/Execution.svelte";
   import type { stringify } from "postcss";
   let session_id: string | undefined = $state(undefined);
   setContext("session_id", () => session_id);
@@ -419,36 +420,20 @@
 
   function handleConvert() {
     converting = true;
-    // fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
-    fetch(
-      `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
-      }
-    )
-    // fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
-    fetch(
-      `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
-      }
-    )
+    fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
+      // fetch(
+      //   `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
+    })
       .then((response) => response.json())
       .then((data) => {
         console.log("decomposition to primitive tasks: ", { data });
         primitive_tasks = data;
         converting = false;
-        if (show_dag === "semantic") {
-          show_dag = "primitive";
-        }
       });
   }
   // stream convert
@@ -610,19 +595,18 @@
             style={`${show_dag === "mcts" ? "background-color: oklch(0.901 0.076 70.697); opacity: 1;" : "background-color: #fafafa; color: rgba(0, 0, 0, 0.2)"}`}
             onclick={() => (show_dag = "mcts")}>Searching</button
           >
-          <button
+          <!-- <button
             class="min-w-[6rem] px-2 py-1 font-mono text-slate-700 outline-1 outline-gray-400 hover:outline-orange-200 hover:outline-2 hover: z-10 hover:!text-slate-700"
-            class:disabled={streaming_states.started &&
-              !streaming_states.paused}
+            class:disabled={streaming_states.started && !streaming_states.paused}
             style={`${show_dag === "semantic" ? "background-color: oklch(0.954 0.038 75.164); opacity: 1;" : "background-color: #fafafa; color: rgba(0, 0, 0, 0.2) "}`}
             onclick={() => (show_dag = "semantic")}>Plan</button
-          >
+          > -->
           <button
             class="min-w-[6rem] px-2 py-1 font-mono rounded-r outline-1 outline-gray-400 text-slate-700 hover:outline-blue-300 hover:outline-2 hover:z-10 hover:!text-slate-700"
-            class:disabled={primitive_tasks.length === 0 ||
-              (streaming_states.started && !streaming_states.paused)}
-            style={`${show_dag === "primitive" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa;  color: rgba(0, 0, 0, 0.2)"}`}
-            onclick={() => (show_dag = "primitive")}>Execution</button
+            class:disabled={streaming_states.started &&
+              !streaming_states.paused}
+            style={`${show_dag === "semantic" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa;  color: rgba(0, 0, 0, 0.2)"}`}
+            onclick={() => (show_dag = "semantic")}>Execution</button
           >
         </div>
       </div>
@@ -645,7 +629,7 @@
                 bind:selected_semantic_task_path
               ></SemanticTasksTree>
             {:else if show_dag == "semantic"}
-              <SemanticTaskPlan
+              <Execution
                 {decomposing_goal}
                 semantic_tasks={selected_semantic_task_path || []}
                 {handleConvert}
@@ -660,18 +644,6 @@
                   inspected_evaluator_node = node;
                 }}
               ></Execution>
-              <!-- <SemanticTaskPlan
-                {decomposing_goal}
-                semantic_tasks={selected_semantic_task_path || []}
-                {handleConvert}
-              ></SemanticTaskPlan> -->
-              <!-- {:else if show_dag === "primitive"}
-              <PrimitiveTasks
-                {primitive_tasks}
-                {converting}
-                handleInspectPrimitiveTask={(task) =>
-                  (inspected_primitive_task = task)}
-              ></PrimitiveTasks>
             {/if}
           </div>
         </div>

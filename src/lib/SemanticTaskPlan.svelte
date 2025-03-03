@@ -31,7 +31,7 @@
   );
   let task_card_expanded: string[] = $state([]);
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
-  const svgId = "dag-svg";
+  const svgId = "plan-dag-svg";
   const node_size: [number, number] = [500, 250];
   let dag_renderer = new DAG(
     svgId,
@@ -44,6 +44,9 @@
     update_dag(semantic_tasks_flattened);
   });
 
+  export function rerender_plan() {
+    update_dag(semantic_tasks_flattened);
+  }
   /**
    * Flatten the semantic tasks
    * @param _semantic_tasks
@@ -207,9 +210,10 @@
       });
   }
 
+  const updateGlobalLinks: Function = getContext("updateGlobalLinks");
   onMount(() => {
     console.log("Semantic Tasks init");
-    dag_renderer.init();
+    dag_renderer.init(updateGlobalLinks);
     update_dag(semantic_tasks);
   });
 </script>
@@ -219,7 +223,7 @@
     <span
       class="canvas-header text-[1.5rem] text-slate-600 font-semibold italic"
     >
-      Analytics Plan
+      Plan
     </span>
     <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
@@ -235,7 +239,7 @@
       semantic_tasks_flattened.length * 2 * node_size[1] * 1.5,
       1000
     ) + "px"} -->
-  <div class="relative bg-gray-50 flex flex-col gap-y-1 grow">
+  <div class="relative flex flex-col gap-y-1 grow">
     {#if decomposing_goal}
       <div
         class="absolute top-0 left-0 right-0 flex items-center justify-center"
