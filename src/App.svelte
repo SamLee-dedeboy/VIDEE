@@ -7,9 +7,11 @@
   import { onMount, setContext } from "svelte";
   import type {
     tExecutionEvaluator,
+    tPrimitiveTask,
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
     tSemanticTask,
+    tExecutionState,
   } from "types";
   import GoalInput from "lib/GoalInput.svelte";
   import PrimitiveTaskInspection from "lib/PrimitiveTaskInspection.svelte";
@@ -21,13 +23,16 @@
   let session_id: string | undefined = $state(undefined);
   setContext("session_id", () => session_id);
   let decomposing_goal = $state(false);
-  let converting = $state(false);
 
   // stream states
   let streaming_states = $state({
     started: false,
     paused: false,
     finished: false,
+  });
+  let controllers = $state({
+    converting: false,
+    compiling: false,
   });
   let stream_controller: any = $state(undefined);
   let mode = $state("step");
@@ -38,6 +43,22 @@
   let few_shot_examples_semantic_tasks: Record<string, any> = $state({});
 
   let user_goal: string = $state("");
+
+  let primitive_tasks: tPrimitiveTask[] = $state([]);
+  let execution_states: Record<string, tExecutionState> | undefined =
+    $state(undefined);
+  let inspected_primitive_task:
+    | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
+    | undefined = $state(undefined);
+  let inspected_evaluator_node: tExecutionEvaluator | undefined =
+    $state(undefined);
+
+  /**
+   * Stores the state of the dag
+   * @value semantic| mcts
+   */
+  let show_dag = $state("mcts");
+
   /**
    * updates the few shot examples every time semantic tasks are updated
    */
@@ -98,19 +119,6 @@
     }
   }
   setContext("setFewShotExampleExplanation", setFewShotExampleExplanation);
-  let primitive_tasks: (tPrimitiveTaskDescription &
-    Partial<tPrimitiveTaskExecution>)[] = $state([]);
-  let inspected_primitive_task:
-    | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
-    | undefined = $state(undefined);
-  let inspected_evaluator_node: tExecutionEvaluator | undefined =
-    $state(undefined);
-
-  /**
-   * Stores the state of the dag
-   * @value semantic| mcts
-   */
-  let show_dag = $state("mcts");
 
   async function init() {
     await fetchTest();
@@ -275,7 +283,7 @@
    */
 
   function handleConvert() {
-    converting = true;
+    controllers.converting = true;
     fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
       // fetch(
       //   `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`, {
@@ -289,9 +297,39 @@
       .then((data) => {
         console.log("decomposition to primitive tasks: ", { data });
         primitive_tasks = data;
-        converting = false;
+        controllers.converting = false;
+        handleCompile();
       });
   }
+
+  function handleCompile() {
+    console.log("Compiling...", { primitive_tasks, session_id });
+    controllers.compiling = true;
+    fetch(`${server_address}/primitive_task/compile/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ primitive_tasks, session_id }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        controllers.compiling = false;
+        primitive_tasks = data.primitive_tasks;
+        execution_states = data.execution_state;
+        if (inspected_primitive_task !== undefined) {
+          const original_id = inspected_primitive_task.id;
+          inspected_primitive_task = primitive_tasks.find(
+            (t) => t.id === original_id
+          );
+        }
+        console.log({ data });
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
+
   function handleUserFeedback(
     task_id: string,
     evaluation: string,
@@ -406,7 +444,9 @@
                 semantic_tasks={selected_semantic_task_path || []}
                 {handleConvert}
                 bind:primitive_tasks
-                {converting}
+                {execution_states}
+                converting={controllers.converting}
+                compiling={controllers.compiling}
                 handleInspectPrimitiveTask={(task) => {
                   console.log("inspecting task", task);
                   inspected_primitive_task = task;

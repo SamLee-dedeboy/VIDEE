@@ -17,17 +17,18 @@
   import { getContext } from "svelte";
   let {
     primitive_tasks = $bindable([]),
+    execution_states,
     converting,
+    compiling,
     handleInspectPrimitiveTask = () => {},
   }: {
     primitive_tasks: tPrimitiveTask[];
+    execution_states: Record<string, tExecutionState> | undefined;
     converting: boolean;
+    compiling: boolean;
     handleInspectPrimitiveTask: Function;
   } = $props();
   let task_card_expanded: string[] = $state([]);
-  let execution_states: Record<string, tExecutionState> | undefined =
-    $state(undefined);
-  let compiling = $state(false);
   const session_id = (getContext("session_id") as Function)();
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
   const svgId = "execution-dag-svg";
@@ -90,27 +91,27 @@
   }
 
   // handlers with server-side updates
-  function handleCompile() {
-    console.log("Compiling...", { primitive_tasks, session_id });
-    compiling = true;
-    fetch(`${server_address}/primitive_task/compile/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ primitive_tasks, session_id }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        compiling = false;
-        primitive_tasks = data.primitive_tasks;
-        execution_states = data.execution_state;
-        console.log({ data });
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
+  // function handleCompile() {
+  //   console.log("Compiling...", { primitive_tasks, session_id });
+  //   compiling = true;
+  //   fetch(`${server_address}/primitive_task/compile/`, {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({ primitive_tasks, session_id }),
+  //   })
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       compiling = false;
+  //       primitive_tasks = data.primitive_tasks;
+  //       execution_states = data.execution_state;
+  //       console.log({ data });
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error:", error);
+  //     });
+  // }
 
   function handleExecute(
     execute_node: tPrimitiveTaskDescription & tPrimitiveTaskExecution
@@ -255,7 +256,7 @@
         </div>
       {/each}
     </div>
-    <button
+    <!-- <button
       class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10 mx-2"
       class:disabled={primitive_tasks === undefined}
       tabindex="0"
@@ -263,7 +264,7 @@
       onkeyup={() => {}}
     >
       Compile Graph
-    </button>
+    </button> -->
   </div>
 </div>
 

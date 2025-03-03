@@ -22,7 +22,9 @@
 
     // execution
     primitive_tasks = $bindable([]),
+    execution_states,
     converting,
+    compiling,
     handleInspectPrimitiveTask = () => {},
 
     // evaluation
@@ -32,7 +34,9 @@
     decomposing_goal: boolean;
     handleConvert: Function;
     primitive_tasks: tPrimitiveTask[];
+    execution_states: Record<string, tExecutionState> | undefined;
     converting: boolean;
+    compiling: boolean;
     handleInspectPrimitiveTask: Function;
     handleInspectEvaluatorNode: Function;
   } = $props();
@@ -198,7 +202,9 @@
         <PrimitiveTasks
           bind:this={execution_component}
           bind:primitive_tasks
+          {execution_states}
           {converting}
+          {compiling}
           {handleInspectPrimitiveTask}
         ></PrimitiveTasks>
         <button

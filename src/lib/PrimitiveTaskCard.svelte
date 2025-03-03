@@ -32,13 +32,15 @@
   class="container task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline-2 outline-blue-100 bg-[#F2F8FD] shadow rounded relative flex gap-y-1 gap-x-2"
 >
   {#if compiling}
-    <div
-      class="absolute top-0 bottom-0 left-0 right-0 flex items-center justify-center"
-    >
-      <div
-        class="absolute top-0 bottom-0 left-0 right-0 opacity-50 bg-slate-200"
-      ></div>
-      <img src="loader_circle.svg" class="w-8 h-8 animate-spin" alt="loading" />
+    <div class="absolute bottom-[calc(100%+3px)] left-0 flex items-end gap-x-1">
+      <img
+        src="loader_circle.svg"
+        alt="loading"
+        class="w-6 h-6 animate-spin opacity-80"
+      />
+      <span class="text-sm animate-pulse italic text-gray-500">
+        compiling...
+      </span>
     </div>
   {/if}
   <div class="flex flex-col grow px-2 gap-y-2">
