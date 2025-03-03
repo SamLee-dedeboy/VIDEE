@@ -106,9 +106,6 @@
   let inspected_evaluator_node: tExecutionEvaluator | undefined =
     $state(undefined);
 
-  // let primitive_task_execution_plan = $state(undefined);
-  // let goal_candidate_steps = $state([]);
-
   /**
    * Stores the state of the dag
    * @value semantic| mcts
@@ -132,61 +129,6 @@
       });
   }
 
-  // async function fetchStream() {
-  //   stream_controller = new AbortController();
-  //   const signal = stream_controller.signal;
-  //   try {
-  //     const response = await fetch(`${server_address}/test/stream/`, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({
-  //         session_id,
-  //       }),
-
-  //       signal,
-  //     });
-  //     if (!response.body) {
-  //       throw new Error("Stream error");
-  //     }
-  //     const reader = response.body.getReader();
-  //     const decoder = new TextDecoder();
-
-  //     let buffer = "";
-
-  //     while (true) {
-  //       const { done, value } = await reader.read();
-  //       if (done) break;
-
-  //       buffer += decoder.decode(value, { stream: true });
-
-  //       // Process complete JSON objects line by line
-  //       let lines = buffer.split("\n");
-  //       buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
-
-  //       for (let line of lines) {
-  //         if (line) {
-  //           const obj = JSON.parse(line);
-  //           console.log("Received:", obj);
-  //           // You can update UI here
-  //         }
-  //       }
-  //     }
-  //   } catch (error: any) {
-  //     if (error.name === "AbortError") {
-  //       streaming_states.paused = true;
-  //       console.log("Stream aborted");
-  //     } else {
-  //       console.error("Error:", error);
-  //     }
-  //   } finally {
-  //     stream_controller = null;
-  //   }
-
-  //   console.log("Stream finished");
-  // }
-
   function createSession() {
     let random_session_id = Math.random().toString(36).substring(2, 15);
     fetch(`${server_address}/session/create/`, {
@@ -205,28 +147,6 @@
         console.error("Error:", error);
       });
   }
-  /**
-   * Decompose the goal into semantic tasks
-   */
-  // function handleDecomposeGoal(goal: string) {
-  //   decomposing_goal = true;
-  //   fetch(`${server_address}/goal_decomposition/`, {
-  //     method: "POST",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify({ goal, session_id }),
-  //   })
-  //     .then((response) => response.json())
-  //     .then((data) => {
-  //       console.log({ data });
-  //       semantic_tasks = data;
-  //       decomposing_goal = false;
-  //     })
-  //     .catch((error) => {
-  //       console.error("Error:", error);
-  //     });
-  // }
   async function dev_handleDecomposeGoalStepped_MCTS(goal: string) {
     fetch(`${server_address}/dev/semantic_task/plan`)
       .then((response) => response.json())
@@ -350,70 +270,6 @@
       });
   }
 
-  // async function handleDecomposeGoalStepped_BeamSearch(goal: string) {
-  //   streaming_states.started = true;
-  //   streaming_states.paused = false;
-  //   stream_controller = new AbortController();
-  //   const signal = stream_controller.signal;
-  //   try {
-  //     const response = await fetch(
-  //       `${server_address}/goal_decomposition/beam_search/stepped/`,
-  //       {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify({
-  //           goal,
-  //           session_id,
-  //           user_steps:
-  //             semantic_tasks === undefined ? [] : [[semantic_tasks, 5]],
-  //         }),
-  //         signal,
-  //       }
-  //     );
-  //     if (!response.body) {
-  //       throw new Error("Stream error");
-  //     }
-  //     const reader = response.body.getReader();
-  //     const decoder = new TextDecoder();
-
-  //     let buffer = "";
-
-  //     while (true) {
-  //       const { done, value } = await reader.read();
-  //       if (done) break;
-
-  //       buffer += decoder.decode(value, { stream: true });
-
-  //       // Process complete JSON objects line by line
-  //       let lines = buffer.split("\n");
-  //       buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
-
-  //       for (let line of lines) {
-  //         if (line) {
-  //           const obj = JSON.parse(line);
-  //           console.log("Received:", obj);
-  //           semantic_tasks = obj["semantic_tasks"][0][0];
-  //         }
-  //       }
-  //     }
-  //     console.log("Stream finished");
-  //     streaming_states.started = false;
-  //     streaming_states.paused = false;
-  //     streaming_states.finished = true;
-  //   } catch (error: any) {
-  //     if (error.name === "AbortError") {
-  //       streaming_states.paused = true;
-  //       console.log("Stream aborted");
-  //     } else {
-  //       console.error("Error:", error);
-  //     }
-  //   } finally {
-  //     stream_controller = undefined;
-  //   }
-  // }
-
   /**
    * convert the semantic tasks to primitive tasks
    */
@@ -436,84 +292,6 @@
         converting = false;
       });
   }
-  // stream convert
-  // async function _handleConvert() {
-  //   converting = true;
-  //   if (show_dag === "semantic") {
-  //     show_dag = "primitive";
-  //   }
-  //   streaming_states.started = true;
-  //   streaming_states.paused = false;
-  //   stream_controller = new AbortController();
-  //   const signal = stream_controller.signal;
-  //   console.log({ selected_semantic_task_path });
-  //   try {
-  //     const response = await fetch(
-  //       `${server_address}/semantic_task/decomposition_to_primitive_tasks/`,
-  //       {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify(
-  //           { semantic_tasks: selected_semantic_task_path },
-  //           signal
-  //         ),
-  //       }
-  //     );
-  //     if (!response.body) {
-  //       throw new Error("Stream error");
-  //     }
-
-  //     const reader = response.body.getReader();
-  //     const decoder = new TextDecoder();
-
-  //     let buffer = "";
-
-  //     while (true) {
-  //       const { done, value } = await reader.read();
-  //       if (done) break;
-
-  //       buffer += decoder.decode(value, { stream: true });
-
-  //       // Process complete JSON objects line by line
-  //       let lines = buffer.split("\n");
-  //       buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
-
-  //       for (let line of lines) {
-  //         if (line) {
-  //           const obj = JSON.parse(line);
-  //           console.log("Received:", obj);
-  //           if (!primitive_tasks) primitive_tasks = [];
-  //           primitive_tasks = primitive_tasks.concat(
-  //             obj["primitive_tasks"] as any[]
-  //           );
-  //           const semantic_task = obj["semantic_task"]; // the semantic task that was converted
-
-  //           if (mode === "step" && stream_controller !== undefined) {
-  //             stream_controller.abort(); // Stop streaming
-  //             stream_controller = undefined;
-  //           }
-  //         }
-  //       }
-  //     }
-  //     console.log("Stream finished");
-  //     streaming_states.started = false;
-  //     streaming_states.paused = false;
-  //     streaming_states.finished = true;
-  //     converting = false;
-  //   } catch (error: any) {
-  //     if (error.name === "AbortError") {
-  //       streaming_states.paused = true;
-  //       console.log("Stream aborted");
-  //     } else {
-  //       console.error("Error:", error);
-  //     }
-  //   } finally {
-  //     stream_controller = undefined;
-  //   }
-  // }
-
   function handleUserFeedback(
     task_id: string,
     evaluation: string,
@@ -595,12 +373,6 @@
             style={`${show_dag === "mcts" ? "background-color: oklch(0.901 0.076 70.697); opacity: 1;" : "background-color: #fafafa; color: rgba(0, 0, 0, 0.2)"}`}
             onclick={() => (show_dag = "mcts")}>Searching</button
           >
-          <!-- <button
-            class="min-w-[6rem] px-2 py-1 font-mono text-slate-700 outline-1 outline-gray-400 hover:outline-orange-200 hover:outline-2 hover: z-10 hover:!text-slate-700"
-            class:disabled={streaming_states.started && !streaming_states.paused}
-            style={`${show_dag === "semantic" ? "background-color: oklch(0.954 0.038 75.164); opacity: 1;" : "background-color: #fafafa; color: rgba(0, 0, 0, 0.2) "}`}
-            onclick={() => (show_dag = "semantic")}>Plan</button
-          > -->
           <button
             class="min-w-[6rem] px-2 py-1 font-mono rounded-r outline-1 outline-gray-400 text-slate-700 hover:outline-blue-300 hover:outline-2 hover:z-10 hover:!text-slate-700"
             class:disabled={streaming_states.started &&
@@ -662,11 +434,6 @@
           primitive_task={inspected_primitive_task}
           evaluator_node={inspected_evaluator_node}
         ></ExecutionInspection>
-        <!-- {:else if show_dag === "primitive"}
-        <PrimitiveTaskInspection
-          task={inspected_primitive_task || {}}
-          {primitive_tasks}
-        ></PrimitiveTaskInspection> -->
       {/if}
     </div>
   {/if}
