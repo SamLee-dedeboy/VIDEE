@@ -15,7 +15,7 @@
   import { draggable } from "./draggable";
   import { getContext } from "svelte";
   let {
-    primitive_tasks,
+    primitive_tasks = $bindable([]),
     converting,
     handleInspectPrimitiveTask = () => {},
   }: {
@@ -195,7 +195,10 @@
 </script>
 
 <div class="flex flex-col gap-y-1 grow">
-  <div class="relative bg-[#f2f8fd] w-full flex justify-center z-10">
+  <div
+    class="relative bg-[#f2f8fd] w-full flex justify-center z-10"
+    class:loading-canvas={converting}
+  >
     <span class="text-[1.5rem] text-slate-600 font-semibold italic">
       Execution Details
     </span>
@@ -264,5 +267,19 @@
 <style lang="postcss">
   .disabled {
     @apply opacity-50 pointer-events-none;
+  }
+
+  .loading-canvas {
+    position: relative;
+    background: linear-gradient(
+      90deg,
+      #c2e2fd 20%,
+      #87f2f7 40%,
+      #86c6ff 60%,
+      transparent 80%
+    );
+    background-size: 200% 200%;
+    animation: dash 3s linear infinite;
+    border: 4px solid transparent;
   }
 </style>

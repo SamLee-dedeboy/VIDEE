@@ -6,6 +6,7 @@
   import { server_address } from "constants";
   import { onMount, setContext } from "svelte";
   import type {
+    tExecutionEvaluator,
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
     tSemanticTask,
@@ -101,6 +102,8 @@
   let inspected_primitive_task:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
     | undefined = $state(undefined);
+  let inspected_evaluator_node: tExecutionEvaluator | undefined =
+    $state(undefined);
 
   // let primitive_task_execution_plan = $state(undefined);
   // let goal_candidate_steps = $state([]);
@@ -626,8 +629,8 @@
       <div class="flex flex-[2_2_0%] gap-x-2">
         <div
           class="relative grow px-2 py-1"
-          class:loading-canvas={converting ||
-            (streaming_states.started && !streaming_states.paused)}
+          class:loading-canvas={streaming_states.started &&
+            !streaming_states.paused}
         >
           <div
             class="absolute top-0 left-0 right-0 bottom-0 flex overflow-hidden"
@@ -646,11 +649,15 @@
                 {decomposing_goal}
                 semantic_tasks={selected_semantic_task_path || []}
                 {handleConvert}
-                {primitive_tasks}
+                bind:primitive_tasks
                 {converting}
                 handleInspectPrimitiveTask={(task) => {
                   console.log("inspecting task", task);
                   inspected_primitive_task = task;
+                }}
+                handleInspectEvaluatorNode={(node) => {
+                  console.log("inspecting evaluator", node);
+                  inspected_evaluator_node = node;
                 }}
               ></Execution>
               <!-- <SemanticTaskPlan
@@ -679,6 +686,7 @@
         <ExecutionInspection
           semantic_tasks={selected_semantic_task_path}
           primitive_task={inspected_primitive_task}
+          evaluator_node={inspected_evaluator_node}
         ></ExecutionInspection>
         <!-- {:else if show_dag === "primitive"}
         <PrimitiveTaskInspection
@@ -698,9 +706,6 @@
     @apply hidden;
   }
 
-  /* #fbf2b4 20%,
-      #ffbb80 40%,
-      #ffc155 60%, */
   .loading-canvas {
     position: relative;
     background: linear-gradient(
@@ -715,22 +720,7 @@
     border: 4px solid transparent;
   }
 
-  @keyframes dash {
-    0% {
-      background-position: 0% 0%;
-    }
-    100% {
-      background-position: 200% 150%;
-    }
-  }
-  @keyframes ripple {
-    0% {
-      background-size: 0% 0%;
-      opacity: 1;
-    }
-    100% {
-      background-size: 100% 100%;
-      opacity: 0;
-    }
-  }
+  /* #fbf2b4 20%,
+      #ffbb80 40%,
+      #ffc155 60%, */
 </style>

@@ -77,24 +77,24 @@ export class DAG {
             return acc;
         }, {})
 
-      // position nodes
-      d3.selectAll(this.selection_card)
-        .style("left", function() { 
-            const id = this.dataset.id
-            return (self.bbox_dict[id].x - self.bbox_dict[id].width / 2) + "px"
-        })
-        .style("top", function() {
-            const id = this.dataset.id
-            return (self.bbox_dict[id].y - self.bbox_dict[id].height / 2)   + "px"
-        })
-        .each(function() {
-            applyTransform(this, d3.zoomTransform(svg.node()))
-            this.style.transitionDuration = "0.5s"
-        })
+        // position nodes
+        d3.selectAll(this.selection_card)
+            .style("left", function() { 
+                const id = this.dataset.id
+                return (self.bbox_dict[id].x - self.bbox_dict[id].width / 2) + "px"
+            })
+            .style("top", function() {
+                const id = this.dataset.id
+                return (self.bbox_dict[id].y - self.bbox_dict[id].height / 2)   + "px"
+            })
+            .each(function() {
+                applyTransform(this, d3.zoomTransform(svg.node()))
+                this.style.transitionDuration = "0.5s"
+            })
 
-        let enter_nodes: string[] = []
-        svg.select("g.nodes")
-        .selectAll("rect.node")
+            let enter_nodes: string[] = []
+            svg.select("g.nodes")
+            .selectAll("rect.node")
             .data(Object.keys(self.bbox_dict), (d) => d)
             .join(
                 enter => enter.append("rect").attr("class", "node")

@@ -3,23 +3,25 @@
   import { slide } from "svelte/transition";
   import { onMount, setContext } from "svelte";
   import type {
+    tExecutionEvaluator,
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
     tSemanticTask,
   } from "types";
   import { getContext } from "svelte";
   import DocumentCard from "./DocumentCard.svelte";
-  import Evaluator from "./Evaluator.svelte";
-  import ExecutionEvaluators from "./ExecutionEvaluators.svelte";
   import PrimitiveTaskInspection from "./PrimitiveTaskInspection.svelte";
+  import EvaluatorNodeInspection from "./EvaluatorNodeInspection.svelte";
   let {
     semantic_tasks,
     primitive_task,
+    evaluator_node,
   }: {
     semantic_tasks: tSemanticTask[];
     primitive_task:
       | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
       | undefined;
+    evaluator_node: tExecutionEvaluator | undefined;
   } = $props();
   const session_id = (getContext("session_id") as Function)();
   let documents: any[] = $state([]);
@@ -87,6 +89,10 @@
   </div>
   {#if primitive_task}
     <PrimitiveTaskInspection task={primitive_task}></PrimitiveTaskInspection>
+  {/if}
+  {#if evaluator_node}
+    <EvaluatorNodeInspection evaluator={evaluator_node}
+    ></EvaluatorNodeInspection>
   {/if}
   <!-- <ExecutionEvaluators --bg-color="#ffedd4" tasks={semantic_tasks}
   ></ExecutionEvaluators> -->

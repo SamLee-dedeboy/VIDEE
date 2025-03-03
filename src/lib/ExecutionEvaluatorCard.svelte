@@ -1,125 +1,88 @@
 <script lang="ts">
-  import { trim } from "lib/trim";
   import type { tExecutionEvaluator } from "types";
   import { slide } from "svelte/transition";
-  import PromptTemplate from "./PromptTemplate.svelte";
   let {
     evaluator = $bindable(),
+    expand,
     tasks,
-    handleDelete,
-    loading = false,
+    handleExecute = () => {},
+    handleInspectEvaluator = () => {},
+    handleDeleteEvaluator = () => {},
+    handleToggleExpand = () => {},
   }: {
     evaluator: tExecutionEvaluator;
+    expand: boolean;
     tasks: [string, string][];
-    loading: boolean;
-    handleDelete: Function;
+    handleExecute: (task: tExecutionEvaluator) => void;
+    handleInspectEvaluator: Function;
+    handleDeleteEvaluator?: Function;
+    handleToggleExpand?: Function;
   } = $props();
-  let show_parameters = $state(false);
 
   function isEmpty(string: string | null | undefined): boolean {
     return string === undefined || string === null || string === "";
   }
-  $effect(() => {
-    if (evaluator.parameters) {
-      show_parameters = true;
-    }
-  });
 </script>
 
 <div
   in:slide
-  class="exec-evaluator-container flex flex-col gap-y-2 shadow-[0px_1px_1px_1px_lightgray] p-1 rounded"
+  class="container evaluator-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline-2 outline-emerald-100 shadow rounded relative flex gap-y-1 gap-x-2"
 >
-  <div class="user-input-header flex text-gray-600 italic gap-x-2 text-sm">
-    <div class="flex-1 flex justify-center bg-slate-100 relative">
-      Name
+  <div class="flex flex-col grow px-2 gap-y-2">
+    <div
+      class="border-b border-gray-300 text-[1.2rem] italic flex items-center"
+      style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
+    >
+      <span class="card-label mr-2 capitalize">{evaluator.name}</span>
       <button
-        class="delete-button hidden absolute top-1/2 -translate-y-1/2 left-0 opacity-60 hover:opacity-100"
-        onclick={() => handleDelete()}
+        class="shrink-0 ml-auto cursor-pointer hover:bg-emerald-200 p-0.5 rounded"
+        onclick={() => handleToggleExpand(evaluator.name)}
+        ><img
+          src="panel_top_open_emerald.svg"
+          alt="more"
+          class="w-6 h-6"
+        /></button
       >
-        <img src="trash.svg" alt="delete" class="w-4 h-4" />
-      </button>
     </div>
-    <div
-      class="header-description flex-2 flex justify-center bg-slate-100 relative"
-    >
-      Definition
-    </div>
-  </div>
-  <div class="user-input flex text-slate-700 gap-x-2 text-sm">
-    <div
-      use:trim
-      class="user-input-name flex-1 flex justify-center"
-      contenteditable
-      onblur={() => {
-        const name = document.querySelector(".user-input-name")?.textContent;
-        evaluator.name = name || "";
-      }}
-    >
-      {evaluator.name}
-    </div>
-    <div
-      use:trim
-      class="user-input-description flex-2 flex justify-center"
-      contenteditable
-      onblur={() => {
-        const description = document.querySelector(
-          ".user-input-description"
-        )?.textContent;
-        evaluator.definition = description || "";
-      }}
-    >
-      {evaluator.definition}
-    </div>
-  </div>
-  <div
-    class="task-option-container flex gap-x-2 items-center px-2 text-sm text-slate-700"
-  >
-    <div class="">Target:</div>
-    <div class="options flex gap-2 flex-wrap text-sm">
-      {#each tasks as task}
+
+    {#if expand}
+      <div
+        in:slide
+        class="border-b border-gray-300 flex flex-col min-w-[18rem]"
+      >
+        <div class="text-sm text-gray-400 italic">Definition</div>
+        {evaluator.definition}
         <button
-          class:selected={evaluator.task === task[0]}
-          class="flex gap-x-2 outline-2 outline-gray-100 px-2 py-0.5 rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700"
-          onclick={() => (evaluator.task = task[0])}
+          class="delete-button hidden absolute top-1/2 -translate-y-1/2 left-0 opacity-60 hover:opacity-100"
+          onclick={() => handleDeleteEvaluator()}
         >
-          {task[1]}
+          <img src="trash.svg" alt="delete" class="w-4 h-4" />
         </button>
-      {/each}
-    </div>
-  </div>
-  <div class="flex flex-col">
-    <button
-      class="text-slate-600 italic bg-slate-100 flex justify-center relative hover:bg-slate-200"
-      onclick={() => (show_parameters = !show_parameters)}
-    >
-      Parameters
-      <img
-        src="chevron_down.svg"
-        alt="expand"
-        class="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4"
-      />
-    </button>
-    {#if show_parameters}
-      <div class="" in:slide>
-        {#if evaluator.parameters}
-          <div>
-            <PromptTemplate messages={evaluator.parameters.prompt_template}
-            ></PromptTemplate>
-          </div>
-        {:else if loading}
-          <div class="flex grow justify-center mt-2">
-            <img
-              src="loader_circle.svg"
-              alt="loading"
-              class="w-4 h-4 animate-spin"
-            />
-          </div>
-        {:else}
-          <div class="px-2 italic text-gray-500 text-sm">
-            Enter the name and description then click "Generate Evaluator"
-          </div>
-        {/if}
+      </div>
+      <div class="task-option-container flex gap-x-2 text-sm text-slate-700">
+        <div class="text-sm text-gray-400 italic">Target:</div>
+        <div class="options flex gap-2 flex-wrap text-sm">
+          {evaluator.task}
+        </div>
+      </div>
+      <div class="flex flex-col justify-between gap-y-2 mt-1">
+        <div class="flex gap-x-2">
+          <button
+            class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
+            onclick={() => handleExecute(evaluator)}>Execute</button
+          >
+          <button
+            class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"
+            onclick={() => handleInspectEvaluator(evaluator)}>Inspect</button
+          >
+          <button
+            class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+            onclick={() => handleDeleteEvaluator(evaluator)}
+          >
+            <!-- <img src="close.svg" alt="x" /> -->
+            Delete
+          </button>
+        </div>
       </div>
     {/if}
   </div>
@@ -127,32 +90,7 @@
 
 <style lang="postcss">
   @reference "../app.css";
-  .user-input-name:empty:before {
-    content: "Name the evaluator...";
-    color: gray;
-    pointer-events: none;
-  }
-  .user-input-description:empty:before {
-    content: "Describe the evaluation criteria...";
-    color: gray;
-    pointer-events: none;
-  }
-  .user-input-name:focus,
-  .user-input-description:focus {
-    @apply justify-start;
-  }
-  .exec-evaluator-container:hover {
-    & .delete-button {
-      @apply flex;
-    }
-  }
-  .disabled {
-    @apply cursor-not-allowed opacity-50 outline-none;
-  }
-  .disabled-button {
-    pointer-events: none;
-  }
-  .selected {
-    @apply bg-slate-200 text-slate-700;
+  .action-button {
+    @apply outline-2 rounded px-1 py-0.5 text-sm font-mono;
   }
 </style>
