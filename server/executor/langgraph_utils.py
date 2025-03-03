@@ -411,16 +411,22 @@ def convert_spec_to_chain(spec):
     elif spec["tool"] == "clustering_tool":
         n_clusters = spec["parameters"].get("n_clusters", 3)
         feature_key = spec["parameters"].get("feature_key", "embedding")
-        # return custom_tools.clustering_chain.bind(n_clusters=n_clusters, feature_key=feature_key)
+        algorithm = spec["parameters"].get("algorithm", "kmeans")
         return RunnableLambda(
-            lambda inputs: clustering_tool(inputs, n_clusters=n_clusters, feature_key=feature_key)
+            lambda inputs: clustering_tool(
+                inputs,
+                n_clusters=n_clusters,
+                feature_key=feature_key,
+                algorithm=algorithm
+            )
         )
     elif spec["tool"] == "embedding_tool":
         api_key = spec["parameters"]["api_key"]
         model = spec["parameters"].get("model", "text-embedding-ada-002")
         feature_key = spec["parameters"].get("feature_key", "content")
+        provider = spec["parameters"].get("provider", "openai")
         return RunnableLambda(
-            lambda doc: embedding_tool(doc, api_key, model, feature_key)
+            lambda doc: embedding_tool(doc, api_key, model, feature_key, provider)
         )
     else:
         raise ValueError(f"Unknown execution type: {spec}")
