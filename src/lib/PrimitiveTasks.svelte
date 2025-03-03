@@ -7,6 +7,7 @@
     tExecutionState,
     tNode,
     tTask,
+    tPrimitiveTask,
   } from "types";
   import * as d3 from "d3";
   import { DAG } from "renderer/dag";
@@ -19,8 +20,7 @@
     converting,
     handleInspectPrimitiveTask = () => {},
   }: {
-    primitive_tasks: (tPrimitiveTaskDescription &
-      Partial<tPrimitiveTaskExecution>)[];
+    primitive_tasks: tPrimitiveTask[];
     converting: boolean;
     handleInspectPrimitiveTask: Function;
   } = $props();
@@ -137,14 +137,13 @@
     primitive_tasks = [
       ...primitive_tasks,
       {
+        solves: "",
         id: Math.random().toString(),
         label: "New Task",
         description: "New Task Description",
         explanation: "N/A",
         parentIds: [],
         children: [],
-        confidence: 0.5,
-        complexity: 0.5,
       },
     ];
     update_with_server();

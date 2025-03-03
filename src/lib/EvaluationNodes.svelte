@@ -22,6 +22,7 @@
   let evaluator_node_expanded: string[] = $state([]);
   let loading = $state(false);
   let adding_evaluator = $state(false);
+  let generating_for_description = $state("");
   const session_id = (getContext("session_id") as Function)();
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
 
@@ -101,6 +102,7 @@
       tasks.find((t) => t.id === task_id),
       session_id
     );
+    generating_for_description = description;
     fetch(`${server_address}/primitive_task/evaluators/add/`, {
       method: "POST",
       headers: {
@@ -179,13 +181,15 @@
               class="w-6 h-6 animate-spin opacity-50"
               alt="loading"
             />
-            <span class="animate-pulse">Generating...</span>
+            <span class="animate-pulse"
+              >Generating for "{generating_for_description}"
+            </span>
           </div>
         </div>
       {/if}
       {#if adding_evaluator}
         <div
-          class="absolute top-0 bottom-0 left-0 right-0 bg-gray-200 z-50 flex justify-center"
+          class="absolute top-0 bottom-0 left-0 right-0 bg-emerald-50 z-50 flex justify-center"
         >
           <div
             class="bg-white absolute top-[30%] left-2 right-2 h-fit p-4 outline-2 outline-slate-300 rounded shadow-md"

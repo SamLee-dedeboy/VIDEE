@@ -638,10 +638,12 @@
                 handleInspectPrimitiveTask={(task) => {
                   console.log("inspecting task", task);
                   inspected_primitive_task = task;
+                  inspected_evaluator_node = undefined;
                 }}
                 handleInspectEvaluatorNode={(node) => {
                   console.log("inspecting evaluator", node);
                   inspected_evaluator_node = node;
+                  inspected_primitive_task = undefined;
                 }}
               ></Execution>
             {/if}

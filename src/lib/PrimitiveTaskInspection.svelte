@@ -49,7 +49,7 @@
   <div
     class="text-[1.5rem] text-slate-600 font-semibold italic bg-[#f2f8fd] flex justify-center"
   >
-    Inspection
+    {task.label} - Detail
   </div>
   {#if task}
     <div class="flex flex-col px-2 gap-y-1">
@@ -61,7 +61,7 @@
             show_description = !show_description;
           }}
         >
-          {task.label}
+          Description
           <img
             src="chevron_down.svg"
             alt="expand"
@@ -175,7 +175,11 @@
                   {#if key === "api_key"}
                     <div></div>
                   {:else if key === "prompt_template"}
-                    <PromptTemplate messages={value}></PromptTemplate>
+                    <PromptTemplate
+                      messages={value}
+                      --bg-color="oklch(0.97 0.014 254.604)"
+                      --border-color="#bedbff"
+                    ></PromptTemplate>
                   {:else}
                     <div class="flex items-center gap-x-2">
                       <div class="italic text-gray-600 w-[3rem]">{key}</div>
@@ -244,10 +248,10 @@
     @apply block;
   }
   .option-label {
-    @apply text-slate-600 bg-gray-200 w-full flex justify-center font-mono;
+    @apply text-slate-600 bg-gray-100 w-full flex justify-center font-mono text-sm;
   }
   .option-value {
-    @apply outline-1 outline-gray-300 rounded px-2 hover:bg-gray-200 transition-all cursor-pointer flex justify-center font-mono;
+    @apply outline-1 outline-gray-300 rounded px-2 hover:bg-gray-200 transition-all cursor-pointer flex justify-center font-mono text-sm;
   }
   .option:hover > .delete {
     @apply flex;

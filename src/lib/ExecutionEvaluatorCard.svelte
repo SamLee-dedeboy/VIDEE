@@ -72,7 +72,7 @@
             onclick={() => handleExecute(evaluator)}>Execute</button
           >
           <button
-            class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"
+            class="action-button outline-gray-200 bg-emerald-200 hover:bg-emerald-300"
             onclick={() => handleInspectEvaluator(evaluator)}>Inspect</button
           >
           <button
@@ -86,10 +86,39 @@
       </div>
     {/if}
   </div>
+  {#if !expand}
+    <div
+      in:slide
+      class="more-actions hidden absolute top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
+    >
+      <div class="flex flex-col justify-between gap-y-2 mt-1">
+        <div class="flex gap-x-2">
+          <button
+            class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
+            onclick={() => handleExecute(evaluator)}>Execute</button
+          >
+          <button
+            class="action-button outline-gray-200 bg-emerald-200 hover:bg-emerald-300"
+            onclick={() => handleInspectEvaluator(evaluator)}>Inspect</button
+          >
+          <button
+            class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+            onclick={() => handleDeleteEvaluator(evaluator)}
+          >
+            <!-- <img src="close.svg" alt="x" /> -->
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style lang="postcss">
   @reference "../app.css";
+  .container:hover > .more-actions {
+    @apply flex flex-wrap;
+  }
   .action-button {
     @apply outline-2 rounded px-1 py-0.5 text-sm font-mono;
   }

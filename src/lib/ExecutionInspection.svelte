@@ -26,6 +26,7 @@
   const session_id = (getContext("session_id") as Function)();
   let documents: any[] = $state([]);
 
+  let inspect_mode = $state("task");
   let show_documents = $state(false);
 
   function getDocuments() {
@@ -52,9 +53,9 @@
 <div class="flex flex-col px-1 gap-y-4">
   <div class="flex flex-col gap-y-2">
     <div
-      class="text-[1.5rem] text-slate-600 font-semibold italic bg-orange-100 flex justify-center"
+      class="text-[1.5rem] text-slate-600 font-semibold italic bg-gray-100 flex justify-center"
     >
-      Dataset Inspection
+      Dataset
     </div>
     <div class="flex flex-col px-1 gap-y-1">
       <div
@@ -79,8 +80,8 @@
           {#each documents as document}
             <DocumentCard
               {document}
-              --bg-color="oklch(0.98 0.016 73.684)"
-              --bg-hover-color="oklch(0.901 0.076 70.697)"
+              --bg-color="#f8f8f8"
+              --bg-hover-color="#e3e3e3"
             />
           {/each}
         </div>
@@ -88,11 +89,15 @@
     </div>
   </div>
   {#if primitive_task}
-    <PrimitiveTaskInspection task={primitive_task}></PrimitiveTaskInspection>
+    <div in:slide>
+      <PrimitiveTaskInspection task={primitive_task}></PrimitiveTaskInspection>
+    </div>
   {/if}
   {#if evaluator_node}
-    <EvaluatorNodeInspection evaluator={evaluator_node}
-    ></EvaluatorNodeInspection>
+    <div in:slide>
+      <EvaluatorNodeInspection evaluator={evaluator_node}
+      ></EvaluatorNodeInspection>
+    </div>
   {/if}
   <!-- <ExecutionEvaluators --bg-color="#ffedd4" tasks={semantic_tasks}
   ></ExecutionEvaluators> -->
@@ -101,6 +106,12 @@
 <style lang="postcss">
   @reference "../app.css";
   .header-2 {
-    @apply text-lg font-bold font-mono text-slate-600 px-1 cursor-pointer hover:bg-orange-100 flex items-center border-b-2 border-orange-200 hover:border-2;
+    @apply text-lg font-bold font-mono text-slate-600 px-1 cursor-pointer hover:bg-gray-100 flex items-center justify-center border-b-2 border-gray-200 hover:border-2;
+  }
+  .header-3 {
+    @apply text-lg font-bold font-mono text-slate-600 px-1 cursor-pointer hover:bg-gray-200 flex items-center justify-center outline-gray-200;
+  }
+  .disabled {
+    @apply text-gray-400  pointer-events-none opacity-50;
   }
 </style>

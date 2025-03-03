@@ -2,8 +2,7 @@
   import type {
     tSemanticTask,
     tNode,
-    tPrimitiveTaskDescription,
-    tPrimitiveTaskExecution,
+    tPrimitiveTask,
     tExecutionEvaluator,
     tExecutionState,
     tTask,
@@ -32,8 +31,7 @@
     semantic_tasks: tSemanticTask[];
     decomposing_goal: boolean;
     handleConvert: Function;
-    primitive_tasks: (tPrimitiveTaskDescription &
-      Partial<tPrimitiveTaskExecution>)[];
+    primitive_tasks: tPrimitiveTask[];
     converting: boolean;
     handleInspectPrimitiveTask: Function;
     handleInspectEvaluatorNode: Function;
@@ -57,14 +55,12 @@
     plan_component?.rerender_plan();
     execution_component?.rerender_execution();
     evaluation_component?.rerender_evaluation();
-    await tick();
     updateLinks(semantic_tasks, primitive_tasks, evaluators);
   }
 
   async function updateLinks(
     _semantic_tasks: tSemanticTask[],
-    _primitive_tasks: (tPrimitiveTaskDescription &
-      Partial<tPrimitiveTaskExecution>)[],
+    _primitive_tasks: tPrimitiveTask[],
     _evaluator_nodes: tExecutionEvaluator[]
   ) {
     await tick();

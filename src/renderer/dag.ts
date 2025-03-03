@@ -141,8 +141,11 @@ export class DAG {
                 exit => exit.remove()
                 )
 
-        // plot edges
+        // plot edge        
         this.update_links(max_value_path_ids, controllers?.show_max_value_path, mcts)
+        if(this.updateGlobalLinks) {
+            setTimeout(() => this.updateGlobalLinks(), 500)
+        }
 
 
         // translate to make new nodes in the center

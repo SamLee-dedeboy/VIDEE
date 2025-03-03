@@ -37,6 +37,7 @@ export type tSemanticTaskDescription = {
 } 
 export type tSemanticTask = tSemanticTaskDescription & tMCT_Node
 
+export type tPrimitiveTask = tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution> 
 export type tPrimitiveTaskDescription = {
     id: string;
     label: string;
@@ -44,11 +45,10 @@ export type tPrimitiveTaskDescription = {
     explanation: string;
     parentIds: string[];
     children: string[];
-    confidence: number;
-    complexity: number;
+    solves: string;
 }
 
-export type tPrimitiveTaskExecution = tPrimitiveTaskDescription & {
+export type tPrimitiveTaskExecution = {
     state_input_key: string,
     doc_input_keys: string[],
     state_output_key: any,
@@ -62,7 +62,7 @@ export type tExecutionState = {
     executable: boolean,
 }
 
-export type tTask = tSemanticTask | tPrimitiveTaskDescription | tPrimitiveTaskExecution
+export type tTask = tSemanticTask | tPrimitiveTask
 
 export type tExecutionEvaluator = {
     name: string;
@@ -72,7 +72,7 @@ export type tExecutionEvaluator = {
 
 export type tExecutionEvaluatorParams = {
     state_input_key: string;
-    doc_input_key: string;
+    doc_input_keys: string[];
     state_output_key: string;
     parameters: {
       name: string;
