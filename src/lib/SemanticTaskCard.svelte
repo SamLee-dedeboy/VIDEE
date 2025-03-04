@@ -33,9 +33,9 @@
     task: tSemanticTask;
     id_key: string;
     next_expansion: boolean;
-    on_max_value_path: boolean;
     controllers: tControllers;
     streaming: boolean;
+    on_max_value_path: boolean;
     show_explanation: boolean;
     expand: boolean;
     handleTaskHovered: Function;

@@ -17,6 +17,7 @@ import server.custom_types as custom_types
 import server.decomposer as decomposer
 import server.executor as executor
 import server.evaluator as evaluator
+import server.evaluator as evaluator
 
 app = FastAPI()
 origins = ["*"]
@@ -96,6 +97,15 @@ async def get_eval_definitions(request: Request):
     return user_sessions[session_id]["eval_definitions"]
 
 
+@app.post("/eval/definitions/")
+async def get_eval_definitions(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    return user_sessions[session_id]["eval_definitions"]
+
+
 @app.post("/eval/definitions/update/")
 async def update_eval_definitions(request: Request):
     request = await request.body()
@@ -116,6 +126,15 @@ async def goal_decomposition_MCTS_stepped(request: Request):
     assert session_id in user_sessions
     user_sessions[session_id]["goal"] = goal
     semantic_tasks = request["semantic_tasks"] if "semantic_tasks" in request else None
+    eval_definitions = user_sessions[session_id]["eval_definitions"]
+    eval_few_shot_examples = (
+        request["eval_few_shot_examples"] if "eval_few_shot_examples" in request else []
+    )
+    next_selection = (
+        custom_types.MCT_Node.model_validate(request["next_expansion"])
+        if "next_expansion" in request
+        else None
+    )
     eval_definitions = user_sessions[session_id]["eval_definitions"]
     eval_few_shot_examples = (
         request["eval_few_shot_examples"] if "eval_few_shot_examples" in request else []
@@ -541,6 +560,45 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run("server.main:app", host="127.0.0.1", port=8000, reload=True)
+
+# @app.post("/goal_decomposition/beam_search/stepped/")
+# async def goal_decomposition_beam_search_stepped(request: Request):
+#     request = await request.body()
+#     request = json.loads(request)
+#     goal = request["goal"]
+#     session_id = request["session_id"]
+#     assert session_id in user_sessions
+#     user_sessions[session_id]["goal"] = goal
+#     user_steps = request["user_steps"]
+#     print("user_steps", user_steps)
+#     k, n = 2, 2
+#     if False:
+#         decomposed_steps = json.load(
+#             open(relative_path("dev_data/test_decomposed_steps_w_children.json"))
+#         )
+#         user_sessions[session_id]["semantic_tasks"] = decomposed_steps
+#         return decomposed_steps
+#     else:
+
+#         async def iter_response(candidate_steps):  # (1)
+#             if len(candidate_steps) == 0:
+#                 candidate_steps = await decomposer.goal_decode_n_samples(
+#                     goal, [], default_model, api_key, n=n
+#                 )
+#                 yield json.dumps({"semantic_tasks": candidate_steps}) + "\n"
+#             async for steps in decomposer.stream_goal_beam_search(
+#                 goal, candidate_steps, default_model, api_key, k=k, n=n
+#             ):
+#                 candidate_steps = steps
+#                 save_json(
+#                     candidate_steps,
+#                     relative_path("dev_data/test_beam_search_candidate_steps.json"),
+#                 )
+#                 yield json.dumps({"semantic_tasks": candidate_steps}) + "\n"
+
+#         return StreamingResponse(
+#             iter_response(user_steps), media_type="application/json"
+#         )
 
 # @app.post("/goal_decomposition/beam_search/stepped/")
 # async def goal_decomposition_beam_search_stepped(request: Request):

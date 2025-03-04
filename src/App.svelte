@@ -190,10 +190,15 @@
             semantic_tasks,
             next_expansion,
             eval_few_shot_examples: few_shot_examples_semantic_tasks,
+            next_expansion,
+            eval_few_shot_examples: few_shot_examples_semantic_tasks,
           }),
           signal,
         }
       );
+      if (!response.body) {
+        throw new Error("Stream error");
+      }
       if (!response.body) {
         throw new Error("Stream error");
       }
@@ -210,6 +215,7 @@
 
         // Process complete JSON objects line by line
         let lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
         buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
 
         for (let line of lines) {

@@ -98,6 +98,18 @@ async def run_goal_decomposition_agent_stepped(
             }
         ]
 
+    if remain_steps <= 0:
+        ids = list(map(lambda step: step["id"], previous_steps))
+        return [
+            {
+                "id": "END_PATH_" + str(ids),
+                "label": "END",
+                "description": "END",
+                "explanation": "END",
+                "parentIds": ids,
+            }
+        ]
+
     model_client = OpenAIChatCompletionClient(
         model=model,
         api_key=api_key,
@@ -117,6 +129,7 @@ async def run_goal_decomposition_agent_stepped(
         Users have collected a dataset of documents. The user will describe a goal to achieve through some text analytics, and what they have done already.
         ** Task **
         Your task is to provide a single next step based on what the user have done so far and the remaining steps to finish the task.
+        Your task is to provide a single next step based on what the user have done so far and the remaining steps to finish the task.
         ** Requirements **
         Please specify the logical next step to take.
         The name of the step should be one concise noun-phrase.
@@ -130,6 +143,14 @@ async def run_goal_decomposition_agent_stepped(
                 "next_steps": [
                     {{
                         "label": (string) name of the step or "END 
+        You should reply with {n} different next steps, so the user can have more choices.
+        The different steps should have varying complexity, coherence with previous steps, and importance.
+        Reply with this JSON format. Do not wrap the json codes in JSON markers.
+            {{
+                "next_steps": [
+                    {{
+                        "id": (string),
+                        "label": (string) or "END"
                         "description": (string)
                         "explanation": (string, explain why this step is needed)
                         "parentIds": (string[], ids of the steps that this step **directly** depends on)
@@ -141,6 +162,9 @@ async def run_goal_decomposition_agent_stepped(
         ),
     )
     user_message = "My goal is: {goal}".format(goal=goal) + "\n"
+    user_message += "There are {remaining_steps} steps remaining until you have to finish the task.\n".format(
+        remaining_steps=remain_steps
+    )
     user_message += "There are {remaining_steps} steps remaining until you have to finish the task.\n".format(
         remaining_steps=remain_steps
     )
@@ -203,6 +227,61 @@ async def run_goal_decomposition_agent_stepped(
     #                 # print("Valid JSON:")
     #                 # print(response.chat_message.content)
     #                 response = extract_json_content(response.chat_message.content)["next_step"]
+    #                 break
+    #             except json.JSONDecodeError:
+    #                 print(
+    #                     f"Retrying... {retries}/{max_retries}-{retries > max_retries}"
+    #                 )
+    #                 print(response.chat_message.content)
+    #                 if retries > max_retries:
+    #                     break
+    #                 response = await goal_decomposition_agent.on_messages(
+    #                     [TextMessage(content=user_message, source="user")],
+    #                     cancellation_token=CancellationToken(),
+    #                 )
+    #                 retries += 1
+    #         responses[index] = response
+    #     return responses
+
+    response = await goal_decomposition_agent.on_messages(
+        [TextMessage(content=user_message, source="user")],
+        cancellation_token=CancellationToken(),
+    )
+
+    retries, max_retries = 0, 5
+    while True:
+        try:
+            response = json.loads(response.chat_message.content)["next_steps"]
+            break
+        except json.JSONDecodeError:
+            print(f"Retrying... {retries}/{max_retries}-{retries > max_retries}")
+            print(response.chat_message.content)
+            if retries > max_retries:
+                break
+            response = await goal_decomposition_agent.on_messages(
+                [TextMessage(content=user_message, source="user")],
+                cancellation_token=CancellationToken(),
+            )
+            retries += 1
+    return response
+    # return json.loads(response.chat_message.content)["next_steps"]
+    # if n == 1:
+    #     response = await goal_decomposition_agent.on_messages(
+    #         [TextMessage(content=user_message, source="user")],
+    #         cancellation_token=CancellationToken(),
+    #     )
+    #     return json.loads(response.chat_message.content)["next_step"]
+    # else:
+    #     responses = await parallel_call_agents(
+    #         n, goal_decomposition_agent, user_message
+    #     )
+    #     for index, response in enumerate(responses):
+    #         retries, max_retries = 0, 5
+    #         while True:
+    #             try:
+    #                 # print("Valid JSON:")
+    #                 # print(response.chat_message.content)
+    #                 response = json.loads(response.chat_message.content)["next_step"]
     #                 break
     #             except json.JSONDecodeError:
     #                 print(
@@ -662,4 +741,7 @@ async def run_result_evaluator_generation_agent(
         [TextMessage(content=user_message, source="user")],
         cancellation_token=CancellationToken(),
     )
-    return extract_json_content(response.chat_message.content)["evaluator_specification"]
+    print(response)
+    return extract_json_content(response.chat_message.content)[
+        "evaluator_specification"
+    ]

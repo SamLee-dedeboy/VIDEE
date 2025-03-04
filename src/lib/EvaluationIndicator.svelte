@@ -25,10 +25,10 @@
     show_transition: boolean;
   } = $props();
 
-  let asking_feedback = $state(false);
   const setFewShotExampleExplanation: Function = getContext(
     "setFewShotExampleExplanation"
   );
+  let asking_feedback = $state(false);
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_mouse_events_have_key_events (because of reasons) -->
@@ -80,16 +80,3 @@
     {@render icon()}
   </button>
 </div>
-
-<style lang="postcss">
-  @reference "../app.css";
-  .disabled {
-    @apply cursor-not-allowed hover:scale-none hover:outline-none;
-  }
-
-  .input-box:empty:before {
-    content: "Why do you think this should change?";
-    color: gray;
-    pointer-events: none;
-  }
-</style>

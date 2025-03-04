@@ -1,0 +1,456 @@
+{
+    "node_dict": {
+        "-1": {
+            "id": "0",
+            "label": "Root",
+            "description": "Root node",
+            "explanation": "Root node",
+            "parentIds": [],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "Root (0.0/12)",
+            "MCT_id": "-1",
+            "MCT_parent_id": null,
+            "MCT_children_ids": [
+                "-1/0",
+                "-1/1"
+            ],
+            "visits": 12,
+            "value": 0.0,
+            "path_value": 1.0,
+            "children_all_ends": false,
+            "level": 0,
+            "new_node": false,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": false,
+                "importance": false
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": false,
+                "importance": false
+            }
+        },
+        "-1/0": {
+            "id": "1",
+            "label": "Codebook Design",
+            "description": "Develop a structured codebook categorizing themes from your transcripts.",
+            "explanation": "Designing the codebook is crucial as it provides the framework for coding the transcripts, guiding the analysis of themes in a systematic way.",
+            "parentIds": [],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "Codebook Design (0.6666666666666666/7)",
+            "MCT_id": "-1/0",
+            "MCT_parent_id": "-1",
+            "MCT_children_ids": [
+                "-1/0/0",
+                "-1/0/1"
+            ],
+            "visits": 7,
+            "value": 0.6666666666666666,
+            "path_value": 0.6666666666666666,
+            "children_all_ends": false,
+            "level": 1,
+            "new_node": false,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            }
+        },
+        "-1/1": {
+            "id": "1",
+            "label": "Preliminary Coding",
+            "description": "Begin initial coding of a few transcripts for refining the codebook.",
+            "explanation": "Performing preliminary coding allows you to test and refine the codebook, ensuring it accurately captures the themes present in the data before full analysis.",
+            "parentIds": [],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "Preliminary Coding (0.6666666666666666/5)",
+            "MCT_id": "-1/1",
+            "MCT_parent_id": "-1",
+            "MCT_children_ids": [
+                "-1/1/0",
+                "-1/1/1"
+            ],
+            "visits": 5,
+            "value": 0.6666666666666666,
+            "path_value": 0.6666666666666666,
+            "children_all_ends": false,
+            "level": 1,
+            "new_node": false,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            }
+        },
+        "-1/0/0": {
+            "id": "2",
+            "label": "Annotation",
+            "description": "Annotate transcripts based on the developed codebook.",
+            "explanation": "This step is necessary to systematically apply the themes from the codebook to the transcripts, which will facilitate the thematic analysis.",
+            "parentIds": [
+                "1"
+            ],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "Annotation (0.6666666666666666/5)",
+            "MCT_id": "-1/0/0",
+            "MCT_parent_id": "-1/0",
+            "MCT_children_ids": [
+                "-1/0/0/0",
+                "-1/0/0/1"
+            ],
+            "visits": 5,
+            "value": 0.6666666666666666,
+            "path_value": 0.4444444444444444,
+            "children_all_ends": false,
+            "level": 2,
+            "new_node": false,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            }
+        },
+        "-1/0/1": {
+            "id": "2",
+            "label": "END",
+            "description": "Complete the thematic analysis process.",
+            "explanation": "With the codebook already designed, if no further steps are necessary for your analysis, you can consider the task finished.",
+            "parentIds": [],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "END (0.3333333333333333/1)",
+            "MCT_id": "-1/0/1",
+            "MCT_parent_id": "-1/0",
+            "MCT_children_ids": [],
+            "visits": 1,
+            "value": 0.3333333333333333,
+            "path_value": 0.2222222222222222,
+            "children_all_ends": false,
+            "level": 2,
+            "new_node": false,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": false,
+                "importance": true
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": false,
+                "importance": true
+            }
+        },
+        "-1/1/0": {
+            "id": "2",
+            "label": "Codebook Development",
+            "description": "Develop a detailed codebook based on the initial coding.",
+            "explanation": "This step is essential to refine and finalize the coding categories that have emerged from the preliminary coding, which will guide the subsequent annotation of the transcripts.",
+            "parentIds": [
+                "1"
+            ],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "Codebook Development (0.6666666666666666/3)",
+            "MCT_id": "-1/1/0",
+            "MCT_parent_id": "-1/1",
+            "MCT_children_ids": [
+                "-1/1/0/0",
+                "-1/1/0/1"
+            ],
+            "visits": 3,
+            "value": 0.6666666666666666,
+            "path_value": 0.4444444444444444,
+            "children_all_ends": false,
+            "level": 2,
+            "new_node": false,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            }
+        },
+        "-1/1/1": {
+            "id": "2",
+            "label": "Further Refinement",
+            "description": "Conduct additional coding sessions to further refine the codes.",
+            "explanation": "Continuing to code more transcripts can help in identifying patterns and categories, which may lead to adjustments or additions in the codebook before finalization.",
+            "parentIds": [
+                "1"
+            ],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "Further Refinement (0.6666666666666666/1)",
+            "MCT_id": "-1/1/1",
+            "MCT_parent_id": "-1/1",
+            "MCT_children_ids": [],
+            "visits": 1,
+            "value": 0.6666666666666666,
+            "path_value": 0.4444444444444444,
+            "children_all_ends": false,
+            "level": 2,
+            "new_node": false,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            }
+        },
+        "-1/0/0/0": {
+            "id": "3",
+            "label": "Thematic Categorization",
+            "description": "Categorize the annotated themes into higher-level themes.",
+            "explanation": "This step is necessary to organize the annotated data into coherent thematic categories that will help in summarizing findings effectively.",
+            "parentIds": [
+                "1",
+                "2"
+            ],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "Thematic Categorization (0.6666666666666666/3)",
+            "MCT_id": "-1/0/0/0",
+            "MCT_parent_id": "-1/0/0",
+            "MCT_children_ids": [
+                "-1/0/0/0/0",
+                "-1/0/0/0/1"
+            ],
+            "visits": 3,
+            "value": 0.6666666666666666,
+            "path_value": 0.2962962962962963,
+            "children_all_ends": false,
+            "level": 3,
+            "new_node": false,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            }
+        },
+        "-1/0/0/1": {
+            "id": "3",
+            "label": "END",
+            "description": "Complete the analysis.",
+            "explanation": "No further analysis is needed if you have already completed the annotation and developed the codebook.",
+            "parentIds": [],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "END (0.3333333333333333/1)",
+            "MCT_id": "-1/0/0/1",
+            "MCT_parent_id": "-1/0/0",
+            "MCT_children_ids": [],
+            "visits": 1,
+            "value": 0.3333333333333333,
+            "path_value": 0.14814814814814814,
+            "children_all_ends": false,
+            "level": 3,
+            "new_node": false,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": false,
+                "importance": true
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": false,
+                "importance": true
+            }
+        },
+        "-1/0/0/0/0": {
+            "id": "4",
+            "label": "Theme Analysis",
+            "description": "Analyze the categorized themes for patterns and insights.",
+            "explanation": "This step is necessary to draw meaningful conclusions from the higher-level themes identified in the thematic categorization, allowing for deeper understanding and interpretation of the data.",
+            "parentIds": [
+                "3"
+            ],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "Theme Analysis (0.6666666666666666/1)",
+            "MCT_id": "-1/0/0/0/0",
+            "MCT_parent_id": "-1/0/0/0",
+            "MCT_children_ids": [],
+            "visits": 1,
+            "value": 0.6666666666666666,
+            "path_value": 0.19753086419753085,
+            "children_all_ends": false,
+            "level": 4,
+            "new_node": false,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            }
+        },
+        "-1/0/0/0/1": {
+            "id": "4",
+            "label": "Findings Summary",
+            "description": "Summarize key findings from the thematic analysis.",
+            "explanation": "This step allows you to distill the insights gained from your analysis into a coherent summary, which is critical for reporting and sharing results.",
+            "parentIds": [
+                "3"
+            ],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "Findings Summary (0.3333333333333333/1)",
+            "MCT_id": "-1/0/0/0/1",
+            "MCT_parent_id": "-1/0/0/0",
+            "MCT_children_ids": [],
+            "visits": 1,
+            "value": 0.3333333333333333,
+            "path_value": 0.09876543209876543,
+            "children_all_ends": false,
+            "level": 4,
+            "new_node": false,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": false,
+                "importance": true
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": false,
+                "importance": true
+            }
+        },
+        "-1/1/0/0": {
+            "id": "3",
+            "label": "Codebook Refinement",
+            "description": "Refine the codebook based on feedback from preliminary coding.",
+            "explanation": "Refining the codebook is essential to ensure that the codes are relevant and comprehensive, which will enhance the accuracy of the thematic analysis in the subsequent steps.",
+            "parentIds": [
+                "1",
+                "2"
+            ],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "Codebook Refinement (0.6666666666666666/1)",
+            "MCT_id": "-1/1/0/0",
+            "MCT_parent_id": "-1/1/0",
+            "MCT_children_ids": [],
+            "visits": 1,
+            "value": 0.6666666666666666,
+            "path_value": 0.2962962962962963,
+            "children_all_ends": false,
+            "level": 3,
+            "new_node": true,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": true,
+                "importance": true
+            }
+        },
+        "-1/1/0/1": {
+            "id": "3",
+            "label": "Transcription Annotation",
+            "description": "Annotate the remaining transcripts using the developed codebook.",
+            "explanation": "Annotating the transcripts with the finalized codebook will allow for the systematic identification of themes and patterns within the interview data, crucial for the analysis process.",
+            "parentIds": [
+                "2"
+            ],
+            "children": [],
+            "sub_tasks": [],
+            "print_label": "Transcription Annotation (0.3333333333333333/1)",
+            "MCT_id": "-1/1/0/1",
+            "MCT_parent_id": "-1/1/0",
+            "MCT_children_ids": [],
+            "visits": 1,
+            "value": 0.3333333333333333,
+            "path_value": 0.14814814814814814,
+            "children_all_ends": false,
+            "level": 3,
+            "new_node": true,
+            "llm_evaluation": {
+                "complexity": false,
+                "coherence": false,
+                "importance": true
+            },
+            "user_evaluation": {
+                "complexity": false,
+                "coherence": false,
+                "importance": true
+            }
+        }
+    },
+    "next_node": {
+        "id": "2",
+        "label": "Further Refinement",
+        "description": "Conduct additional coding sessions to further refine the codes.",
+        "explanation": "Continuing to code more transcripts can help in identifying patterns and categories, which may lead to adjustments or additions in the codebook before finalization.",
+        "parentIds": [
+            "1"
+        ],
+        "children": [],
+        "sub_tasks": [],
+        "print_label": "Further Refinement (0.6666666666666666/1)",
+        "MCT_id": "-1/1/1",
+        "MCT_parent_id": "-1/1",
+        "MCT_children_ids": [],
+        "visits": 1,
+        "value": 0.6666666666666666,
+        "path_value": 0.4444444444444444,
+        "children_all_ends": false,
+        "level": 2,
+        "new_node": false,
+        "llm_evaluation": {
+            "complexity": false,
+            "coherence": true,
+            "importance": true
+        },
+        "user_evaluation": {
+            "complexity": false,
+            "coherence": true,
+            "importance": true
+        }
+    },
+    "max_value_path": [
+        [
+            "-1/1/1",
+            "-1/1",
+            "-1"
+        ],
+        0.4444444444444444
+    ]
+}
