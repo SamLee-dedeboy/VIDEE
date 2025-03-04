@@ -10,23 +10,32 @@ from autogen_agentchat.messages import TextMessage
 from autogen_ext.models.semantic_kernel import SKChatCompletionAdapter
 from autogen_core.models import ModelFamily
 from semantic_kernel import Kernel
-from semantic_kernel.connectors.ai.anthropic import AnthropicChatCompletion, AnthropicChatPromptExecutionSettings
+from semantic_kernel.connectors.ai.anthropic import (
+    AnthropicChatCompletion,
+    AnthropicChatPromptExecutionSettings,
+)
 from semantic_kernel.memory.null_memory import NullMemory
 
 from dotenv import load_dotenv
 
-load_dotenv('../../.env')
+load_dotenv("../../.env")
+dirname = os.path.dirname(__file__)
+relative_path = lambda filename: os.path.join(dirname, filename)
 
 AnthropicModelType = Literal[
-    "claude-3-haiku", "claude-3-sonnet", "claude-3-opus",
-    "claude-3.5-haiku", "claude-3.5-sonnet"
+    "claude-3-haiku",
+    "claude-3-sonnet",
+    "claude-3-opus",
+    "claude-3.5-haiku",
+    "claude-3.5-sonnet",
 ]
+
 
 def get_openai_client(model_name: str):
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         return None
-    
+
     return OpenAIChatCompletionClient(model=model_name, api_key=api_key)
 
 
@@ -34,7 +43,7 @@ def get_claude_client(model_name: str):
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         return None
-    
+
     sk_client = AnthropicChatCompletion(ai_model_id=model_name, api_key=api_key)
     settings = AnthropicChatPromptExecutionSettings(temperature=0.0)
 
@@ -56,12 +65,12 @@ def get_claude_client(model_name: str):
             "json_output": True,
             "vision": True,
             "family": family,
-        }
+        },
     )
 
 
 def get_agents(agent_name: str, system_message: str):
-    with open("../../model_list.yaml", "r", encoding="utf-8") as f:
+    with open(relative_path("model_list.yaml"), "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
         model_list = data.get("eval-models", [])
 
@@ -79,7 +88,7 @@ def get_agents(agent_name: str, system_message: str):
             agent = AssistantAgent(
                 name=f"{model.replace('-', '_')}_{agent_name}",
                 model_client=model_client,
-                system_message=system_message
+                system_message=system_message,
             )
             agents.append((model, agent))
 
@@ -95,4 +104,3 @@ async def get_response(agent: AssistantAgent, messages: List[TextMessage]):
     result_text = response.chat_message.content.strip()
 
     return result_text
-

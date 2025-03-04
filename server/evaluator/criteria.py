@@ -2,12 +2,16 @@ from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.messages import TextMessage
 import asyncio
 import itertools
-from server.custom_types import MCT_Node
+from server.custom_types import MCT_Node, ScoreWithReasoning
 from .agents import get_agents, get_response, get_openai_client
 
 import json
 import re
 import yaml
+import os
+
+dirname = os.path.dirname(__file__)
+relative_path = lambda filename: os.path.join(dirname, filename)
 
 
 def save_json(data, filename):
@@ -24,12 +28,14 @@ def task_def_toString(task: MCT_Node, goal: str):
 
 
 def load_system_message(criteria):
-    with open("eval_definitions/system_messages.yaml", "r", encoding="utf-8") as f:
+    with open(
+        relative_path("eval_definitions/system_messages.yaml"), "r", encoding="utf-8"
+    ) as f:
         system_messages = yaml.safe_load(f)
     return system_messages.get(criteria, "")
 
 
-def parse_result(result_text: str, flip: bool = False) -> dict:
+def parse_result(result_text: str, flip: bool = False) -> ScoreWithReasoning:
     reasoning_match = re.search(r"<REASONING>(.*?)</REASONING>", result_text, re.DOTALL)
     if not reasoning_match:
         raise ValueError("Missing <REASONING> section in result text.")
@@ -52,7 +58,7 @@ def parse_result(result_text: str, flip: bool = False) -> dict:
 
     if flip:
         value = 1 - value
-
+    return ScoreWithReasoning(value=value, reasoning=reasoning)
     return {"value": value, "reason": reasoning}
 
 
@@ -138,7 +144,7 @@ async def run_complexity_evaluation_agent(
     api_key: str,
     complexity_definition: str,
     few_shot_examples: list[dict],
-):
+) -> ScoreWithReasoning:
     """
     Run the complexity evaluation agent to evaluate whether the node is complex.
     Args:
@@ -148,6 +154,10 @@ async def run_complexity_evaluation_agent(
         api_key: The API key for the model.
         complexity_definition: The definition of complexity.
         few_shot_examples: Few-shot examples for the evaluation. (optional)
+    Returns:
+        A dictionary containing the evaluation results for the node.
+        Key: The model name.
+        Value: The evaluation result.
     """
 
     system_message = load_system_message("complexity_evaluator").format(
@@ -197,6 +207,8 @@ async def run_complexity_evaluation_agent(
         model: parse_result(result_text, flip=True)
         for (model, _), result_text in zip(agents, results)
     }
+
+    # TODO: Aggregate results from multiple models
 
     return parsed_results
 
@@ -369,7 +381,7 @@ async def get_llm_reasoning(
     system_message = load_system_message(f"{criteria}_reasoner").format(
         definition=definition
     )
-    with open("../../model_list.yaml", "r", encoding="utf-8") as f:
+    with open(relative_path("model_list.yaml"), "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
         model_name = data.get("reason-model", "o1")
 

@@ -5,6 +5,7 @@ import random
 from server.AutoGenUtils import query
 from server.custom_types.custom_types import MCT_Node
 import server.evaluator as evaluator
+import traceback
 
 
 MAX_STEPS = 10
@@ -63,8 +64,9 @@ async def stream_MCTS(
             if all_END(root, node_dict):
                 yield root, None, None
     except Exception as e:
+        traceback.print_exc()
         print(f"Error in stream_MCTS: {e}")
-        yield root, None, None
+        yield root, None, None, None
     pass
 
 

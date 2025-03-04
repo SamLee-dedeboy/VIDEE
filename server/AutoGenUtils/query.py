@@ -149,7 +149,6 @@ async def run_goal_decomposition_agent_stepped(
             {{
                 "next_steps": [
                     {{
-                        "id": (string),
                         "label": (string) or "END"
                         "description": (string)
                         "explanation": (string, explain why this step is needed)

@@ -156,7 +156,7 @@
       });
   }
   async function dev_handleDecomposeGoalStepped_MCTS(goal: string) {
-    fetch(`${server_address}/dev/semantic_task/plan`)
+    fetch(`${server_address}/dev/semantic_task/plan/`)
       .then((response) => response.json())
       .then((obj) => {
         console.log({ obj });

@@ -19,10 +19,15 @@ class Node(SemanticTaskResponse):
         orm_mode = True
 
 
+class ScoreWithReasoning(BaseModel):
+    value: bool = False
+    reasoning: str = ""
+
+
 class Evaluation(BaseModel):
-    complexity: bool = False
-    coherence: bool = False
-    importance: bool = False
+    complexity: ScoreWithReasoning = ScoreWithReasoning()
+    coherence: ScoreWithReasoning = ScoreWithReasoning()
+    importance: ScoreWithReasoning = ScoreWithReasoning()
 
 
 class MCT_Node(Node):
