@@ -142,6 +142,8 @@
         .attr("stroke", "black")
         .attr("stroke-width", 2)
         .attr("stroke-dasharray", "5,5");
+    } else {
+      svg.select("g.execution-evaluation").selectAll("line.links").remove();
     }
   }
   setContext("updateGlobalLinks", () =>
@@ -171,7 +173,7 @@
   </div>
   <div class="divide-x divide-gray-400 divide-dashed flex grow">
     {#if controllers.show_plan}
-      <div class="plane flex-1 flex relative">
+      <div class="plane flex-1 flex relative z-10">
         <SemanticTaskPlan
           bind:this={plan_component}
           {semantic_tasks}

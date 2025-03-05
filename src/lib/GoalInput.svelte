@@ -30,9 +30,11 @@
       console.log("Goal changed to", goal);
     }}
   >
-    I have a dataset of interview transcripts and I am going to do thematic
+    I have a dataset of UIST paper abstracts. I want to extract high-level
+    concepts from the abstracts to understand research topics and trends.
+    <!-- I have a dataset of interview transcripts and I am going to do thematic
     analysis. Help me design a codebook, annotate the transcripts with the
-    codebook, and then summarize findings
+    codebook, and then summarize findings -->
     <!-- I want to analyze media bias in news articles using knowledge graphs. -->
   </div>
   <div class="flex flex-col gap-y-1">
