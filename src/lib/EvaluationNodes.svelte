@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext, onMount, tick } from "svelte";
+  import { getContext, onMount, setContext, tick } from "svelte";
   import type {
     tExecutionEvaluator,
     tPrimitiveTaskDescription,
@@ -10,15 +10,18 @@
   import { server_address } from "constants";
   import * as d3 from "d3";
   import { DAG } from "renderer/dag";
+  import { evaluatorState } from "./ExecutionStates.svelte";
   let {
-    evaluators = $bindable([]),
+    // evaluators = $bindable([]),
     tasks,
     handleInspectEvaluatorNode = () => {},
   }: {
-    evaluators: tExecutionEvaluator[];
+    // evaluators: tExecutionEvaluator[];
     tasks: tPrimitiveTaskDescription[];
     handleInspectEvaluatorNode: Function;
   } = $props();
+  // const evaluators: tExecutionEvaluator[] = getContext("evaluators");
+  const evaluators = $derived(evaluatorState.evaluators);
   let evaluator_node_expanded: string[] = $state([]);
   let loading = $state(false);
   let adding_evaluator = $state(false);
@@ -117,7 +120,9 @@
       .then((response) => response.json())
       .then((data) => {
         console.log(data);
-        evaluators = [...evaluators, data["result"]];
+        // evaluators = [...evaluators, data["result"]];
+        // setContext("evaluators", data["result"]);
+        evaluatorState.evaluators = [...evaluators, data["result"]];
         update_dag(evaluators);
         updateGlobalLinks();
         loading = false;
@@ -128,7 +133,21 @@
   }
 
   function handleExecute(evaluator: tExecutionEvaluator) {
-    console.log("Executing evaluator", evaluator);
+    console.log("Executing evaluator", $state.snapshot(evaluator));
+    fetch(`${server_address}/primitive_task/evaluators/run/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        evaluator,
+        session_id,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("evaluator execution result: ", data);
+      });
   }
   async function handleToggleExpand(evaluator_name: string) {
     console.log("toggling expand", evaluator_name);
@@ -218,7 +237,9 @@
                 .filter((t) => t.label !== "Root")
                 .map((t) => [t.id as string, t.label as string])}
               handleDeleteEvaluator={() => {
-                evaluators = evaluators.filter((e) => e !== evaluator);
+                evaluatorState.evaluators = evaluators.filter(
+                  (e) => e !== evaluator
+                );
               }}
               {handleExecute}
               handleInspectEvaluator={handleInspectEvaluatorNode}

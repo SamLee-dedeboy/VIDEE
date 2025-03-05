@@ -7,14 +7,36 @@ from server.custom_types import BaseStateSchema
 from langgraph.checkpoint.memory import MemorySaver
 
 
-async def create_evaluator(task, user_description, model, api_key):
-    evaluator_spec = await evaluator_for_task(task, user_description, model, api_key)
-    evaluator_node = create_llm_evaluator_chain(evaluator_spec)
+def evaluator_reduce_func(combined, state_input_key, state_output_key):
+    outputs = combined[state_output_key]  # "summaries"
+    documents = combined[state_input_key]  # "documents"
+    return {
+        "documents": [
+            {**doc, state_output_key: output} for doc, output in zip(documents, outputs)
+        ]
+    }
+
+
+async def create_evaluator_exec(evaluator_spec):
+    evaluator_node = create_llm_evaluator_chain(
+        evaluator_spec, custom_reduce_func=evaluator_reduce_func
+    )
     graph = StateGraph(BaseStateSchema)
     graph.add_node(evaluator_spec["name"], evaluator_node)
     graph.add_edge(START, evaluator_spec["name"])
     app = graph.compile(checkpointer=MemorySaver())
-    return app, evaluator_spec
+    return app
+
+
+async def create_evaluator_spec(task, user_description, model, api_key):
+    evaluator_spec = await evaluator_for_task(task, user_description, model, api_key)
+    return evaluator_spec
+    # evaluator_node = create_llm_evaluator_chain(evaluator_spec)
+    # graph = StateGraph(BaseStateSchema)
+    # graph.add_node(evaluator_spec["name"], evaluator_node)
+    # graph.add_edge(START, evaluator_spec["name"])
+    # app = graph.compile(checkpointer=MemorySaver())
+    # return app, evaluator_spec
     # execute with this
     final_state = app.invoke(
         test_execution_result,
@@ -92,7 +114,9 @@ def create_llm_evaluator_chain(
     if custom_get_input_func is None:
         get_input = lambda state: get_input_func(state, state_input_key, doc_input_keys)
     else:
-        get_input = custom_get_input_func
+        get_input = lambda state: custom_get_input_func(
+            state, state_input_key, doc_input_keys
+        )
     # create the map-reduce chain
     map = RunnableAssign(
         {
@@ -103,6 +127,10 @@ def create_llm_evaluator_chain(
     if custom_reduce_func is None:
         reduce = lambda combined: reduce_func(
             combined, state_input_key, state_output_key
+        )
+    else:
+        reduce = lambda state: custom_reduce_func(
+            state, state_input_key, state_output_key
         )
 
     return map | reduce

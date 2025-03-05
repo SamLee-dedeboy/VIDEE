@@ -321,10 +321,7 @@ def create_node(step, custom_get_input_func=None, custom_reduce_func=None):
     if custom_reduce_func is None:
         if step["execution"]["tool"] in ["clustering_tool", "embedding_tool"]:
             reduce = lambda combined: tools_reduce_func(
-                combined,
-                state_input_key,
-                state_output_key,
-                state_output_key
+                combined, state_input_key, state_output_key, state_output_key
             )
         else:
             reduce = lambda combined: reduce_func(
@@ -335,25 +332,26 @@ def create_node(step, custom_get_input_func=None, custom_reduce_func=None):
     # create the map-reduce chain
     # for clustering, the input is all documents. We cannot do batch process document by document
     if step["execution"]["tool"] in ["clustering_tool"]:
-        map = RunnableAssign(
-            {
-                state_output_key: get_input
-                | execution_chain
-            }
-        )
+        map = RunnableAssign({state_output_key: get_input | execution_chain})
     else:
         map = RunnableAssign(
             {
                 state_output_key: get_input
-                | RunnableLambda(func=execution_chain.batch, afunc=execution_chain.abatch)
+                | RunnableLambda(
+                    func=execution_chain.batch, afunc=execution_chain.abatch
+                )
             }
         )
     map_reduce_chain = map | reduce
     return map_reduce_chain
 
 
-def tools_reduce_func(combined: dict, state_input_key: str, state_output_key: str,
-                      label_key: str = "output"):
+def tools_reduce_func(
+    combined: dict,
+    state_input_key: str,
+    state_output_key: str,
+    label_key: str = "output",
+):
     """
     Assigns labels to documents in the state.
     Add as a placeholder for future customization in tools
@@ -369,8 +367,11 @@ def tools_reduce_func(combined: dict, state_input_key: str, state_output_key: st
     """
     labels = combined[state_output_key]
     documents = combined[state_input_key]  # List of document dicts
-    updated_documents = [{**doc, label_key: label} for doc, label in zip(documents, labels)]
+    updated_documents = [
+        {**doc, label_key: label} for doc, label in zip(documents, labels)
+    ]
     return {state_input_key: updated_documents}
+
 
 # an empty node that is the root of the graph
 def create_root():
@@ -417,7 +418,7 @@ def convert_spec_to_chain(spec):
                 inputs,
                 n_clusters=n_clusters,
                 feature_key=feature_key,
-                algorithm=algorithm
+                algorithm=algorithm,
             )
         )
     elif spec["tool"] == "embedding_tool":

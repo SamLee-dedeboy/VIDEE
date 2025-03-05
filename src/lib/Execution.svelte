@@ -14,6 +14,7 @@
   import PrimitiveTasks from "./PrimitiveTasks.svelte";
   import SemanticTaskPlan from "./SemanticTaskPlan.svelte";
   import EvaluationNodes from "./EvaluationNodes.svelte";
+  import { evaluatorState, primitiveTaskState } from "./ExecutionStates.svelte";
   let {
     // plans
     semantic_tasks = $bindable([]),
@@ -21,23 +22,25 @@
     handleConvert,
 
     // execution
-    primitive_tasks = $bindable([]),
     execution_states,
     converting,
     compiling,
     handleInspectPrimitiveTask = () => {},
 
     // evaluation
+    // evaluators = $bindable([]),
     handleInspectEvaluatorNode = () => {},
   }: {
     semantic_tasks: tSemanticTask[];
     decomposing_goal: boolean;
     handleConvert: Function;
-    primitive_tasks: tPrimitiveTask[];
+
     execution_states: Record<string, tExecutionState> | undefined;
     converting: boolean;
     compiling: boolean;
     handleInspectPrimitiveTask: Function;
+
+    // evaluators: tExecutionEvaluator[];
     handleInspectEvaluatorNode: Function;
   } = $props();
   const session_id = (getContext("session_id") as Function)();
@@ -48,7 +51,8 @@
     show_evaluation: false,
   });
 
-  let evaluators: tExecutionEvaluator[] = $state([]);
+  const evaluators = $derived(evaluatorState.evaluators);
+  const primitive_tasks = $derived(primitiveTaskState.primitiveTasks);
 
   let plan_component: any = $state();
   let execution_component: any = $state();
@@ -203,7 +207,6 @@
       <div class="plane flex-1 flex relative">
         <PrimitiveTasks
           bind:this={execution_component}
-          bind:primitive_tasks
           {execution_states}
           {converting}
           {compiling}
@@ -232,7 +235,6 @@
       <div class="plane flex-1 flex relative">
         <EvaluationNodes
           bind:this={evaluation_component}
-          bind:evaluators
           tasks={primitive_tasks}
           {handleInspectEvaluatorNode}
         ></EvaluationNodes>

@@ -8,12 +8,14 @@
   import { onMount } from "svelte";
   import { server_address } from "constants";
   import { getContext } from "svelte";
-  import ExecutionEvaluators from "./ExecutionEvaluators.svelte";
   import PromptTemplate from "./PromptTemplate.svelte";
+  import { primitiveTaskState } from "./ExecutionStates.svelte";
   let {
     task,
+    // handleUpdatePrimitiveTask,
   }: {
     task: tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>;
+    // handleUpdatePrimitiveTask: Function;
   } = $props();
   let show_description = $state(true);
   let show_formats = $state(false);
@@ -39,7 +41,11 @@
         console.error("Error:", error);
       });
   }
-
+  function handleUpdatePrompt(messages) {
+    task.execution!.parameters.prompt_template = messages;
+    console.log("Updated primitive task", $state.snapshot(task));
+    primitiveTaskState.updatePrimitiveTask(task.id, task);
+  }
   onMount(() => {
     console.log({ task });
   });
@@ -177,6 +183,7 @@
                   {:else if key === "prompt_template"}
                     <PromptTemplate
                       messages={value}
+                      {handleUpdatePrompt}
                       --bg-color="oklch(0.97 0.014 254.604)"
                       --border-color="#bedbff"
                     ></PromptTemplate>

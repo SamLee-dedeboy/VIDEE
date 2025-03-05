@@ -468,10 +468,11 @@ async def fetch_primitive_task_result(request: Request):
     session_id = request["session_id"]
     assert session_id in user_sessions
     task_id = request["task_id"]
-    if dev:
-        result = json.load(open(relative_path("dev_data/test_execution_result.json")))
-    else:
-        result = user_sessions[session_id]["execution_results"][task_id]
+    result = user_sessions[session_id]["execution_results"][task_id]
+    # if dev:
+    #     result = json.load(open(relative_path("dev_data/test_execution_result.json")))
+    # else:
+    #     result = user_sessions[session_id]["execution_results"][task_id]
 
     return {
         "result": result,
@@ -488,17 +489,10 @@ async def add_evaluators(request: Request):
     task = request["task"]
     user_description = request["description"]
 
-    evaluator_exec, evaluator_spec = await executor.create_evaluator(
+    evaluator_spec = await executor.create_evaluator_spec(
         task, user_description, default_model, api_key
     )
     evaluator_spec["task"] = task["id"]
-    user_sessions[session_id]["result_evaluators"][task["id"]].append(
-        {
-            "spec": evaluator_spec,
-            "exec": evaluator_exec,
-        }
-    )
-
     return {"result": evaluator_spec}
 
 
@@ -509,19 +503,35 @@ async def run_evaluators(request: Request):
     session_id = request["session_id"]
     assert session_id in user_sessions
 
-    task_id = request["task_id"]
+    evaluator_spec = request["evaluator"]
+    evaluator_exec = await executor.create_evaluator_exec(evaluator_spec)
+    task_id = evaluator_spec["task"]
     execution_result = user_sessions[session_id]["execution_results"][task_id]
-    for evaluator in user_sessions[session_id]["result_evaluators"][task_id]:
-        evaluation_result = evaluator["exec"].invoke(
-            execution_result, config={"configurable": {"thread_id": session_id}}
-        )
-        user_sessions[session_id]["execution_evaluations"][task_id].append(
-            {
-                "name": evaluator["space"]["name"],
-                "result": evaluation_result.model_dump(mode="json"),
-            }
-        )
+
+    evaluation_result = evaluator_exec.invoke(
+        execution_result, config={"configurable": {"thread_id": session_id}}
+    )
+    user_sessions[session_id]["execution_evaluations"][task_id].append(
+        {"name": evaluator_spec["name"], "result": evaluation_result}
+    )
     return {"results": user_sessions[session_id]["execution_evaluations"][task_id]}
+
+
+@app.post("/primitive_task/evaluators/result/")
+async def fetch_primitive_task_result(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    task_id = request["task_id"]
+    evaluator_name = request["evaluator_name"]
+    all_results = user_sessions[session_id]["execution_evaluations"][task_id]
+    evaluator_result = next(
+        filter(lambda x: x["name"] == evaluator_name, all_results), None
+    )
+    return {
+        "result": evaluator_result,
+    }
 
 
 @app.get("/dev/semantic_task/plan/")

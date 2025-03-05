@@ -1,5 +1,5 @@
 <script lang="ts">
-  let { messages } = $props();
+  let { messages, handleUpdatePrompt } = $props();
 </script>
 
 <div class="container flex flex-col border-x-2 border-t-2 border-dashed">
@@ -9,7 +9,7 @@
     Prompt Template
   </div>
   <div class="flex divide-x divide-dashed">
-    {#each messages as prompt_template_message}
+    {#each messages as prompt_template_message, index}
       {#if prompt_template_message.role === "system"}
         <div class="flex flex-[2_2_0%] flex-col gap-x-2">
           <div class="flex justify-center bg-gray-100 font-mono">
@@ -17,6 +17,12 @@
           </div>
           <div
             class="bg-white text-slate-600 px-1 whitespace-pre-line max-h-[20rem] overflow-y-auto"
+            contenteditable="true"
+            onblur={(event) => {
+              let messages_copy = [...messages];
+              messages_copy[index].content = event.target.textContent;
+              handleUpdatePrompt(messages_copy);
+            }}
           >
             {prompt_template_message.content.trim()}
           </div>

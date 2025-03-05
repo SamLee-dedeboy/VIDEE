@@ -13,11 +13,9 @@
   import PrimitiveTaskInspection from "./PrimitiveTaskInspection.svelte";
   import EvaluatorNodeInspection from "./EvaluatorNodeInspection.svelte";
   let {
-    semantic_tasks,
     primitive_task,
     evaluator_node,
   }: {
-    semantic_tasks: tSemanticTask[];
     primitive_task:
       | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
       | undefined;

@@ -15,19 +15,21 @@
   import { fly, fade, blur } from "svelte/transition";
   import { draggable } from "./draggable";
   import { getContext } from "svelte";
+  import { primitiveTaskState } from "./ExecutionStates.svelte";
   let {
-    primitive_tasks = $bindable([]),
     execution_states,
     converting,
     compiling,
     handleInspectPrimitiveTask = () => {},
   }: {
-    primitive_tasks: tPrimitiveTask[];
     execution_states: Record<string, tExecutionState> | undefined;
     converting: boolean;
     compiling: boolean;
     handleInspectPrimitiveTask: Function;
   } = $props();
+  const primitive_tasks = $derived(
+    primitiveTaskState.primitiveTasks
+  ) as tPrimitiveTaskDescription[];
   let task_card_expanded: string[] = $state([]);
   const session_id = (getContext("session_id") as Function)();
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
@@ -135,24 +137,13 @@
   }
 
   function handleAddTask() {
-    primitive_tasks = [
-      ...primitive_tasks,
-      {
-        solves: "",
-        id: Math.random().toString(),
-        label: "New Task",
-        description: "New Task Description",
-        explanation: "N/A",
-        parentIds: [],
-        children: [],
-      },
-    ];
+    primitiveTaskState.add();
     update_with_server();
   }
 
   function handleDeleteTask(task: tPrimitiveTaskDescription) {
     console.log("delete: ", { task });
-    primitive_tasks = primitive_tasks.filter((_task) => _task.id !== task.id);
+    primitiveTaskState.delete(task.id);
     const task_dict = primitive_tasks.reduce((acc, task) => {
       acc[task.id] = task;
       return acc;

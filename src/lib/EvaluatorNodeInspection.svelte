@@ -4,10 +4,16 @@
   import { trim } from "lib/trim";
   import type { tExecutionEvaluator } from "types";
   import DocumentCard from "./DocumentCard.svelte";
+  import { server_address } from "constants";
+  import { getContext } from "svelte";
+  import { evaluatorState } from "./ExecutionStates.svelte";
+
   let {
     evaluator = $bindable(),
+    // handleUpdateEvaluator,
   }: {
     evaluator: tExecutionEvaluator;
+    // handleUpdateEvaluator: Function;
   } = $props();
   let show_parameters = $state(false);
   let show_description = $state(true);
@@ -16,12 +22,39 @@
   let show_result = $state(false);
 
   let result = $state(undefined);
-  function handleFetchEvaluationResult() {}
+  const session_id = (getContext("session_id") as Function)();
+  function handleFetchEvaluationResult() {
+    fetch(`${server_address}/primitive_task/evaluators/result/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        session_id,
+        evaluator_name: evaluator.name,
+        task_id: evaluator.task,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Evaluation result:", data);
+        result = data.result.result;
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
+
+  function handleUpdatePrompt(messages) {
+    evaluator.parameters!.prompt_template = messages;
+    console.log("Updated evaluator", $state.snapshot(evaluator));
+    evaluatorState.updateEvaluator(evaluator.name, evaluator);
+  }
 </script>
 
 <div class="flex flex-col px-1 gap-y-2">
   <div
-    class="text-[1.5rem] text-slate-600 font-semibold italic bg-emerald-100 flex justify-center"
+    class="text-[1.5rem] text-slate-600 font-semibold italic bg-emerald-100 flex justify-center items-center"
   >
     {evaluator.name}
   </div>
@@ -134,7 +167,8 @@
                   <div></div>
                 {:else if key === "prompt_template"}
                   <PromptTemplate
-                    messages={value}
+                    messages={evaluator.parameters.prompt_template}
+                    {handleUpdatePrompt}
                     --bg-color="#f6fffb"
                     --border-color="#00d492"
                   ></PromptTemplate>
@@ -178,8 +212,8 @@
                   {#each result[state_input_key] as doc}
                     <DocumentCard
                       document={doc}
-                      --bg-color="oklch(0.97 0.014 254.604)"
-                      --bg-hover-color="oklch(0.882 0.059 254.128)"
+                      --bg-color="#f6fffb"
+                      --bg-hover-color="#d0fae5"
                     />
                   {/each}
                 </div>

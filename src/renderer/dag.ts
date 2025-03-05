@@ -19,7 +19,7 @@ export class DAG {
     dag: any
     zoom: any
     handleClick: Function
-    updateGlobalLinks: Function
+    updateGlobalLinks: Function | undefined
     next_expansion_id: string | undefined
     new_nodes: string[] = []
     constructor(svgId: string, node_radius: [number,number]=[100, 100], selection_card: string, selection_container: string) {
@@ -36,7 +36,7 @@ export class DAG {
         this.selection_container = selection_container
         this.bbox_dict = {}
         this.handleClick = () => {}
-        this.updateGlobalLinks = () => {}
+        this.updateGlobalLinks = undefined
     }
     init (updateGlobalLinks: Function) {
         const svg = d3.select(`#${this.svgId}`)
@@ -143,7 +143,7 @@ export class DAG {
 
         // plot edge        
         this.update_links(max_value_path_ids, controllers?.show_max_value_path, mcts)
-        if(this.updateGlobalLinks) {
+        if(this.updateGlobalLinks !== undefined) {
             setTimeout(() => this.updateGlobalLinks(), 500)
         }
 

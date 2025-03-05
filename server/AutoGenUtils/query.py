@@ -711,16 +711,17 @@ async def run_result_evaluator_generation_agent(
         You are an expert in generating LLM judges. An LLM judge is an agent that can generate a score using some criteria.
         ** Task **
         The user will describe a task that he/she has done, and how he/she wants the llm judge to evaluate the task result. Your task is to generate a specification of the LLM judge.
+        The LLM judge should do the following:
+            First, identify what "unit" the user wants to evaluate. 
+            Then, for each "unit", output a categorical score using the user-specified criteria.
         ** Requirements **
-        Some requirements for the prompt_template:
-            The possible scores should be categorical, like "Low", "Mid", "High".
-            The JSON format should be a dictionary with only one key. Put the actual output format as the value of the key. The format (list or dict) should match the requirements of the user.
-        Reply the evaluator specification with this JSON format:
+        The JSON format should match the unit that the user wants to evaluate.
+        Reply the evaluator specification with this JSON format. Do not wrap the json codes in JSON markers. Do not include any comments.
             {{
                 "evaluator_specification": {{
                     "name": str,
                     "definition": str,
-                    "prompt_template": {{
+                "prompt_template": {{
                             "Context": str,
                             "Task": str,
                             "Possible Scores": list[str]
@@ -740,7 +741,7 @@ async def run_result_evaluator_generation_agent(
         [TextMessage(content=user_message, source="user")],
         cancellation_token=CancellationToken(),
     )
-    print(response)
+    print(response.chat_message.content)
     return extract_json_content(response.chat_message.content)[
         "evaluator_specification"
     ]

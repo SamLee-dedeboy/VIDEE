@@ -15,6 +15,8 @@ def extract_json_content(raw_response: str) -> Optional[Dict[str, Any]]:
         Parsed JSON dict or None if unrecoverable
     """
     raw_response = raw_response.strip()
+    # Replace double curly braces with single curly braces
+    raw_response = re.sub(r"\{\{", "{", re.sub(r"\}\}", "}", raw_response))
     try:
         # try to extract the first JSON object from the raw response.
         brace_match = re.search(r"^\s*\n*(\{[\s\S]+\})\s*\n*$", raw_response, re.DOTALL)
@@ -24,20 +26,24 @@ def extract_json_content(raw_response: str) -> Optional[Dict[str, Any]]:
         pass
     try:
         # Fallback: Try to extract JSON from a markdown JSON block.
-        code_block_match = re.search(r"```json\s*\n(\{[\s\S]+\})\s*\n```", raw_response, re.DOTALL)
+        code_block_match = re.search(
+            r"```json\s*\n(\{[\s\S]+\})\s*\n```", raw_response, re.DOTALL
+        )
         if code_block_match:
             return json.loads(code_block_match.group(1))
     except Exception:
         pass
     try:
         # Fallback 2: Try to extract JSON from a markdown code block.
-        code_block_match = re.search(r"```\s*\n(\{[\s\S]+\})\s*\n```", raw_response, re.DOTALL)
+        code_block_match = re.search(
+            r"```\s*\n(\{[\s\S]+\})\s*\n```", raw_response, re.DOTALL
+        )
         if code_block_match:
             return code_block_match.group(1)
     except Exception:
         pass
     # Last resort: Find JSON-like structures in text
-    json_candidates = re.findall(r'\{.*\}', raw_response, re.DOTALL)
+    json_candidates = re.findall(r"\{.*\}", raw_response, re.DOTALL)
     for candidate in json_candidates:
         try:
             return json.loads(candidate)
@@ -48,10 +54,12 @@ def extract_json_content(raw_response: str) -> Optional[Dict[str, Any]]:
     warnings.warn("No valid JSON found in response")
     return None
 
+
 # for testing
 if __name__ == "__main__":
-    print(extract_json_content(
-        """
+    print(
+        extract_json_content(
+            """
 {
   "next_steps": [
     {
@@ -71,9 +79,11 @@ if __name__ == "__main__":
   ]
 }
         """
-    ))
-    print(extract_json_content(
-        """
+        )
+    )
+    print(
+        extract_json_content(
+            """
 ```
 {
   "next_steps": [
@@ -95,9 +105,11 @@ if __name__ == "__main__":
 }
 ```
         """
-    ))
-    print(extract_json_content(
-        """```json
+        )
+    )
+    print(
+        extract_json_content(
+            """```json
 {
   "next_steps": [
     {
@@ -118,10 +130,12 @@ if __name__ == "__main__":
 }
 ```
 """
-    ))
+        )
+    )
 
-    print(extract_json_content(
-        """
+    print(
+        extract_json_content(
+            """
 Here's the response from AI.
 - Step1
 - Step2
@@ -146,4 +160,5 @@ Here's the response from AI.
 }
 ```
 """
-    ))
+        )
+    )
