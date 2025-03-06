@@ -9,15 +9,17 @@
   import { draggable } from "./draggable";
   import { getContext } from "svelte";
   import SimpleSemanticTaskCard from "./SimpleSemanticTaskCard.svelte";
+  import { semanticTaskPlanState } from "./ExecutionStates.svelte";
   let {
-    semantic_tasks = $bindable([]),
     decomposing_goal,
     handleConvert,
   }: {
-    semantic_tasks: tSemanticTask[];
     decomposing_goal: boolean;
     handleConvert: Function;
   } = $props();
+  const semantic_tasks: tSemanticTask[] = $derived(
+    semanticTaskPlanState.semantic_tasks
+  );
   const session_id = (getContext("session_id") as Function)();
   /**
    * Stores the id of the expanded tasks
@@ -120,49 +122,22 @@
 
   // handlers with server-side updates
   function handleAddTask() {
-    semantic_tasks.push({
-      id: Math.random().toString(),
-      label: "New Task",
-      description: "New Task Description",
-      explanation: "N/A",
-      parentIds: [],
-      sub_tasks: [],
-      children: [],
-      confidence: 0.0,
-      complexity: 0.0,
-    });
+    semanticTaskPlanState.addTask();
     update_with_server();
   }
 
   function handleDeleteTask(task: tSemanticTask) {
-    semantic_tasks = semantic_tasks.filter((_task) => _task.id !== task.id);
-    const task_dict = semantic_tasks.reduce((acc, task) => {
-      acc[task.id] = task;
-      return acc;
-    }, {});
-    // update the parentIds of the children
-    task.children.forEach((child_task_id) => {
-      task_dict[child_task_id].parentIds = task_dict[
-        child_task_id
-      ].parentIds.filter((id) => id !== task.id);
-    });
-
-    // update the childrenIds of the parent
-    task.parentIds.forEach((parent_task_id) => {
-      task_dict[parent_task_id].children = task_dict[
-        parent_task_id
-      ].children.filter((id) => id !== task.id);
-    });
+    semanticTaskPlanState.deleteTask(task);
     update_with_server();
   }
 
   function handleDeleteSubTasks(task: tSemanticTask) {
     console.log({ task, semantic_tasks });
-    task.sub_tasks = [];
-    semantic_tasks = semantic_tasks.map((_task) =>
-      _task.id === task.id ? task : _task
-    );
-    update_with_server();
+    // task.sub_tasks = [];
+    // semantic_tasks = semantic_tasks.map((_task) =>
+    //   _task.id === task.id ? task : _task
+    // );
+    // update_with_server();
   }
 
   function handleDecompose(task: tSemanticTask) {
@@ -175,7 +150,7 @@
     })
       .then((response) => response.json())
       .then((data) => {
-        semantic_tasks = data;
+        semanticTaskPlanState.semantic_tasks = data;
         console.log("task decomposed: ", { data });
       })
       .catch((error) => {
@@ -255,22 +230,30 @@
       </div>
     {/if}
     <svg id={svgId} class="w-full h-full absolute"></svg>
-    <div class="semantic-tasks relative w-full">
+    <div class="semantic-tasks relative w-full flex flex-col-reverse">
       {#each semantic_tasks_flattened as task, index}
-        <!-- use:draggable={dag_renderer} -->
         <div
           class="semantic-task-card-container absolute flex task-wrapper bg-[#FFCFB1] outline-1 outline-gray-300 rounded-sm shadow transition-all duration-500"
-          style:z-index={semantic_tasks_flattened.length - index}
           data-id={task.id}
         >
           <SimpleSemanticTaskCard
             {task}
+            task_options={semantic_tasks
+              .filter(
+                (t) =>
+                  t.id !== task.id &&
+                  !task.parentIds.includes(t.id) &&
+                  !task.children.includes(t.id)
+              )
+              .map((task) => [task.id, task.label])}
             expand={task_card_expanded.includes(task.id)}
             {handleDecompose}
             {handleDeleteSubTasks}
             {handleToggleShowSubTasks}
             {handleDeleteTask}
             handleToggleExpand={() => handleToggleExpand(task.id)}
+            handleAddParent={(parent_id) =>
+              semanticTaskPlanState.addParent(task, parent_id)}
           ></SimpleSemanticTaskCard>
         </div>
       {/each}

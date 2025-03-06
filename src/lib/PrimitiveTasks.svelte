@@ -118,9 +118,7 @@
   //     });
   // }
 
-  function handleExecute(
-    execute_node: tPrimitiveTaskDescription & tPrimitiveTaskExecution
-  ) {
+  function handleExecute(execute_node: tPrimitiveTask) {
     console.log("Executing...", { execute_node, session_id });
     executing_task_id = execute_node.id;
     fetch(`${server_address}/primitive_task/execute/`, {
@@ -240,6 +238,14 @@
           data-id={task.id}
         >
           <PrimitiveTaskCard
+            task_options={primitive_tasks
+              .filter(
+                (t) =>
+                  t.id !== task.id &&
+                  !task.parentIds.includes(t.id) &&
+                  !task.children.includes(t.id)
+              )
+              .map((task) => [task.id, task.label])}
             {task}
             expand={task_card_expanded.includes(task.id)}
             {compiling}
@@ -248,6 +254,8 @@
             {handleDeleteTask}
             handleInspectTask={handleInspectPrimitiveTask}
             handleToggleExpand={() => handleToggleExpand(task.id)}
+            handleAddParent={(parent_id) =>
+              primitiveTaskState.addParent(task, parent_id)}
           ></PrimitiveTaskCard>
         </div>
       {/each}

@@ -13,6 +13,7 @@
   import {
     primitiveTaskState,
     primitiveTaskExecutionStates,
+    semanticTaskPlanState,
   } from "lib/ExecutionStates.svelte";
   import GoalInput from "lib/GoalInput.svelte";
   import SemanticTaskTreeInspection from "lib/SemanticTaskTreeInspection.svelte";
@@ -38,6 +39,9 @@
   let semantic_tasks: tSemanticTask[] = $state([]);
   let next_expansion: tSemanticTask | undefined = $state(undefined);
   let selected_semantic_task_path: tSemanticTask[] = $state([]);
+  $effect(() => {
+    semanticTaskPlanState.semantic_tasks = selected_semantic_task_path;
+  });
   let few_shot_examples_semantic_tasks: Record<string, any> = $state({});
 
   let user_goal: string = $state("");
@@ -449,7 +453,6 @@
             {:else if show_dag == "semantic"}
               <Execution
                 {decomposing_goal}
-                semantic_tasks={selected_semantic_task_path || []}
                 {handleConvert}
                 converting={controllers.converting}
                 compiling={controllers.compiling}

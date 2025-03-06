@@ -4,22 +4,27 @@
   import EvaluationIndicator from "./EvaluationIndicator.svelte";
   let {
     task,
+    task_options,
     expand,
     handleDecompose = () => {},
     handleToggleExpand = () => {},
     handleToggleShowSubTasks = () => {},
     handleDeleteSubTasks = () => {},
     handleDeleteTask = () => {},
+    handleAddParent = () => {},
   }: {
     task: tSemanticTask;
+    task_options: [string, string][];
     expand: boolean;
     handleDecompose?: Function;
     handleToggleExpand?: Function;
     handleToggleShowSubTasks?: Function;
     handleDeleteSubTasks?: Function;
     handleDeleteTask?: Function;
+    handleAddParent: Function;
   } = $props();
   let show_subtasks = $state(false);
+  let adding_parent = $state(false);
   function showSubTasks() {
     show_subtasks = !show_subtasks;
     handleToggleShowSubTasks(task.id);
@@ -96,21 +101,46 @@
       </div>
       <div class="flex gap-x-2 mt-1">
         <div class="flex justify-between flex-wrap">
-          <button
+          <!-- <button
             class="action-button outline-gray-200 bg-gray-100 hover:bg-green-100"
             class:disabled={task.sub_tasks === undefined ||
               task.sub_tasks.length === 0}
             class:active={show_subtasks}
             onclick={() => showSubTasks()}>SubTasks</button
-          >
+          > -->
         </div>
         <div class="flex gap-x-2 relative grow">
           <div class="more-actions">
             <div class="flex gap-x-2">
-              <button
+              <!-- <button
                 class="action-button outline-orange-200 bg-orange-100 hover:bg-orange-200"
                 onclick={() => handleDecompose(task)}>Decompose</button
-              >
+              > -->
+              <div class="relative add-parent-container">
+                <button
+                  class="action-button outline-gray-200 bg-orange-100 hover:bg-orange-200 relative"
+                  onclick={() => (adding_parent = true)}
+                >
+                  Add Parent
+                </button>
+                <div
+                  class="options absolute hidden top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
+                >
+                  <div class="flex flex-col w-max">
+                    {#each task_options as option}
+                      <button
+                        class="text-sm bg-gray-50 outline-2 outline-gray-200 px-1 py-0.5 hover:bg-gray-200"
+                        onclick={() => {
+                          handleAddParent(option[0]);
+                          adding_parent = false;
+                        }}
+                      >
+                        {option[1]}
+                      </button>
+                    {/each}
+                  </div>
+                </div>
+              </div>
               <button
                 class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
                 onclick={() => handleDeleteTask(task)}
@@ -118,16 +148,15 @@
                 <!-- <img src="close.svg" alt="x" /> -->
                 Delete
               </button>
-              <button
+              <!-- <button
                 class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
                 tabindex="0"
                 class:disabled={task.sub_tasks === undefined ||
                   task.sub_tasks.length === 0}
                 onclick={() => handleDeleteSubTasks(task)}
               >
-                <!-- <img src="close.svg" alt="x" /> -->
                 Delete SubTasks
-              </button>
+              </button> -->
             </div>
           </div>
         </div>
@@ -155,30 +184,52 @@
       class="more-actions hidden absolute top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
     >
       <div class="flex gap-x-0 relative grow">
-        <div class="more-actions">
-          <div class="flex gap-x-2">
-            <button
+        <div class="flex gap-x-2">
+          <!-- <button
               class="action-button outline-orange-200 bg-orange-100 hover:bg-orange-200"
               onclick={() => handleDecompose(task)}>Decompose</button
-            >
+            > -->
+          <div class="relative add-parent-container">
             <button
-              class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
-              onclick={() => handleDeleteTask(task)}
+              class="action-button outline-gray-200 bg-orange-100 hover:bg-orange-200 relative"
+              onclick={() => (adding_parent = true)}
             >
-              <!-- <img src="close.svg" alt="x" /> -->
-              Delete
+              Add Parent
             </button>
-            <button
+            <div
+              class="options absolute hidden top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
+            >
+              <div class="flex flex-col w-max">
+                {#each task_options as option}
+                  <button
+                    class="text-sm bg-gray-50 outline-2 outline-gray-200 px-1 py-0.5 hover:bg-gray-200"
+                    onclick={() => {
+                      handleAddParent(option[0]);
+                      adding_parent = false;
+                    }}
+                  >
+                    {option[1]}
+                  </button>
+                {/each}
+              </div>
+            </div>
+          </div>
+          <button
+            class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
+            onclick={() => handleDeleteTask(task)}
+          >
+            <!-- <img src="close.svg" alt="x" /> -->
+            Delete
+          </button>
+          <!-- <button
               class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
               tabindex="0"
               class:disabled={task.sub_tasks === undefined ||
                 task.sub_tasks.length === 0}
               onclick={() => handleDeleteSubTasks(task)}
             >
-              <!-- <img src="close.svg" alt="x" /> -->
               Delete SubTasks
-            </button>
-          </div>
+            </button> -->
         </div>
       </div>
     </div>
@@ -211,5 +262,8 @@
     & .close-button {
       @apply block;
     }
+  }
+  .add-parent-container:hover .options {
+    @apply block;
   }
 </style>

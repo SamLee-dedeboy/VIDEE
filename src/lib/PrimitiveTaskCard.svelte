@@ -1,31 +1,35 @@
 <script lang="ts">
   import type {
+    tPrimitiveTask,
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
   } from "types";
   import { slide } from "svelte/transition";
   let {
     task,
+    task_options,
     expand,
     executable,
     compiling,
+    handleAddParent = () => {},
     handleExecute = () => {},
     handleInspectTask = () => {},
     handleDeleteTask = () => {},
     handleToggleExpand = () => {},
   }: {
-    task: tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>;
+    task: tPrimitiveTask;
+    task_options: [string, string][];
     expand: boolean;
     executable: boolean;
     compiling: boolean;
-    handleExecute: (
-      task: tPrimitiveTaskDescription & tPrimitiveTaskExecution
-    ) => void;
+    handleAddParent: Function;
+    handleExecute: (task: tPrimitiveTask) => void;
     handleInspectTask: Function;
     handleDeleteTask?: Function;
     handleToggleExpand?: Function;
   } = $props();
   let show_actions = $state(false);
+  let adding_parent = $state(false);
 </script>
 
 <div
@@ -78,41 +82,37 @@
             class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"
             onclick={() => handleInspectTask(task)}>Inspect</button
           >
+          <div class="relative">
+            <button
+              class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300 relative"
+              onclick={() => (adding_parent = true)}
+            >
+              Add Parent
+            </button>
+            <div
+              class="absolute top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
+            >
+              <div class="flex flex-col w-max">
+                {#each task_options as option}
+                  <button
+                    class="text-sm bg-gray-50 outline-2 outline-gray-200 px-1 py-0.5 hover:bg-gray-200"
+                    onclick={() => {
+                      handleAddParent(option[0]);
+                      adding_parent = false;
+                    }}
+                  >
+                    {option[1]}
+                  </button>
+                {/each}
+              </div>
+            </div>
+          </div>
           <button
             class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
             onclick={() => handleDeleteTask(task)}
           >
-            <!-- <img src="close.svg" alt="x" /> -->
             Delete
           </button>
-          <!-- <div
-            role="button"
-            tabindex="0"
-            class={`action-trigger action-button ml-auto flex justify-center outline outline-gray-200 bg-green-100 hover:bg-green-300 relative cursor-pointer`}
-            class:showing-actions={show_actions}
-            onclick={() => (show_actions = !show_actions)}
-            onkeyup={() => {}}
-          >
-            More Actions
-            {#if show_actions}
-              <div
-                class="more-actions absolute top-[calc(100%+5px)] left-1/2 -translate-x-1/2"
-              >
-                <div class="flex gap-x-2">
-                  <button
-                    class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
-                    >Edit</button
-                  >
-                  <button
-                    class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
-                    onclick={() => handleDeleteTask(task)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            {/if}
-          </div> -->
         </div>
       </div>
     {/if}
@@ -149,6 +149,31 @@
           class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"
           onclick={() => handleInspectTask(task)}>Inspect</button
         >
+        <div class="relative add-parent-container">
+          <button
+            class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300 relative"
+            onclick={() => (adding_parent = true)}
+          >
+            Add Parent
+          </button>
+          <div
+            class="options absolute hidden top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
+          >
+            <div class="flex flex-col w-max">
+              {#each task_options as option}
+                <button
+                  class="text-sm bg-gray-50 outline-2 outline-gray-200 px-1 py-0.5 hover:bg-gray-200"
+                  onclick={() => {
+                    handleAddParent(option[0]);
+                    adding_parent = false;
+                  }}
+                >
+                  {option[1]}
+                </button>
+              {/each}
+            </div>
+          </div>
+        </div>
         <!-- <button
           class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
           >Edit</button
@@ -194,5 +219,8 @@
     & .close-button {
       @apply block;
     }
+  }
+  .add-parent-container:hover .options {
+    @apply block;
   }
 </style>

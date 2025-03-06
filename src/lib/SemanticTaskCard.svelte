@@ -14,12 +14,10 @@
     on_max_value_path = false,
     controllers,
     streaming,
-    show_explanation = $bindable(false),
     expand,
     handleTaskHovered = () => {},
     handleSetAsNextExpansion = () => {},
     handleDecompose = () => {},
-    handleToggleExplain = () => {},
     handleToggleExpand = () => {},
     handleToggleShowSubTasks = () => {},
     handleDeleteSubTasks = () => {},
@@ -55,10 +53,12 @@
   let show_subtasks = $state(false);
   let show_actions = $state(false);
   let regenerating = $state(false);
-  function showSubTasks() {
-    show_subtasks = !show_subtasks;
-    handleToggleShowSubTasks(task[id_key]);
-  }
+
+  // function showSubTasks() {
+  //   show_subtasks = !show_subtasks;
+  //   handleToggleShowSubTasks(task[id_key]);
+  // }
+
   const path_value = $derived(
     +Math.pow(task.path_value, 1 / task.level).toFixed(2)
   );

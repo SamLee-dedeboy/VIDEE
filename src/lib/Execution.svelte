@@ -14,10 +14,13 @@
   import PrimitiveTasks from "./PrimitiveTasks.svelte";
   import SemanticTaskPlan from "./SemanticTaskPlan.svelte";
   import EvaluationNodes from "./EvaluationNodes.svelte";
-  import { evaluatorState, primitiveTaskState } from "./ExecutionStates.svelte";
+  import {
+    evaluatorState,
+    primitiveTaskState,
+    semanticTaskPlanState,
+  } from "./ExecutionStates.svelte";
   let {
     // plans
-    semantic_tasks = $bindable([]),
     decomposing_goal,
     handleConvert,
 
@@ -30,7 +33,6 @@
     // evaluators = $bindable([]),
     handleInspectEvaluatorNode = () => {},
   }: {
-    semantic_tasks: tSemanticTask[];
     decomposing_goal: boolean;
     handleConvert: Function;
 
@@ -49,6 +51,7 @@
     show_evaluation: false,
   });
 
+  const semantic_tasks = $derived(semanticTaskPlanState.semantic_tasks);
   const evaluators = $derived(evaluatorState.evaluators);
   const primitive_tasks = $derived(primitiveTaskState.primitiveTasks);
 
@@ -76,6 +79,7 @@
       let plan_execution_links: any[] = [];
       _primitive_tasks.forEach((primitive_task) => {
         const solves = primitive_task.solves;
+        if (!semantic_tasks.find((task) => task.id === solves)) return;
         const source = document.querySelector(`[data-id="${solves}"]`);
         const target = document.querySelector(
           `[data-id="${primitive_task.id}"]`
@@ -114,6 +118,7 @@
       let execution_evaluation_links: any[] = [];
       _evaluator_nodes.forEach((evaluator_node) => {
         const target_task = evaluator_node.task;
+        if (!primitive_tasks.find((task) => task.id === target_task)) return;
         const source = document.querySelector(`[data-id="${target_task}"]`);
         const target = document.querySelector(
           `[data-id="${evaluator_node.name}"]`
@@ -178,7 +183,6 @@
       <div class="plane flex-1 flex relative z-10">
         <SemanticTaskPlan
           bind:this={plan_component}
-          {semantic_tasks}
           {decomposing_goal}
           {handleConvert}
         ></SemanticTaskPlan>
