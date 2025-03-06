@@ -166,23 +166,26 @@
           >
             <div class="flex flex-col gap-y-2">
               <div class="text-gray-700">Parameters</div>
-              {#each Object.entries(evaluator.parameters) as [key, value]}
-                {#if key === "api_key"}
-                  <div></div>
-                {:else if key === "prompt_template"}
-                  <PromptTemplate
-                    messages={evaluator.parameters.prompt_template}
-                    {handleUpdatePrompt}
-                    --bg-color="#f6fffb"
-                    --border-color="#00d492"
-                  ></PromptTemplate>
-                {:else}
-                  <div class="flex items-center gap-x-2">
-                    <div class="italic text-gray-600 w-[3rem]">{key}</div>
-                    <div class="option-value">{value}</div>
-                  </div>
-                {/if}
-              {/each}
+              <div class="flex items-center gap-x-2">
+                <div class="italic text-gray-600 w-[3rem]">name</div>
+                <div class="option-value">{evaluator.parameters.name}</div>
+              </div>
+              <div class="flex gap-x-4">
+                <div class="flex items-center gap-x-2">
+                  <div class="italic text-gray-600 w-[3rem]">model</div>
+                  <div class="option-value">{evaluator.parameters.model}</div>
+                </div>
+                <div class="flex items-center gap-x-2">
+                  <div class="italic text-gray-600 w-[3rem]">format</div>
+                  <div class="option-value">{evaluator.parameters.format}</div>
+                </div>
+              </div>
+              <PromptTemplate
+                messages={evaluator.parameters.prompt_template}
+                {handleUpdatePrompt}
+                --bg-color="#f6fffb"
+                --border-color="#00d492"
+              ></PromptTemplate>
             </div>
           </div>
         {/if}
@@ -196,7 +199,7 @@
             class="header-2"
             onclick={() => {
               show_result = !show_result;
-              handleFetchEvaluationResult();
+              handleFetchEvaluationResult(evaluator);
             }}
           >
             Result
