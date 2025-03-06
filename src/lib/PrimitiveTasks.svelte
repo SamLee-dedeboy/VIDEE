@@ -15,14 +15,15 @@
   import { fly, fade, blur } from "svelte/transition";
   import { draggable } from "./draggable";
   import { getContext } from "svelte";
-  import { primitiveTaskState } from "./ExecutionStates.svelte";
+  import {
+    primitiveTaskState,
+    primitiveTaskExecutionStates,
+  } from "./ExecutionStates.svelte";
   let {
-    execution_states,
     converting,
     compiling,
     handleInspectPrimitiveTask = () => {},
   }: {
-    execution_states: Record<string, tExecutionState> | undefined;
     converting: boolean;
     compiling: boolean;
     handleInspectPrimitiveTask: Function;
@@ -128,7 +129,7 @@
     })
       .then((response) => response.json())
       .then((data) => {
-        execution_states = data.execution_state;
+        primitiveTaskExecutionStates.execution_states = data.execution_state;
         console.log("execution: ", data);
       })
       .catch((error) => {
@@ -185,7 +186,6 @@
   onMount(() => {
     dag_renderer.init(updateGlobalLinks);
     update_dag(primitive_tasks);
-    console.log({ execution_states });
   });
 </script>
 
@@ -238,7 +238,7 @@
             {task}
             expand={task_card_expanded.includes(task.id)}
             {compiling}
-            executable={execution_states?.[task.id].executable || false}
+            executable={primitiveTaskExecutionStates.executable(task.id)}
             {handleExecute}
             {handleDeleteTask}
             handleInspectTask={handleInspectPrimitiveTask}

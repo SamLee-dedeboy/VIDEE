@@ -22,7 +22,6 @@
     handleConvert,
 
     // execution
-    execution_states,
     converting,
     compiling,
     handleInspectPrimitiveTask = () => {},
@@ -35,7 +34,6 @@
     decomposing_goal: boolean;
     handleConvert: Function;
 
-    execution_states: Record<string, tExecutionState> | undefined;
     converting: boolean;
     compiling: boolean;
     handleInspectPrimitiveTask: Function;
@@ -207,7 +205,6 @@
       <div class="plane flex-1 flex relative">
         <PrimitiveTasks
           bind:this={execution_component}
-          {execution_states}
           {converting}
           {compiling}
           {handleInspectPrimitiveTask}
@@ -247,7 +244,10 @@
         >
       </div>
     {:else}
-      <div class="px-2 bg-emerald-50 flex h-fit hover:bg-emerald-200">
+      <div
+        class="px-2 bg-emerald-50 flex h-fit hover:bg-emerald-200"
+        class:disabled={compiling || converting}
+      >
         <button
           class="z-20 flex text-[1.5rem] text-slate-600 font-semibold italic"
           onclick={() => {
@@ -263,5 +263,9 @@
 <style lang="postcss">
   @reference "../app.css";
   .plane {
+  }
+  .disabled {
+    pointer-events: none;
+    opacity: 0.5;
   }
 </style>

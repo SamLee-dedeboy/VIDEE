@@ -59,6 +59,7 @@ export type tPrimitiveTaskExecution = {
 }
 
 export type tExecutionState = {
+    executed: boolean,
     executable: boolean,
 }
 

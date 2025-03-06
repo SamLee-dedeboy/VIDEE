@@ -10,7 +10,10 @@
     tSemanticTask,
     tExecutionState,
   } from "types";
-  import { primitiveTaskState } from "lib/ExecutionStates.svelte";
+  import {
+    primitiveTaskState,
+    primitiveTaskExecutionStates,
+  } from "lib/ExecutionStates.svelte";
   import GoalInput from "lib/GoalInput.svelte";
   import SemanticTaskTreeInspection from "lib/SemanticTaskTreeInspection.svelte";
   import ExecutionInspection from "lib/ExecutionInspection.svelte";
@@ -41,8 +44,6 @@
 
   // let primitive_tasks: tPrimitiveTask[] = $state([]);
   let primitive_tasks = $derived(primitiveTaskState.primitiveTasks);
-  let execution_states: Record<string, tExecutionState> | undefined =
-    $state(undefined);
   let inspected_primitive_task:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
     | undefined = $state(undefined);
@@ -320,7 +321,8 @@
       .then((data) => {
         controllers.compiling = false;
         primitiveTaskState.primitiveTasks = data.primitive_tasks;
-        execution_states = data.execution_state;
+        primitiveTaskExecutionStates.execution_states = data.execution_state;
+        console.log({ data });
         if (inspected_primitive_task !== undefined) {
           const original_id = inspected_primitive_task.id;
           inspected_primitive_task = primitive_tasks.find(
@@ -447,7 +449,6 @@
                 {decomposing_goal}
                 semantic_tasks={selected_semantic_task_path || []}
                 {handleConvert}
-                {execution_states}
                 converting={controllers.converting}
                 compiling={controllers.compiling}
                 handleInspectPrimitiveTask={(task) => {

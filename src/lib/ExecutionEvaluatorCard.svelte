@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { tExecutionEvaluator } from "types";
   import { slide } from "svelte/transition";
+  import { primitiveTaskExecutionStates } from "./ExecutionStates.svelte";
   let {
     evaluator = $bindable(),
     expand,
@@ -69,6 +70,9 @@
         <div class="flex gap-x-2">
           <button
             class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
+            class:disabled={!primitiveTaskExecutionStates.executed(
+              evaluator.task
+            )}
             onclick={() => handleExecute(evaluator)}>Execute</button
           >
           <button
@@ -95,6 +99,9 @@
         <div class="flex gap-x-2">
           <button
             class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
+            class:disabled={!primitiveTaskExecutionStates.executed(
+              evaluator.task
+            )}
             onclick={() => handleExecute(evaluator)}>Execute</button
           >
           <button
@@ -121,5 +128,8 @@
   }
   .action-button {
     @apply outline-2 rounded px-1 py-0.5 text-sm font-mono;
+  }
+  .disabled {
+    @apply cursor-not-allowed pointer-events-none bg-gray-300 outline-gray-200 opacity-50;
   }
 </style>

@@ -1,6 +1,5 @@
-import type { tExecutionEvaluator, tPrimitiveTask } from 'types/server'
+import type { tExecutionEvaluator, tPrimitiveTask, tExecutionState } from 'types/server'
 let evaluators: tExecutionEvaluator[] = $state([])
-let primitiveTasks: tPrimitiveTask[] = $state([])
 export const evaluatorState = {
     get evaluators() {
         return evaluators
@@ -16,6 +15,7 @@ export const evaluatorState = {
     }
 }
 
+let primitiveTasks: tPrimitiveTask[] = $state([])
 export const primitiveTaskState = {
     get primitiveTasks() {
         return primitiveTasks
@@ -46,5 +46,20 @@ export const primitiveTaskState = {
             primitiveTasks[index] = primitiveTask
         }
     }
+}
 
+let execution_states: Record<string, tExecutionState> | undefined = $state(undefined);
+export const primitiveTaskExecutionStates = {
+    get execution_states() {
+        return execution_states
+    },
+    set execution_states(value) {
+        execution_states = value
+    },
+    executable(task_id: string) {
+        return execution_states?.[task_id]?.executable || false
+    },
+    executed(task_id: string) {
+        return execution_states?.[task_id]?.executed || false
+    }
 }

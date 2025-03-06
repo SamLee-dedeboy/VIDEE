@@ -180,7 +180,7 @@
     @apply outline-2 rounded px-1 py-0.5 text-sm font-mono;
   }
   .disabled {
-    @apply cursor-not-allowed bg-gray-300 outline-gray-200 opacity-50;
+    @apply cursor-not-allowed pointer-events-none bg-gray-300 outline-gray-200 opacity-50;
   }
   .active {
     @apply outline-gray-600 bg-green-200;
