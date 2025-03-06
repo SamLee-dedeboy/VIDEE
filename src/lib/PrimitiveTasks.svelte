@@ -28,6 +28,8 @@
     compiling: boolean;
     handleInspectPrimitiveTask: Function;
   } = $props();
+
+  let executing_task_id: string | undefined = $state(undefined);
   const primitive_tasks = $derived(
     primitiveTaskState.primitiveTasks
   ) as tPrimitiveTaskDescription[];
@@ -120,6 +122,7 @@
     execute_node: tPrimitiveTaskDescription & tPrimitiveTaskExecution
   ) {
     console.log("Executing...", { execute_node, session_id });
+    executing_task_id = execute_node.id;
     fetch(`${server_address}/primitive_task/execute/`, {
       method: "POST",
       headers: {
@@ -131,6 +134,7 @@
       .then((data) => {
         primitiveTaskExecutionStates.execution_states = data.execution_state;
         console.log("execution: ", data);
+        executing_task_id = undefined;
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -231,6 +235,7 @@
       {#each primitive_tasks as task, index}
         <div
           class="primitive-task-card-container absolute task-wrapper bg-blue-200 flex outline-1 outline-gray-300 rounded-sm shadow transition-all"
+          class:executing={executing_task_id === task.id}
           style:z-index={primitive_tasks.length - index}
           data-id={task.id}
         >
@@ -260,6 +265,7 @@
 </div>
 
 <style lang="postcss">
+  @reference "../app.css";
   .disabled {
     @apply opacity-50 pointer-events-none;
   }
@@ -276,5 +282,20 @@
     background-size: 200% 200%;
     animation: dash 3s linear infinite;
     border: 4px solid transparent;
+  }
+  .executing::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: calc(100% + 3px);
+    bottom: 0;
+    background-image: url("loader_circle.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 100;
+    @apply w-7 h-7 animate-spin;
+  }
+  .executing {
+    @apply animate-pulse;
   }
 </style>

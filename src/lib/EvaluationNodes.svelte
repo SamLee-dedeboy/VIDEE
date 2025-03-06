@@ -29,6 +29,7 @@
   const session_id = (getContext("session_id") as Function)();
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
 
+  let executing_evaluator_name: string | undefined = $state(undefined);
   const svgId = "evaluation-dag-svg";
   const node_size: [number, number] = [150, 80];
   let dag_renderer = new DAG(
@@ -134,6 +135,7 @@
 
   function handleExecute(evaluator: tExecutionEvaluator) {
     console.log("Executing evaluator", $state.snapshot(evaluator));
+    executing_evaluator_name = evaluator.name;
     fetch(`${server_address}/primitive_task/evaluators/run/`, {
       method: "POST",
       headers: {
@@ -147,6 +149,7 @@
       .then((response) => response.json())
       .then((data) => {
         console.log("evaluator execution result: ", data);
+        executing_evaluator_name = undefined;
       });
   }
   async function handleToggleExpand(evaluator_name: string) {
@@ -227,6 +230,7 @@
         {#each evaluators as evaluator, index}
           <div
             class="evaluator-card-container absolute task-wrapper bg-[#f6fffb] flex flex-col justify-center gap-8 outline-1 outline-gray-300 rounded-sm shadow transition-all"
+            class:executing={executing_evaluator_name === evaluator.name}
             style:z-index={evaluators.length - index}
             data-id={evaluator.name}
           >
@@ -253,6 +257,7 @@
 </div>
 
 <style lang="postcss">
+  @reference "../app.css";
   .disabled {
     @apply opacity-50 pointer-events-none;
   }
@@ -268,5 +273,20 @@
     background-size: 200% 200%;
     animation: dash 3s linear infinite;
     border: 4px solid transparent;
+  }
+  .executing::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: calc(100% + 3px);
+    bottom: 0;
+    background-image: url("loader_circle.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 100;
+    @apply w-7 h-7 animate-spin;
+  }
+  .executing {
+    @apply animate-pulse;
   }
 </style>
