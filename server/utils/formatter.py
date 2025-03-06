@@ -4,7 +4,36 @@ from typing import Optional, Dict, Any
 import warnings
 
 
-def extract_json_content(raw_response: str) -> Optional[Dict[str, Any]]:
+def escape_json_format_curly_braces(json_string: str) -> str:
+    """
+    Identifies the 'JSON_format' field inside a JSON string and escapes curly brackets within its value.
+    """
+    # Regular expression to find the "JSON_format" key and its string value
+    # pattern = r'"JSON_format"\s*:\s*"([^"]*)"'
+    # pattern = r'"JSON_format"\s*:\s*"\{[^}]+\}"'
+    pattern = r'"JSON_format"\s*:\s*"\{.*?\}"'
+    match = re.search(pattern, json_string)
+    if match:
+        content_inside_quotes = match.group(0)
+        escaped_content = (
+            content_inside_quotes.replace('"JSON_format":', "")
+            .strip()[1:-1]
+            .replace("{", "{{")
+            .replace("}", "}}")
+            .replace('"', "'")
+        )
+        escaped_content = '"JSON_format": "' + escaped_content + '"'
+
+        return re.sub(pattern, escaped_content, json_string)
+        # return escaped_content
+    else:
+        print("No match found.")
+        return json_string
+
+
+def extract_json_content(
+    raw_response: str, escape_JSON_format=False
+) -> Optional[Dict[str, Any]]:
     """
     Extract and parse JSON content from LLM response with robust error handling
 
@@ -15,8 +44,11 @@ def extract_json_content(raw_response: str) -> Optional[Dict[str, Any]]:
         Parsed JSON dict or None if unrecoverable
     """
     raw_response = raw_response.strip()
-    # Replace double curly braces with single curly braces
-    raw_response = re.sub(r"\{\{", "{", re.sub(r"\}\}", "}", raw_response))
+    if escape_JSON_format:
+        # replace single quotes with double quotes
+        raw_response = re.sub(r"'", '"', raw_response)
+        # reformat JSON_format field so that it is treated as a string
+        raw_response = escape_json_format_curly_braces(raw_response)
     try:
         # try to extract the first JSON object from the raw response.
         brace_match = re.search(r"^\s*\n*(\{[\s\S]+\})\s*\n*$", raw_response, re.DOTALL)

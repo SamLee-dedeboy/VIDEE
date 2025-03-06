@@ -717,6 +717,7 @@ async def run_result_evaluator_generation_agent(
         ** Requirements **
         The JSON format should match the unit that the user wants to evaluate.
         Reply the evaluator specification with this JSON format. Do not wrap the json codes in JSON markers. Do not include any comments.
+        Wrap the types of the values in the JSON format with single quotes.
             {{
                 "evaluator_specification": {{
                     "name": str,
@@ -742,6 +743,6 @@ async def run_result_evaluator_generation_agent(
         cancellation_token=CancellationToken(),
     )
     print(response.chat_message.content)
-    return extract_json_content(response.chat_message.content)[
+    return extract_json_content(response.chat_message.content, escape_JSON_format=True)[
         "evaluator_specification"
     ]
