@@ -2,11 +2,12 @@
   import { slide } from "svelte/transition";
   import PromptTemplate from "./PromptTemplate.svelte";
   import { trim } from "lib/trim";
-  import type { tExecutionEvaluator } from "types";
+  import type { tExecutionEvaluator, tExecutionEvaluatorResult } from "types";
   import DocumentCard from "./DocumentCard.svelte";
   import { server_address } from "constants";
   import { getContext } from "svelte";
   import { evaluatorState } from "./ExecutionStates.svelte";
+  import EvaluatorResult from "./EvaluatorResult.svelte";
 
   let {
     evaluator = $bindable(),
@@ -21,9 +22,12 @@
   let show_execution = $state(false);
   let show_result = $state(false);
 
-  let result = $state(undefined);
+  let result: tExecutionEvaluatorResult | undefined = $state(undefined);
   const session_id = (getContext("session_id") as Function)();
-  function handleFetchEvaluationResult() {
+  $effect(() => {
+    handleFetchEvaluationResult(evaluator);
+  });
+  function handleFetchEvaluationResult(evaluator: tExecutionEvaluator) {
     fetch(`${server_address}/primitive_task/evaluators/result/`, {
       method: "POST",
       headers: {
@@ -38,7 +42,7 @@
       .then((response) => response.json())
       .then((data) => {
         console.log("Evaluation result:", data);
-        result = data.result.result;
+        result = data.result;
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -204,7 +208,8 @@
           </button>
         </div>
         {#if show_result && result !== undefined}
-          <div in:slide class="flex flex-col">
+          <EvaluatorResult {result}></EvaluatorResult>
+          <!-- <div in:slide class="flex flex-col">
             {#each Object.keys(result) as state_input_key}
               <div class="flex flex-col">
                 <div>{state_input_key}</div>
@@ -219,7 +224,7 @@
                 </div>
               </div>
             {/each}
-          </div>
+          </div> -->
         {/if}
       </div>
     {/if}

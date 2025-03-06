@@ -18,9 +18,10 @@ def evaluator_reduce_func(combined, state_input_key, state_output_key):
 
 
 async def create_evaluator_exec(evaluator_spec):
-    evaluator_node = create_llm_evaluator_chain(
-        evaluator_spec, custom_reduce_func=evaluator_reduce_func
-    )
+    # evaluator_node = create_llm_evaluator_chain(
+    #     evaluator_spec, custom_reduce_func=evaluator_reduce_func
+    # )
+    evaluator_node = create_llm_evaluator_chain(evaluator_spec)
     graph = StateGraph(BaseStateSchema)
     graph.add_node(evaluator_spec["name"], evaluator_node)
     graph.add_edge(START, evaluator_spec["name"])
@@ -61,7 +62,7 @@ async def evaluator_for_task(task, user_description: str, model: str, api_key: s
     # )
     json_format_str = """Reply with the following JSON format:
         {{{{
-            {output_key}: str (one of {possible_scores})
+            {output_key}: a single string (one of the possible scores)
         }}}}
     """.format(
         output_key=output_key,
@@ -76,6 +77,7 @@ async def evaluator_for_task(task, user_description: str, model: str, api_key: s
                 ** Task **
                 {prompt_task}
                 ** Requirements **
+                Generate one of the following scores for each document:
                 Possible Scores: {prompt_requirements}
                 {prompt_output_format}
                 """.format(
