@@ -289,15 +289,17 @@
 
   function handleConvert() {
     controllers.converting = true;
-    fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
-      // fetch(
-      //   `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
-    })
+    // fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
+    fetch(
+      `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
+      }
+    )
       .then((response) => response.json())
       .then((data) => {
         console.log("decomposition to primitive tasks: ", { data });

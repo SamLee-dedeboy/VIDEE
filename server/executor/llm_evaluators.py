@@ -53,11 +53,19 @@ async def evaluator_for_task(task, user_description: str, model: str, api_key: s
     ]  # consider using another agent?
     output_key = evaluator["name"] + "_output"
 
-    evaluator["prompt_template"]["JSON_format"] = (
-        evaluator["prompt_template"]["JSON_format"]
-        .replace("{", "{{")
-        .replace("}", "}}")
-        .replace("'", '"')
+    # evaluator["prompt_template"]["JSON_format"] = (
+    #     evaluator["prompt_template"]["JSON_format"]
+    #     .replace("{", "{{")
+    #     .replace("}", "}}")
+    #     .replace("'", '"')
+    # )
+    json_format_str = """Reply with the following JSON format:
+        {{{{
+            {output_key}: str (one of {possible_scores})
+        }}}}
+    """.format(
+        output_key=output_key,
+        possible_scores=evaluator["prompt_template"]["Possible Scores"],
     )
     prompt_template = [
         {
@@ -68,14 +76,14 @@ async def evaluator_for_task(task, user_description: str, model: str, api_key: s
                 ** Task **
                 {prompt_task}
                 ** Requirements **
-                {prompt_requirements}
-                Reply with the following JSON format:
+                Possible Scores: {prompt_requirements}
                 {prompt_output_format}
                 """.format(
                 prompt_context=evaluator["prompt_template"]["Context"],
                 prompt_task=evaluator["prompt_template"]["Task"],
                 prompt_requirements=evaluator["prompt_template"]["Possible Scores"],
-                prompt_output_format=evaluator["prompt_template"]["JSON_format"],
+                # prompt_output_format=evaluator["prompt_template"]["JSON_format"],
+                prompt_output_format=json_format_str,
             ),
         },
         {

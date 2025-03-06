@@ -400,7 +400,7 @@ async def compile_primitive_tasks(request: Request) -> dict:
     session_id = request["session_id"]
     assert session_id in user_sessions
     primitive_task_descriptions = request["primitive_tasks"]
-    if False:
+    if dev:
         primitive_task_execution_plan = json.load(
             open(relative_path("dev_data/test_execution_plan.json"))
         )
