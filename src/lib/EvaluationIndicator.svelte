@@ -80,3 +80,11 @@
     {@render icon()}
   </button>
 </div>
+
+<style lang="postcss">
+  @reference "../app.css";
+  .input-box:empty:before {
+    content: "Why do you think this is good/bad?";
+    cursor: text;
+  }
+</style>
