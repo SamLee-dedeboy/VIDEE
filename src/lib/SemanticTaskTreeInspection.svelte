@@ -3,40 +3,22 @@
   import { slide } from "svelte/transition";
   import { onMount, setContext } from "svelte";
   import type {
+    tDocument,
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
   } from "types";
   import { getContext } from "svelte";
-  import DocumentCard from "./DocumentCard.svelte";
   import Evaluator from "./Evaluator.svelte";
+  import DatasetInspection from "./DatasetInspection.svelte";
   let { few_shot_examples }: { few_shot_examples: Record<string, any> } =
     $props();
   const session_id = (getContext("session_id") as Function)();
-  let documents: any[] = $state([]);
   let eval_definitions: Record<string, string> = $state({
     complexity: "The complexity of the task",
     coherence: "The coherence of the task",
     importance: "The importance of the task",
   });
 
-  let show_documents = $state(false);
-
-  function getDocuments() {
-    fetch(`${server_address}/documents/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ session_id }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        documents = data;
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
   function getEvalDefinitions() {
     fetch(`${server_address}/eval/definitions/`, {
       method: "POST",
@@ -73,7 +55,6 @@
   }
 
   onMount(() => {
-    getDocuments();
     getEvalDefinitions();
   });
 </script>
@@ -92,43 +73,7 @@
 
 <div class="flex flex-col px-1 gap-y-4">
   <div class="flex flex-col gap-y-2">
-    <div
-      class="text-[1.5rem] text-slate-600 font-semibold italic bg-gray-100 flex justify-center"
-    >
-      Dataset
-    </div>
-    <div class="flex flex-col px-1 gap-y-1">
-      <div
-        role="button"
-        tabindex="0"
-        class="header-2"
-        onclick={() => {
-          show_documents = !show_documents;
-        }}
-        onkeyup={() => {}}
-      >
-        Documents
-        <img
-          src="chevron_down.svg"
-          alt="expand"
-          class="hidden ml-auto w-5 h-5"
-        />
-      </div>
-
-      {#if show_documents}
-        <div in:slide class="flex flex-col gap-y-2">
-          {#each documents as document}
-            <DocumentCard
-              {document}
-              --bg-color="#f8f8f8"
-              --bg-hover-color="#e3e3e3"
-            />
-          {/each}
-        </div>
-      {/if}
-    </div>
-  </div>
-  <div class="flex flex-col gap-y-2">
+    <DatasetInspection></DatasetInspection>
     <div
       class="text-[1.5rem] text-slate-600 font-semibold italic bg-gray-100 flex justify-center"
     >

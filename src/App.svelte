@@ -472,7 +472,7 @@
         </div>
       </div>
     </div>
-    <div class="flex-1 flex flex-col overflow-auto gap-y-2">
+    <div class="inspection-panel flex-1 flex flex-col overflow-auto gap-y-2">
       {#if show_dag === "mcts"}
         <SemanticTaskTreeInspection
           few_shot_examples={few_shot_examples_semantic_tasks}

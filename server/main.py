@@ -88,6 +88,35 @@ async def get_documents(request: Request):
     return json.load(open(relative_path("executor/docs.json")))
 
 
+@app.post("/documents/dr/")
+async def get_dr(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+
+    if "dr_data" in user_sessions[session_id]:
+        return user_sessions[session_id]["dr_data"]
+    else:
+        data = request["data"]
+        texts = list(map(lambda x: x["content"], data))
+
+        # using OpenAI client here because the 'radial_dr' is a legacy function I copied from another project.
+        # this should be refactored to use AutoGen in the future.
+        openai_client = OpenAI(api_key=api_key)
+        clusters, cluster_orders, cluster_topics, all_angles = executor.radial_dr(
+            texts, openai_client
+        )
+
+        for i, datum in enumerate(data):
+            data[i]["cluster"] = cluster_orders[clusters[i]]
+            data[i]["cluster_label"] = cluster_topics[clusters[i]]
+            data[i]["angle"] = all_angles[i]
+
+        user_sessions[session_id]["dr_data"] = data
+        return data
+
+
 @app.post("/eval/definitions/")
 async def get_eval_definitions(request: Request):
     request = await request.body()
@@ -532,33 +561,6 @@ async def fetch_primitive_task_result(request: Request):
     return {
         "result": evaluator_result,
     }
-
-
-@app.post("/primitive_task/evaluators/result/dr/")
-async def get_dr(request: Request):
-    request = await request.body()
-    request = json.loads(request)
-    session_id = request["session_id"]
-    assert session_id in user_sessions
-
-    data = request["data"]
-    texts = list(map(lambda x: x["content"], data))
-
-    # using OpenAI client here because the 'radial_dr' is a legacy function I copied from another project.
-    # this should be refactored to use AutoGen in the future.
-    openai_client = OpenAI(api_key=api_key)
-    clusters, cluster_orders, cluster_topics, all_angles = executor.radial_dr(
-        texts, openai_client
-    )
-
-    for i, datum in enumerate(data):
-        data[i]["cluster"] = cluster_orders[clusters[i]]
-        data[i]["cluster_label"] = cluster_topics[clusters[i]]
-        data[i]["angle"] = all_angles[i]
-        # this should be replaced by the actual evaluation results
-        data[i]["value"] = random.random()
-
-    return data
 
 
 @app.get("/dev/semantic_task/plan/")

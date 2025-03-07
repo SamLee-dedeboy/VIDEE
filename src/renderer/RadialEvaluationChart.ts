@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 import type { tDRResult } from "types";
-export class UncertaintyGraph {
+export class RadialEvaluationChart {
   svgId: string;
   width: number = 300;
   height: number = 300;
@@ -98,6 +98,7 @@ export class UncertaintyGraph {
   update(data: tDRResult[], highlight_ids: string[] | undefined, func_id = (d) => d.id, func_value = (d) => d.value) {
     const self = this;
     const svg = d3.select("#" + this.svgId);
+    const circle_radius = 2
     const clusters = data
       .map((d) => d.cluster)
       .reduce((acc, cur) => {
@@ -145,7 +146,7 @@ export class UncertaintyGraph {
             .classed("node-highlighted", false)
             .attr("cx", (d) => (d.x = d.coordinates_2d[0]))
             .attr("cy", (d) => (d.y = d.coordinates_2d[1]))
-            .attr("r", (d) => (d.r = 2))
+            .attr("r", circle_radius)
             .attr("fill", (d) => this.clusterColorScale("" + d.cluster))
             .attr("stroke", "black")
             .attr("stroke-width", 1)
@@ -178,17 +179,17 @@ export class UncertaintyGraph {
             )
             .force(
               "collide",
-              d3.forceCollide((d) => d.r * 1.3),
+              d3.forceCollide((d) => circle_radius * 1.3),
             )
             .on("tick", function () {
               enter_nodes.each(function (d) {
                 d.x = clip(d.x, [
-                  self.innerSize.x + d.r,
-                  self.innerSize.x + self.innerSize.width - d.r,
+                  self.innerSize.x + circle_radius,
+                  self.innerSize.x + self.innerSize.width - circle_radius,
                 ]);
                 d.y = clip(d.y, [
-                  self.innerSize.y + d.r,
-                  self.innerSize.y + self.innerSize.height - d.r,
+                  self.innerSize.y + circle_radius,
+                  self.innerSize.y + self.innerSize.height - circle_radius,
                 ]);
                 [d.x, d.y] = clipClusterRange(
                   d.x,

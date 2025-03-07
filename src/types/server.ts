@@ -1,3 +1,7 @@
+export type tDocument = {
+  id: string;
+  content: string;
+}
 export type tNode = {
     id: string;
     parentIds: string[];
@@ -103,5 +107,5 @@ export type tExecutionEvaluatorParams = {
     cluster: string;
     cluster_label: string;
     angle: number;
-    value: number;
+    value?: number;
   }

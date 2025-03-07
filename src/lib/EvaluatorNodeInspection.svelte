@@ -1,5 +1,6 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
+  import { tick } from "svelte";
   import PromptTemplate from "./PromptTemplate.svelte";
   import { trim } from "lib/trim";
   import type { tExecutionEvaluator, tExecutionEvaluatorResult } from "types";
@@ -198,9 +199,17 @@
           <button
             tabindex="0"
             class="header-2"
-            onclick={() => {
+            onclick={async () => {
               show_result = !show_result;
               handleFetchEvaluationResult(evaluator);
+              await tick();
+              const inspection_panel =
+                document.querySelector(".inspection-panel");
+              if (inspection_panel)
+                inspection_panel.scroll({
+                  top: inspection_panel.scrollHeight,
+                  behavior: "smooth",
+                });
             }}
           >
             Result

@@ -12,6 +12,7 @@
   import DocumentCard from "./DocumentCard.svelte";
   import PrimitiveTaskInspection from "./PrimitiveTaskInspection.svelte";
   import EvaluatorNodeInspection from "./EvaluatorNodeInspection.svelte";
+  import DatasetInspection from "./DatasetInspection.svelte";
   let {
     primitive_task,
     evaluator_node,
@@ -49,43 +50,7 @@
 </script>
 
 <div class="flex flex-col px-1 gap-y-4">
-  <div class="flex flex-col gap-y-2">
-    <div
-      class="text-[1.5rem] text-slate-600 font-semibold italic bg-gray-100 flex justify-center"
-    >
-      Dataset
-    </div>
-    <div class="flex flex-col px-1 gap-y-1">
-      <div
-        role="button"
-        tabindex="0"
-        class="header-2"
-        onclick={() => {
-          show_documents = !show_documents;
-        }}
-        onkeyup={() => {}}
-      >
-        Documents
-        <img
-          src="chevron_down.svg"
-          alt="expand"
-          class="hidden ml-auto w-5 h-5"
-        />
-      </div>
-
-      {#if show_documents}
-        <div in:slide class="flex flex-col gap-y-2">
-          {#each documents as document}
-            <DocumentCard
-              {document}
-              --bg-color="#f8f8f8"
-              --bg-hover-color="#e3e3e3"
-            />
-          {/each}
-        </div>
-      {/if}
-    </div>
-  </div>
+  <DatasetInspection></DatasetInspection>
   {#if primitive_task}
     <div in:slide>
       <PrimitiveTaskInspection task={primitive_task}></PrimitiveTaskInspection>

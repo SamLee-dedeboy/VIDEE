@@ -1,11 +1,11 @@
 <script lang="ts">
   import { getContext, onMount } from "svelte";
-  import type { tExecutionEvaluatorResult } from "types";
-  import { UncertaintyGraph } from "renderer/UncertaintyGraph";
+  import type { tDRResult, tExecutionEvaluatorResult } from "types";
+  import { RadialEvaluationChart } from "renderer/RadialEvaluationChart";
   import { server_address } from "constants";
   let { result }: { result: tExecutionEvaluatorResult } = $props();
   const svgId = "evaluator-result-radial-chart-svg";
-  let uncertaintyGraph: UncertaintyGraph = new UncertaintyGraph(svgId);
+  let evaluationChart: RadialEvaluationChart = new RadialEvaluationChart(svgId);
   const session_id = (getContext("session_id") as Function)();
 
   $effect(() => {
@@ -14,7 +14,7 @@
 
   function fetchDR(_result: tExecutionEvaluatorResult) {
     console.log($state.snapshot(_result));
-    fetch(`${server_address}/primitive_task/evaluators/result/dr/`, {
+    fetch(`${server_address}/documents/dr/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -26,7 +26,7 @@
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log("Evaluation result distribution:", data);
+        console.log("DR result:", data);
         updateRadialChart(data);
       })
       .catch((error) => {
@@ -34,14 +34,17 @@
       });
   }
 
-  function updateRadialChart(dr_result) {
-    let highlight_ids: string[] | undefined = undefined;
-    console.log({ dr_result, highlight_ids });
-    uncertaintyGraph.update(dr_result, highlight_ids);
+  function updateRadialChart(dr_result: tDRResult[]) {
+    console.log({ dr_result });
+    // this should be replaced with real ensemble scores
+    dr_result.forEach((doc) => {
+      doc.value = Math.random();
+    });
+    evaluationChart.update(dr_result, undefined);
   }
 
   onMount(() => {
-    uncertaintyGraph.init();
+    evaluationChart.init();
   });
 </script>
 
