@@ -8,6 +8,7 @@
   import { getContext } from "svelte";
   import { evaluatorState } from "./ExecutionStates.svelte";
   import EvaluatorResult from "./EvaluatorResult.svelte";
+  import EvaluatorResultRadialChart from "./EvaluatorResultRadialChart.svelte";
 
   let {
     evaluator = $bindable(),
@@ -212,6 +213,7 @@
         </div>
         {#if show_result && result !== undefined}
           <EvaluatorResult {result}></EvaluatorResult>
+          <EvaluatorResultRadialChart {result}></EvaluatorResultRadialChart>
           <!-- <div in:slide class="flex flex-col">
             {#each Object.keys(result) as state_input_key}
               <div class="flex flex-col">

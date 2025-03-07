@@ -17,7 +17,7 @@ import server.custom_types as custom_types
 import server.decomposer as decomposer
 import server.executor as executor
 import server.evaluator as evaluator
-import server.evaluator as evaluator
+
 
 app = FastAPI()
 origins = ["*"]
@@ -532,6 +532,33 @@ async def fetch_primitive_task_result(request: Request):
     return {
         "result": evaluator_result,
     }
+
+
+@app.post("/primitive_task/evaluators/result/dr/")
+async def get_dr(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+
+    data = request["data"]
+    texts = list(map(lambda x: x["content"], data))
+
+    # using OpenAI client here because the 'radial_dr' is a legacy function I copied from another project.
+    # this should be refactored to use AutoGen in the future.
+    openai_client = OpenAI(api_key=api_key)
+    clusters, cluster_orders, cluster_topics, all_angles = executor.radial_dr(
+        texts, openai_client
+    )
+
+    for i, datum in enumerate(data):
+        data[i]["cluster"] = cluster_orders[clusters[i]]
+        data[i]["cluster_label"] = cluster_topics[clusters[i]]
+        data[i]["angle"] = all_angles[i]
+        # this should be replaced by the actual evaluation results
+        data[i]["value"] = random.random()
+
+    return data
 
 
 @app.get("/dev/semantic_task/plan/")

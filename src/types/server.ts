@@ -98,3 +98,10 @@ export type tExecutionEvaluatorParams = {
       documents: Record<string, any>;
     }
   }
+
+  export type tDRResult = {
+    cluster: string;
+    cluster_label: string;
+    angle: number;
+    value: number;
+  }
