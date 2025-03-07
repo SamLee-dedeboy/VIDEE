@@ -38,7 +38,7 @@ export class DAG {
         this.handleClick = () => {}
         this.updateGlobalLinks = undefined
     }
-    init (updateGlobalLinks: Function) {
+    init (updateGlobalLinks: Function=() => {}) {
         const svg = d3.select(`#${this.svgId}`)
         svg.append("g").attr("class", "next_expansion_link");
         svg.append("g").attr("class", "links");

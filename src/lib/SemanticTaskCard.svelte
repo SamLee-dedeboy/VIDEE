@@ -24,6 +24,7 @@
     handleDeleteTask = () => {},
     handleSelectPath = () => {},
     handleRegenerate = () => {},
+    handleAddChild = () => {},
     complexity_icon,
     coherence_icon,
     importance_icon,
@@ -46,6 +47,7 @@
     handleDeleteSubTasks?: Function;
     handleDeleteTask?: Function;
     handleSelectPath?: Function;
+    handleAddChild?: Function;
     complexity_icon: Snippet;
     coherence_icon: Snippet;
     importance_icon: Snippet;
@@ -285,6 +287,7 @@
               {handleSetAsNextExpansion}
               {handleSelectPath}
               {handleRegenerate}
+              {handleAddChild}
             />
           </div>
         {/if}
@@ -299,9 +302,15 @@
             class="mx-2 w-7 h-7 inline-block p-0.5 border-r border-b border-gray-300 shadow min-w-[15rem] bg-gray-50"
           />
           <div class="text-sm text-gray-400 italic mx-2">Explanation</div>
-          <span class="mx-2 overflow-auto">
-            {task.explanation}
-          </span>
+          <div class="relative grow">
+            <div
+              class="absolute left-0 right-0 top-0 bottom-[4rem] overflow-auto mx-2"
+            >
+              <span>
+                {task.explanation}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     {/if}
@@ -322,6 +331,7 @@
         {handleDeleteSubTasks}
         {handleSetAsNextExpansion}
         {handleSelectPath}
+        {handleAddChild}
       />
     </div>
   {/if}

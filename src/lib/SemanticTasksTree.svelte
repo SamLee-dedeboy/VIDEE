@@ -5,9 +5,10 @@
   import type { tSemanticTask, tNode, tControllers } from "types";
   import { DAG } from "renderer/dag";
   import SemanticTaskCard from "./SemanticTaskCard.svelte";
-  import { fly, fade, blur } from "svelte/transition";
+  import { fly, fade, blur, scale } from "svelte/transition";
   import { draggable } from "./draggable";
   import { getContext } from "svelte";
+  import AddMctNode from "./AddMCTNode.svelte";
   let {
     semantic_tasks = $bindable([]),
     next_expansion = $bindable(undefined),
@@ -48,7 +49,7 @@
     selected_semantic_task_path.map((t) => t[id_key])
   );
   let controllers: tControllers = $state({
-    show_max_value_path: false,
+    show_max_value_path: true,
     show_next_expansion: true,
     show_new_nodes: true,
     show_complexity: true,
@@ -60,6 +61,8 @@
       !streaming_states.paused &&
       !streaming_states.finished
   );
+  let adding_child = $state(false);
+  let adding_child_for: tSemanticTask | undefined = $state(undefined);
 
   $effect(() => {
     update_dag(semantic_tasks_flattened, max_value_path, controllers);
@@ -125,7 +128,10 @@
     _best_path: string[],
     _controllers: tControllers
   ) {
-    console.log("updating semantic dag:", _semantic_tasks_flattened);
+    console.log(
+      "updating semantic dag:",
+      $state.snapshot(_semantic_tasks_flattened)
+    );
     // get the bounding box of each task card
     const semantic_task_divs: NodeListOf<HTMLElement> =
       document.querySelectorAll(".semantic-task-card-container");
@@ -181,17 +187,52 @@
 
   // TODO: decide how a task should be initialized: Should we allow adding a task during Monte Carlo Tree search?
   // handlers with server-side updates
-  function handleAddTask() {
-    semantic_tasks.push({
-      id: Math.random().toString(),
-      label: "New Task",
-      description: "New Task Description",
-      explanation: "N/A",
-      parentIds: [],
-      sub_tasks: [],
+  // function handleAddTask() {
+  // semantic_tasks.push({
+  //   id: Math.random().toString(),
+  //   label: "New Task",
+  //   description: "New Task Description",
+  //   explanation: "N/A",
+  //   parentIds: [],
+  //   sub_tasks: [],
+  //   children: [],
+  // });
+  // update_with_server();
+  // }
+
+  function addChild(name: string, description: string, task: tSemanticTask) {
+    const new_task: tSemanticTask = {
+      id: "" + (+task.level + 1),
+      parentIds: [task.id],
       children: [],
-    });
-    update_with_server();
+      sub_tasks: [],
+      new_node: false,
+      level: +task.level + 1,
+      llm_evaluation: {
+        complexity: true,
+        coherence: true,
+        importance: true,
+      },
+      user_evaluation: {
+        complexity: true,
+        coherence: true,
+        importance: true,
+      },
+      value: 1.0,
+      visits: 0,
+      path_value: task.path_value,
+      MCT_id: task.MCT_children_ids.length.toString(),
+      label: name,
+      description: description,
+      explanation: "N/A",
+      MCT_parent_id: task[id_key],
+      MCT_children_ids: [],
+    };
+    adding_child = false;
+    adding_child_for = undefined;
+    semantic_tasks.push(new_task);
+    task.MCT_children_ids.push(new_task[id_key]);
+    // update_with_server();
   }
 
   function handleDeleteTask(task: tSemanticTask) {
@@ -238,7 +279,7 @@
       );
     }
 
-    update_with_server();
+    // update_with_server();
   }
 
   function handleDecompose(task: tSemanticTask) {
@@ -310,7 +351,7 @@
       paused: false,
       finished: false,
     };
-    update_with_server();
+    // update_with_server();
   }
 
   function trace_path(
@@ -331,22 +372,22 @@
     return path;
   }
 
-  function update_with_server() {
-    fetch(`${server_address}/semantic_task/update/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ semantic_tasks, session_id }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
+  // function update_with_server() {
+  //   fetch(`${server_address}/semantic_task/update/`, {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({ semantic_tasks, session_id }),
+  //   })
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       console.log(data);
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error:", error);
+  //     });
+  // }
 
   onMount(() => {
     dag_renderer.init();
@@ -393,14 +434,14 @@
         </span>
       </span>
     </span>
-    <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
+    <!-- <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
         class="flex items-center justify-center p-0.5 hover:bg-orange-300 rounded-full outline-2 outline-gray-800"
-        onclick={handleAddTask}
+        onclick={() => (adding_task = true)}
       >
         <img src="plus.svg" alt="add" class="w-4 h-4" />
       </button>
-    </div>
+    </div> -->
   </div>
 
   <!-- style:height={Math.max(
@@ -408,6 +449,28 @@
       1000
     ) + "px"} -->
   <div class="relative bg-gray-50 flex flex-col gap-y-1 grow">
+    {#if adding_child && adding_child_for}
+      <div
+        in:fade={{ duration: 100 }}
+        class="absolute left-0 right-0 bottom-0 top-0 z-30"
+      >
+        <div
+          class="absolute left-0 right-0 bottom-0 top-0 bg-gray-200 opacity-50"
+        ></div>
+        <div
+          class="absolute left-1/2 top-1/4 -translate-x-1/2 -translate-y-1/4 p-2 flex flex-col min-w-[15rem] min-h-[15rem] bg-orange-50 outline-2 outline-orange-100"
+        >
+          <AddMctNode
+            {adding_child_for}
+            handleAddChild={addChild}
+            handleCancel={() => {
+              adding_child = false;
+              adding_child_for = undefined;
+            }}
+          />
+        </div>
+      </div>
+    {/if}
     {#if decomposing_goal}
       <div
         class="absolute top-0 left-0 right-0 flex items-center justify-center"
@@ -535,6 +598,10 @@
             {handleRegenerate}
             {handleDecompose}
             {handleToggleShowSubTasks}
+            handleAddChild={() => {
+              adding_child = true;
+              adding_child_for = task;
+            }}
             {handleDeleteTask}
             {handleSelectPath}
             handleToggleExpand={() => handleToggleExpand(task[id_key])}

@@ -9,6 +9,7 @@
     handleDeleteTask = () => {},
     handleDeleteSubTasks = () => {},
     handleSelectPath = () => {},
+    handleAddChild = () => {},
   }: {
     task: tSemanticTask;
     handleSetAsNextExpansion: Function;
@@ -17,6 +18,7 @@
     handleDeleteTask: Function;
     handleDeleteSubTasks: Function;
     handleSelectPath: Function;
+    handleAddChild: Function;
   } = $props();
 </script>
 
@@ -37,6 +39,12 @@
     onclick={() => handleRegenerate(task)}
   >
     Try Again
+  </button>
+  <button
+    class="action-button border-y-2 border-x-1 border-orange-300 bg-orange-100 hover:bg-orange-200 ml-auto right-0"
+    onclick={() => handleAddChild(task)}
+  >
+    Add Child
   </button>
   <button
     class="action-button border-y-2 border-x-1 border-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
