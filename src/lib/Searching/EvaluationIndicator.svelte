@@ -82,7 +82,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .input-box:empty:before {
     content: "Why do you think this is good/bad?";
     cursor: text;

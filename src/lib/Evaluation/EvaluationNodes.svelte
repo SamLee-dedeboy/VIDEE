@@ -6,11 +6,11 @@
     tNode,
   } from "types";
   import ExecutionEvaluatorCard from "./ExecutionEvaluatorCard.svelte";
-  import AddExecutionEvaluator from "./AddExecutionEvaluator.svelte";
+  import AddExecutionEvaluator from "../Execution/AddExecutionEvaluator.svelte";
   import { server_address } from "constants";
   import * as d3 from "d3";
   import { DAG } from "renderer/dag";
-  import { evaluatorState } from "./ExecutionStates.svelte";
+  import { evaluatorState } from "../ExecutionStates.svelte";
   let {
     // evaluators = $bindable([]),
     tasks,
@@ -257,7 +257,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .disabled {
     @apply opacity-50 pointer-events-none;
   }

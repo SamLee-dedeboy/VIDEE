@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { tSemanticTask } from "types";
   import { slide, scale } from "svelte/transition";
-  import EvaluationIndicator from "./EvaluationIndicator.svelte";
+  import EvaluationIndicator from "../Searching/EvaluationIndicator.svelte";
   let {
     task,
     task_options,
@@ -237,7 +237,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .container:hover > .more-actions {
     @apply flex flex-wrap;
   }

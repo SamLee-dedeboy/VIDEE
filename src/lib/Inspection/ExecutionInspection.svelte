@@ -65,16 +65,3 @@
   <!-- <ExecutionEvaluators --bg-color="#ffedd4" tasks={semantic_tasks}
   ></ExecutionEvaluators> -->
 </div>
-
-<style lang="postcss">
-  @reference "../app.css";
-  .header-2 {
-    @apply text-lg font-bold font-mono text-slate-600 px-1 cursor-pointer hover:bg-gray-100 flex items-center justify-center border-b-2 border-gray-200 hover:border-2;
-  }
-  .header-3 {
-    @apply text-lg font-bold font-mono text-slate-600 px-1 cursor-pointer hover:bg-gray-200 flex items-center justify-center outline-gray-200;
-  }
-  .disabled {
-    @apply text-gray-400  pointer-events-none opacity-50;
-  }
-</style>

@@ -9,7 +9,7 @@
   import { server_address } from "constants";
   import { getContext } from "svelte";
   import PromptTemplate from "./PromptTemplate.svelte";
-  import { primitiveTaskState } from "./ExecutionStates.svelte";
+  import { primitiveTaskState } from "../ExecutionStates.svelte";
   let {
     task,
     // handleUpdatePrimitiveTask,
@@ -247,7 +247,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .header-2 {
     @apply text-lg font-bold font-mono text-slate-600 bg-blue-100 px-1 cursor-pointer hover:bg-blue-200 flex items-center;
   }

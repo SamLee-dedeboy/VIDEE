@@ -12,13 +12,13 @@
   import * as d3 from "d3";
   import { getContext, setContext, tick } from "svelte";
   import PrimitiveTasks from "./PrimitiveTasks.svelte";
-  import SemanticTaskPlan from "./SemanticTaskPlan.svelte";
-  import EvaluationNodes from "./EvaluationNodes.svelte";
+  import SemanticTaskPlan from "../Plan/SemanticTaskPlan.svelte";
+  import EvaluationNodes from "../Evaluation/EvaluationNodes.svelte";
   import {
     evaluatorState,
     primitiveTaskState,
     semanticTaskPlanState,
-  } from "./ExecutionStates.svelte";
+  } from "../ExecutionStates.svelte";
   let {
     // plans
     decomposing_goal,
@@ -265,7 +265,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .plane {
   }
   .disabled {

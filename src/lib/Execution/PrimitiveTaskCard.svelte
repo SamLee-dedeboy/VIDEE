@@ -191,7 +191,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .container:hover > .more-actions {
     @apply flex flex-wrap;
   }

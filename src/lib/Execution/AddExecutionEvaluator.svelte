@@ -60,7 +60,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .disabled {
     @apply pointer-events-none opacity-50;
   }

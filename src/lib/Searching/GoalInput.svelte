@@ -73,7 +73,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .disabled {
     @apply cursor-not-allowed bg-gray-300 outline-gray-200 opacity-50;
   }

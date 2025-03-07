@@ -1,5 +1,4 @@
 <script lang="ts">
-  import SemanticTasksTree from "lib/SemanticTasksTree.svelte";
   import { server_address } from "constants";
   import { onMount, setContext } from "svelte";
   import type {
@@ -15,10 +14,11 @@
     primitiveTaskExecutionStates,
     semanticTaskPlanState,
   } from "lib/ExecutionStates.svelte";
-  import GoalInput from "lib/GoalInput.svelte";
-  import SemanticTaskTreeInspection from "lib/SemanticTaskTreeInspection.svelte";
-  import ExecutionInspection from "lib/ExecutionInspection.svelte";
-  import Execution from "lib/Execution.svelte";
+  import GoalInput from "lib/Searching/GoalInput.svelte";
+  import SemanticTaskTreeInspection from "lib/Inspection/SemanticTaskTreeInspection.svelte";
+  import ExecutionInspection from "lib/Inspection/ExecutionInspection.svelte";
+  import Execution from "lib/Execution/Execution.svelte";
+  import SemanticTasksTree from "lib/Searching/SemanticTasksTree.svelte";
   let session_id: string | undefined = $state(undefined);
   setContext("session_id", () => session_id);
   let decomposing_goal = $state(false);
@@ -488,6 +488,7 @@
 </main>
 
 <style lang="postcss">
+  @reference "tailwindcss";
   .disabled {
     @apply !opacity-50 pointer-events-none;
   }

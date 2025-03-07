@@ -7,9 +7,9 @@
   import DocumentCard from "./DocumentCard.svelte";
   import { server_address } from "constants";
   import { getContext } from "svelte";
-  import { evaluatorState } from "./ExecutionStates.svelte";
-  import EvaluatorResult from "./EvaluatorResult.svelte";
-  import EvaluatorResultRadialChart from "./EvaluatorResultRadialChart.svelte";
+  import { evaluatorState } from "../ExecutionStates.svelte";
+  import EvaluatorResult from "../Evaluation/EvaluatorResult.svelte";
+  import EvaluatorResultRadialChart from "../Evaluation/EvaluatorResultRadialChart.svelte";
 
   let {
     evaluator = $bindable(),
@@ -246,7 +246,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .header-2 {
     @apply text-lg font-bold font-mono text-slate-600 bg-emerald-50 px-1 cursor-pointer hover:bg-emerald-100 flex items-center;
   }

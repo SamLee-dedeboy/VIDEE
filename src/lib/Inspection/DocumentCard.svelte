@@ -59,7 +59,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .doc-content {
     @apply italic text-sm text-gray-600 pl-1;
   }

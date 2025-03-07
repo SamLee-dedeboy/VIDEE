@@ -13,12 +13,12 @@
   import { DAG } from "renderer/dag";
   import PrimitiveTaskCard from "./PrimitiveTaskCard.svelte";
   import { fly, fade, blur } from "svelte/transition";
-  import { draggable } from "./draggable";
+  import { draggable } from "../draggable";
   import { getContext } from "svelte";
   import {
     primitiveTaskState,
     primitiveTaskExecutionStates,
-  } from "./ExecutionStates.svelte";
+  } from "../ExecutionStates.svelte";
   let {
     converting,
     compiling,
@@ -273,7 +273,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .disabled {
     @apply opacity-50 pointer-events-none;
   }

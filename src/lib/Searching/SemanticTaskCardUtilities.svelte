@@ -73,7 +73,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
 
   .action-button {
     @apply px-1 py-0.5 text-sm font-mono;

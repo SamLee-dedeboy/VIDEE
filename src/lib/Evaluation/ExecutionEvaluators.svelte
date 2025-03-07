@@ -8,7 +8,7 @@
     tPrimitiveTaskDescription,
     tSemanticTaskDescription,
   } from "types";
-  import AddExecutionEvaluator from "./AddExecutionEvaluator.svelte";
+  import AddExecutionEvaluator from "../Execution/AddExecutionEvaluator.svelte";
 
   let {
     tasks,
@@ -109,7 +109,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .header-1 {
     background-color: var(--bg-color);
   }

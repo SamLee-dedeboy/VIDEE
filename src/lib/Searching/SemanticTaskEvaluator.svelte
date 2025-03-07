@@ -55,7 +55,7 @@
         </div>
       </div>
       <div class="flex flex-col">
-        <div class="header-3">User Inputs</div>
+        <div class="header-3">User Changes</div>
         <div
           class="flex gap-x-2 items-center bg-slate-100 border-b border-slate-300"
         >
@@ -123,7 +123,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .container.expanded {
     @apply border-l-8 border-slate-400 shadow-[0px_1px_1px_1px_gray];
   }

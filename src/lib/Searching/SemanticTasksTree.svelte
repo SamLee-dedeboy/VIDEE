@@ -6,7 +6,7 @@
   import { DAG } from "renderer/dag";
   import SemanticTaskCard from "./SemanticTaskCard.svelte";
   import { fly, fade, blur, scale } from "svelte/transition";
-  import { draggable } from "./draggable";
+  import { draggable } from "../draggable";
   import { getContext } from "svelte";
   import AddMctNode from "./AddMCTNode.svelte";
   let {
@@ -550,6 +550,7 @@
         <button
           class="evaluation-legend complexity"
           class:inactive={!controllers.show_complexity}
+          class:no-interaction={true}
           onclick={() =>
             (controllers.show_complexity = !controllers.show_complexity)}
         >
@@ -559,6 +560,7 @@
         <button
           class="evaluation-legend coherence"
           class:inactive={!controllers.show_coherence}
+          class:no-interaction={true}
           onclick={() =>
             (controllers.show_coherence = !controllers.show_coherence)}
         >
@@ -568,6 +570,7 @@
         <button
           class="evaluation-legend importance"
           class:inactive={!controllers.show_importance}
+          class:no-interaction={true}
           onclick={() =>
             (controllers.show_importance = !controllers.show_importance)}
         >
@@ -627,13 +630,16 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .info-trigger:hover > .info {
     @apply scale-100;
     transition: all 0.3s;
   }
   .evaluation-legend {
     @apply flex items-center px-2 py-1 rounded bg-white outline-2 outline-slate-700 text-xs text-slate-700 gap-x-1 max-w-[7.5rem];
+  }
+  .evaluation-legend.no-interaction {
+    @apply pointer-events-none outline-none !bg-[unset] px-0;
   }
   .disabled {
     @apply pointer-events-none opacity-50;

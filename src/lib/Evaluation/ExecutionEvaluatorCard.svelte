@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { tExecutionEvaluator } from "types";
   import { slide } from "svelte/transition";
-  import { primitiveTaskExecutionStates } from "./ExecutionStates.svelte";
+  import { primitiveTaskExecutionStates } from "../ExecutionStates.svelte";
   let {
     evaluator = $bindable(),
     expand,
@@ -122,7 +122,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .container:hover > .more-actions {
     @apply flex flex-wrap;
   }

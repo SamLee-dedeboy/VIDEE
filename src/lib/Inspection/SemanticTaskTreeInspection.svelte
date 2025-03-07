@@ -8,7 +8,7 @@
     tPrimitiveTaskExecution,
   } from "types";
   import { getContext } from "svelte";
-  import Evaluator from "./Evaluator.svelte";
+  import Evaluator from "../Searching/SemanticTaskEvaluator.svelte";
   import DatasetInspection from "./DatasetInspection.svelte";
   let { few_shot_examples }: { few_shot_examples: Record<string, any> } =
     $props();
@@ -113,7 +113,7 @@
 </div>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .header-2 {
     @apply text-lg font-bold font-mono text-slate-600 px-1 cursor-pointer hover:bg-gray-100 flex items-center border-b-2 border-slate-200 hover:border-2;
   }

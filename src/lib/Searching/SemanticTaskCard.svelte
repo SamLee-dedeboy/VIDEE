@@ -345,7 +345,7 @@
 </svg>
 
 <style lang="postcss">
-  @reference "../app.css";
+  @reference "tailwindcss";
   .regenerating:before {
     content: "";
     position: absolute;
