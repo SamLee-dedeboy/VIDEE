@@ -138,11 +138,10 @@ def segmentation_tool(doc: Dict[str, Any],
         Dictionary containing the segments
     """
     try:
-        if content_key not in doc:
-            logging.warning(f"Content key '{content_key}' not found in document")
-            return {output_key: []}
-
         text = doc[content_key]
+        if content_key not in doc:
+            logging.warning(f"Content key '{content_key}' not found in document, force to use the entire doc for segmentation")
+            text = str(doc)
         if not text or not isinstance(text, str):
             return {output_key: []}
 

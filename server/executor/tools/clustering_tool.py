@@ -13,18 +13,18 @@ class ClusteringModel:
     def __init__(self, **kwargs):
         self.model = None
         self.kwargs = kwargs
-    
+
     def fit_predict(self, data: np.ndarray) -> np.ndarray:
         raise NotImplementedError
 
 class KMeansCluster(ClusteringModel):
     """
     Performs K-Means clustering to partition doc (embeddings) into k clusters.
-    
+
     Some prompting Notes for planning
     - we need the execution plan to give the number of clusters in advance
     - could be used with document categorization with known categories
-    
+
     Expected input:
     - list of docs represented by embeddings vectors
 
@@ -33,7 +33,7 @@ class KMeansCluster(ClusteringModel):
     def fit_predict(self, data: np.ndarray) -> np.ndarray:
         n_clusters = min(self.kwargs.get('n_clusters', 3), len(data))
         self.model = KMeans(
-            n_clusters=n_clusters, 
+            n_clusters=n_clusters,
             random_state=self.kwargs.get('random_state', 42),
             n_init=self.kwargs.get('n_init', 10)
         )
@@ -47,10 +47,10 @@ class DBSCANCluster(ClusteringModel):
     Some prompting Notes for planning
     - Suitable for discovering clusters of arbitrary shape.
     - the plan does not need to specify the number of clusters in advance.
-    
+
     Expected input:
     - list of docs represented by embeddings vectors
-    
+
     Output labels
     """
     def fit_predict(self, data: np.ndarray) -> np.ndarray:
@@ -85,10 +85,10 @@ class AgglomerativeCluster(ClusteringModel):
 class GaussianMixtureCluster(ClusteringModel):
     """
     Performs clustering using GMM
-    
+
     Some prompting Notes for planning
     - Suitable when clusters may overlap.
-    
+
     Expected input:
     - list of docs represented by embeddings vectors
 
@@ -146,7 +146,7 @@ class BERTopicCluster(ClusteringModel):
     """
     def fit_predict(self, data: np.ndarray) -> np.ndarray:
         # For BERTopic, we need original text if available
-        original_docs = self.kwargs.get('original_docs', None)
+        original_docs = self.kwargs.get('original_docs', [])
 
         # BERTopic parameters
         min_topic_size = self.kwargs.get('min_topic_size', 2)
@@ -158,7 +158,7 @@ class BERTopicCluster(ClusteringModel):
             # Fallback to a simpler clustering algorithm for very small datasets
             fallback = KMeansCluster(n_clusters=min(2, len(data)))
             return fallback.fit_predict(data)
-        
+
         try:
             # Initialize the model with customized UMAP parameters for small datasets
             from umap import UMAP
@@ -169,7 +169,7 @@ class BERTopicCluster(ClusteringModel):
                 min_dist=0.0,
                 metric='cosine'
             )
-            
+
             # Create HDBSCAN model with appropriate parameters
             hdbscan_model = HDBSCAN(
                 min_cluster_size=min(2, len(data)),
@@ -189,7 +189,7 @@ class BERTopicCluster(ClusteringModel):
                 return np.array(topics)
             topics, _ = self.model.fit_transform([""] * len(data), embeddings=data)
             return np.array(topics)
-            
+
         except Exception as e:
             logging.error(f"BERTopic error: {e}")
             # Fallback to a simpler clustering algorithm!
@@ -214,11 +214,11 @@ def register_clustering_model(name: str, model_class: type):
 def evaluate_clustering(data: np.ndarray, labels: np.ndarray) -> Dict[str, float]:
     """
     Evaluate clustering quality with metrics, I _think_ this could be helpful for our evaluator
-    
+
     Args:
         data: Feature vectors used for clustering
         labels: Cluster assignments from the clustering algorithm
-        
+
     Returns:
         Dictionary of metric names and values
     """
@@ -229,13 +229,13 @@ def evaluate_clustering(data: np.ndarray, labels: np.ndarray) -> Dict[str, float
             metrics['silhouette_score'] = silhouette_score(data, labels)
         except Exception as e:
             logging.warning(f"Error calculating silhouette score: {e}")
-    
+
     # Add more metrics if needed
-    
+
     return metrics
 
-def clustering_tool(inputs: List[Dict[str, Any]], 
-                   n_clusters: int = 3, 
+def clustering_tool(inputs: List[Dict[str, Any]],
+                   n_clusters: int = 3,
                    feature_key: str = "embedding",
                    algorithm: str = "kmeans",
                    return_metrics: bool = False,
@@ -259,51 +259,67 @@ def clustering_tool(inputs: List[Dict[str, Any]],
     try:
         # Extract feature vectors from inputs
         data = [i.get(feature_key, []) for i in inputs]
-        
+
         # For BERTopic, we might need original texts
         if algorithm == 'bertopic':
             # original doc content
             content_key = kwargs.get('content_key', 'content')
             if content_key in inputs[0]:
                 kwargs['original_docs'] = [i.get(content_key, "") for i in inputs]
-        
+
         # Filter out empty vectors
         valid_indices = [i for i, vec in enumerate(data) if vec]
         valid_data = [data[i] for i in valid_indices]
-        
+
+        # there's no valid embedding, generate it!
+        if (len(valid_data) == 0
+                or not (isinstance(valid_data[0], list) and len(valid_data[0]) > 0)
+                or not isinstance(valid_data[0][0], (int, float))
+        ):
+            # original doc content
+            content_key = kwargs.get('content_key', 'content')
+            if content_key in inputs[0]:
+                kwargs['original_docs'] = [i.get(content_key, "") for i in inputs]
+            else:
+                kwargs['original_docs'] = [str(obj) for obj in inputs]
+            from sentence_transformers import SentenceTransformer
+            embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            valid_data = [embedding_model.encode(doc) for doc in kwargs['original_docs']]
+            valid_indices = [i for i in range(len(valid_data))]
+
         if not valid_data:
             logging.warning(f"No valid feature vectors found with key: {feature_key}")
             return [0] * len(inputs)  # Default to cluster 0
-            
+
         data_array = np.array(valid_data)
-        
+
         # Check if algorithm exists, if not let's default to kmeans..
         if algorithm not in _CLUSTERING_MODELS:
             logging.warning(f"Unknown clustering algorithm: {algorithm}, falling back to kmeans")
             algorithm = "kmeans"
-        
+
         # Create clustering model
         kwargs['n_clusters'] = n_clusters
         model = _CLUSTERING_MODELS[algorithm](**kwargs)
-        
+
         # Perform clustering
         valid_labels = model.fit_predict(data_array)
-        
+
         # Create result array with same length as inputs
         result = [0] * len(inputs)  # Default to cluster 0
         for idx, valid_idx in enumerate(valid_indices):
             result[valid_idx] = int(valid_labels[idx])
-        
+
         # If only labels are requested
         if not return_metrics:
             return result
-            
+
         # Build extended result if requested, for example, evaluation metrics..
         output = {'labels': result}
-        
+
         if return_metrics:
             output['metrics'] = evaluate_clustering(data_array, valid_labels)
-        
+
         return output
     except Exception as e:
         logging.error(f"Error in clustering_tool: {e}")

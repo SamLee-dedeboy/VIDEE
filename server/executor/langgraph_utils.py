@@ -107,6 +107,8 @@ async def execution_plan(
             input_keys = await autogen_utils.run_input_key_generation_agent(
                 primitive_task, [], model=model, api_key=api_key
             )
+            existing_key_names = [k["key"] if isinstance(k, dict) else k for k in existing_keys]
+            input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
 
         # Handle local tools tasks differently
         if primitive_task["label"] == "Data Transformation":
@@ -250,7 +252,7 @@ async def execution_plan(
 
         # Default to using prompt_generation_agent for other tasks
         prompt_structured = await autogen_utils.run_prompt_generation_agent(
-            primitive_task, input_keys, model=model, api_key=api_key
+            primitive_task, input_key_names, model=model, api_key=api_key
         )
         # extract output key from JSON format
         try:
@@ -275,8 +277,8 @@ async def execution_plan(
         except ValueError as e:
             print(e)
             output_key = primitive_task["label"] + "_output"
-        existing_keys.append(output_key)
-
+        # existing_keys.append(output_key)
+        existing_keys.append({"key": output_key, "schema": "Any"})
         # replace {} in the JSON format with {{}}
         prompt_structured["JSON_format"] = (
             prompt_structured["JSON_format"].replace("{", "{{").replace("}", "}}")
@@ -302,14 +304,14 @@ async def execution_plan(
             },
             {
                 "role": "human",
-                "content": "\n".join([f"{key}: {{{key}}}" for key in input_keys]),
+                "content": "\n".join([f"{key}: {{{key}}}" for key in input_key_names]),
             },
         ]
         plan.append(
             {
                 **primitive_task,
                 "state_input_key": current_state_key,
-                "doc_input_keys": input_keys,
+                "doc_input_keys": input_key_names,
                 "state_output_key": output_key,
                 "execution": {
                     "tool": "prompt_tool",
@@ -662,7 +664,7 @@ def convert_spec_to_chain(spec):
         )
     elif spec["tool"] == "clustering_tool":
         n_clusters = spec["parameters"].get("n_clusters", 3)
-        feature_key = spec["parameters"].get("feature_key", "embedding")
+        feature_key = spec["parameters"].get("feature_key", "content")
         algorithm = spec["parameters"].get("algorithm", "kmeans")
         return RunnableLambda(
             lambda inputs: clustering_tool(
@@ -683,7 +685,7 @@ def convert_spec_to_chain(spec):
     # Dimension Reduction Tool
     elif spec["tool"] == "dim_reduction_tool":
         algorithm = spec["parameters"].get("algorithm", "pca")
-        feature_key = spec["parameters"].get("feature_key", "embedding")
+        feature_key = spec["parameters"].get("feature_key", "content")
         n_components = spec["parameters"].get("n_components", 2)
         # Extract any other parameters for specific algorithms
         extra_params = {k: v for k, v in spec["parameters"].items()
@@ -927,7 +929,7 @@ def create_clustering_plan(
     parameters = {
         "name": primitive_task["label"],
         "algorithm": algorithm or default_algorithm,
-        "feature_key": "embedding",
+        "feature_key": config_params.get("feature_key", "content"),
         "n_clusters": 3,  # Default number of clusters
         "input_key_schemas": input_key_schemas,
         "output_schema": default_output_schema
@@ -1005,7 +1007,7 @@ def create_dim_reduction_plan(
     parameters = {
         "name": primitive_task["label"],
         "algorithm": algorithm or default_algorithm,
-        "feature_key": "embedding",  # Default feature key
+        "feature_key": config_params.get("feature_key", "content"),
         "n_components": 2,  # Default number of dimensions to reduce to
         "input_key_schemas": input_key_schemas,
         "output_schema": default_output_schema
@@ -1084,7 +1086,7 @@ def create_embedding_plan(
         "name": primitive_task["label"],
         "provider": provider or default_provider,
         "model": default_model,
-        "feature_key": "content",  # Default feature key
+        "feature_key": config_params.get("feature_key", "content"),
         "input_key_schemas": input_key_schemas,
         "output_schema": default_output_schema
     }

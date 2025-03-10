@@ -668,6 +668,7 @@ async def run_input_key_generation_agent(
         ** Task **
         The user will describe a task for you, and what data is available in the dataset. Your task is to pick the keys that are required from the dataset to complete the task, along with their detailed schema definition.
         ** Requirements **
+        You MUST only select keys from the <existing_keys></existing_keys> block. No additional keys outside this list can be used.
         Reply with this JSON format:
             {
                "required_keys": [
@@ -1016,10 +1017,12 @@ async def run_clustering_plan_agent(
         ** Task **
         The user will describe a clustering task. You need to create a clustering configuration
         that includes the algorithm to use and the parameters for that algorithm.
-
+        You also need to determine which feature_key to use for clustering, based on available keys from available input keys and their schema
+        
         ** Note **
         The input data needs to contain embeddings (vector representations) for effective clustering.
         You need to specify which feature to use for clustering (typically "embedding").
+        You have to output one and only one feature_key, You MUST only select feature_key from the available input keys list. No additional keys outside this list can be used.
 
         ** IMPORTANT: Available Clustering Algorithms **
         Choose ONE of these algorithms based on the task requirements:
@@ -1073,7 +1076,7 @@ async def run_clustering_plan_agent(
             "algorithm": "kmeans" | "dbscan" | "agglomerative" | "gaussian_mixture" | "hdbscan" | "bertopic",
             "parameters": {
                 // Parameters specific to the chosen algorithm
-                "feature_key": str,  // Feature to use for clustering (e.g., "embedding")
+                "feature_key": str,  // Feature to use for clustering
                 // Additional algorithm-specific parameters
             },
             "output_schema": {
@@ -1159,10 +1162,12 @@ async def run_dim_reduction_plan_agent(
         ** Task **
         The user will describe a dimensionality reduction task. You need to create a configuration
         that includes the algorithm to use and the parameters for that algorithm.
+        You also need to determine which feature_key to use for dimensionality reduction, based on available keys from available input keys and their schema
 
         ** Note **
         The input data needs to contain high-dimensional embeddings that need to be reduced to lower dimensions.
         You need to specify which feature to use (typically "embedding") and the number of dimensions to reduce to.
+        You have to output one and only one feature_key, You MUST only select feature_key from the available input keys list. No additional keys outside this list can be used.
 
         ** IMPORTANT: Available Dimensionality Reduction Algorithms **
         Choose ONE of these algorithms based on the task requirements:
@@ -1285,10 +1290,12 @@ async def run_embedding_plan_agent(
         ** Task **
         The user will describe an embedding task. You need to create a configuration
         that includes the embedding model to use and the parameters for that model.
+        You also need to determine which feature_key to use for embedding, based on available keys from available input keys and their schema
 
         ** Note **
         Embeddings convert text into dense vector representations that capture semantic meaning.
         You need to specify which text field to embed (typically "content") and which embedding model to use.
+        You have to output one and only one feature_key, You MUST only select feature_key from the available input keys list. No additional keys outside this list can be used.
 
         ** IMPORTANT: Available Embedding Providers and Models **
         Choose a provider and model combination based on the task requirements:
@@ -1396,10 +1403,12 @@ async def run_segmentation_plan_agent(
         ** Context **
         You are an expert in text segmentation for document processing.
         You will create a configuration for segmenting text documents based on the task description.
+        You also need to determine which feature_key to use for segmentation, based on available keys from available input keys and their schema        
         
         ** Task **
         The user will describe a segmentation task. You need to create a configuration
         that includes the segmentation strategy and the parameters for that strategy.
+        You have to output one and only one feature_key, You MUST only select feature_key from the available input keys list. No additional keys outside this list can be used.
 
         ** Note **
         Text segmentation divides long documents into smaller, manageable chunks.

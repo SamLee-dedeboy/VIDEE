@@ -122,8 +122,9 @@ def embedding_tool(doc: Dict[str, Any], api_key: str = None, model: str = "text-
     try:
         text = doc[feature_key]
         if not text or not isinstance(text, str):
-            logging.warning(f"Invalid text in document for key {feature_key}")
-            return []
+            logging.warning(f"Invalid text in document for key {feature_key}, force to use the input object for embedding")
+            # original doc content
+            text = str(doc)
 
         if provider not in _PROVIDERS:
             logging.error(f"Unknown embedding provider: {provider}")
@@ -163,7 +164,10 @@ def batch_embedding_tool(docs: List[Dict[str, Any]], api_key: str = None, model:
         texts = [t for t in texts if t and isinstance(t, str)]
 
         if not texts:
-            return [[] for _ in docs]
+            logging.warning(
+                f"Invalid text in document for key {feature_key}, force to use the input object for embedding")
+            # original doc content
+            texts = [str(doc) for doc in docs]
 
         if provider not in _PROVIDERS:
             logging.error(f"Unknown embedding provider: {provider}")
