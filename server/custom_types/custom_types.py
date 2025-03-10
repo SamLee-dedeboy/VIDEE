@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import TypedDict, Annotated
+from typing import TypedDict, Annotated, Any
 from typing import Optional
 
 
@@ -48,6 +48,7 @@ class MCT_Node(Node):
 class BaseStateSchema(TypedDict):
     documents: Annotated[list, lambda a, b: b]
     entities: list
+    transformed_data: dict[str, Any]
 
 
 class PrimitiveTaskDescription(BaseModel):

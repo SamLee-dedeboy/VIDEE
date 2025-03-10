@@ -1,0 +1,72 @@
+[
+    {
+        "solves": "1",
+        "label": "Data Transformation",
+        "id": "Word Counting-1",
+        "description": "Analyze the document to count the number of distinct words present. This involves tokenizing the text and using a set to filter out duplicates.",
+        "explanation": "This task is needed to provide the distinct word count, which is essential for generating a summary object based on that count.",
+        "parentIds": [],
+        "children": [
+            "Summary Creation-1"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content"
+        ],
+        "input_key_schemas": {
+            "content": "str"
+        },
+        "state_output_key": "transformed_data",
+        "execution": {
+            "tool": "data_transform_tool",
+            "parameters": {
+                "name": "Data Transformation",
+                "operation": "reduce",
+                "output_schema": {
+                    "distinct_word_count": "int"
+                },
+                "reduce_code": "def reduce_data(data):\n    distinct_words = set()\n    for item in data:\n        words = item.get('content', '').split()  # Tokenizing the text\n        distinct_words.update(words)  # Adding words to the set to filter duplicates\n    return {\n        'distinct_word_count': len(distinct_words)\n    }"
+            }
+        }
+    },
+    {
+        "solves": "2",
+        "label": "Data Transformation",
+        "id": "Summary Creation-1",
+        "description": "Create a summary of the document based on the distinct word counts obtained from the previous task. This involves identifying key information and condensing it into a shorter format.",
+        "explanation": "This task is needed to generate a summary object that reflects the distinct word counts, providing a concise overview of the document's content.",
+        "parentIds": [
+            "Word Counting-1"
+        ],
+        "children": [],
+        "sub_tasks": [],
+        "state_input_key": "transformed_data",
+        "doc_input_keys": [
+            "transformed_data"
+        ],
+        "input_key_schemas": {
+            "transformed_data": {
+                "properties": {
+                    "distinct_word_count": "int"
+                }
+            }
+        },
+        "state_output_key": "transformed_data",
+        "execution": {
+            "tool": "data_transform_tool",
+            "parameters": {
+                "name": "Data Transformation",
+                "operation": "reduce",
+                "output_schema": {
+                    "summary": {
+                        "properties": {
+                            "total_distinct_words": "int"
+                        }
+                    }
+                },
+                "reduce_code": "def reduce_data(data):\n    total_word_count = sum(item.get('distinct_word_count', 0) for item in data)\n    return {\n        'summary': {\n            'total_distinct_words': total_word_count\n        }\n    }"
+            }
+        }
+    }
+]

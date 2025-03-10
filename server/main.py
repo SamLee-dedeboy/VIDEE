@@ -354,12 +354,20 @@ async def semantic_task_decomposition_to_primitive_task(request: Request):
     primitive_task_list = json.load(
         open(relative_path("decomposer/primitive_task_defs.json"))
     )
-    return await decomposer.one_shot_decomposition_to_primitive_task(
-        semantic_tasks=semantic_tasks,
-        primitive_task_list=primitive_task_list,
-        model=default_model,
-        api_key=api_key,
-    )
+    return json.load(
+            open(relative_path("dev_data/test_decomposed_to_primitive_task_1.json"))
+        )
+    # data= await decomposer.one_shot_decomposition_to_primitive_task(
+    #     semantic_tasks=semantic_tasks,
+    #     primitive_task_list=primitive_task_list,
+    #     model=default_model,
+    #     api_key=api_key,
+    # )
+    # save_json(
+    #     data,
+    #     relative_path("dev_data/test_decomposed_to_primitive_task_1.json"),
+    # )
+    return data
 
     async def iter_response(semantic_tasks, primitive_task_list):  # (1)
         async for (
