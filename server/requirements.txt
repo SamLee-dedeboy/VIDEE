@@ -6,12 +6,27 @@ autogen
 autogen-agentchat==0.4.5
 autogen-agentchat[gemini,retrievechat,lmm]
 autogen-ext[openai]==0.4.5
+autogen-ext[semantic-kernel-anthropic]
+
 google-genai
 vertexai
 ag2[gemini]
 langgraph
 langchain
 langchain-core
+treelib
+
 
 langchain-openai
 fastapi[standard]
+scikit-learn
+networkx
+transformers
+torch
+hdbscan
+bertopic
+umap-learn
+sentence_transformers
+matplotlib
+seaborn
+nltk

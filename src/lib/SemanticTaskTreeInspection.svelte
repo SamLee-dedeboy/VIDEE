@@ -93,9 +93,9 @@
 <div class="flex flex-col px-1 gap-y-4">
   <div class="flex flex-col gap-y-2">
     <div
-      class="text-[1.5rem] text-slate-600 font-semibold italic bg-orange-100 flex justify-center"
+      class="text-[1.5rem] text-slate-600 font-semibold italic bg-gray-100 flex justify-center"
     >
-      Dataset Inspection
+      Dataset
     </div>
     <div class="flex flex-col px-1 gap-y-1">
       <div
@@ -120,8 +120,8 @@
           {#each documents as document}
             <DocumentCard
               {document}
-              --bg-color="oklch(0.98 0.016 73.684)"
-              --bg-hover-color="oklch(0.901 0.076 70.697)"
+              --bg-color="#f8f8f8"
+              --bg-hover-color="#e3e3e3"
             />
           {/each}
         </div>
@@ -130,9 +130,9 @@
   </div>
   <div class="flex flex-col gap-y-2">
     <div
-      class="text-[1.5rem] text-slate-600 font-semibold italic bg-orange-100 flex justify-center"
+      class="text-[1.5rem] text-slate-600 font-semibold italic bg-gray-100 flex justify-center"
     >
-      Evaluators
+      Task Evaluators
     </div>
     <Evaluator
       title="Complexity"
@@ -170,6 +170,6 @@
 <style lang="postcss">
   @reference "../app.css";
   .header-2 {
-    @apply text-lg font-bold font-mono text-slate-600 px-1 cursor-pointer hover:bg-orange-100 flex items-center border-b-2 border-orange-200 hover:border-2;
+    @apply text-lg font-bold font-mono text-slate-600 px-1 cursor-pointer hover:bg-gray-100 flex items-center border-b-2 border-slate-200 hover:border-2;
   }
 </style>

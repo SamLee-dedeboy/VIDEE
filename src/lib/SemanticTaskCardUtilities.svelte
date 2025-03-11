@@ -4,15 +4,19 @@
   let {
     task,
     handleSetAsNextExpansion = () => {},
+    handleRegenerate = () => {},
     handleDecompose = () => {},
     handleDeleteTask = () => {},
     handleDeleteSubTasks = () => {},
+    handleSelectPath = () => {},
   }: {
     task: tSemanticTask;
     handleSetAsNextExpansion: Function;
     handleDecompose: Function;
+    handleRegenerate: Function;
     handleDeleteTask: Function;
     handleDeleteSubTasks: Function;
+    handleSelectPath: Function;
   } = $props();
 </script>
 
@@ -29,18 +33,34 @@
     onclick={() => handleDecompose(task)}>Decompose</button
   > -->
   <button
+    class="action-button border-y-2 border-x-1 border-blue-300 bg-blue-100 hover:bg-blue-200 ml-auto right-0"
+    onclick={() => handleRegenerate(task)}
+  >
+    Try Again
+  </button>
+  <button
     class="action-button border-y-2 border-x-1 border-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
     onclick={() => handleDeleteTask(task)}
   >
     Delete
   </button>
-  <button
+  <!-- <button
     class="action-button border-y-2 border-l-1 border-r-2 border-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
     class:disabled={task.sub_tasks === undefined || task.sub_tasks.length === 0}
     tabindex="0"
     onclick={() => handleDeleteSubTasks(task)}
   >
     Delete SubTasks
+  </button> -->
+  <button
+    class="action-button border-2 border-black bg-[#fbfaec] hover:bg-orange-100 ml-auto right-0"
+    tabindex="0"
+    onclick={() => {
+      console.log("Choose Path clicked", task);
+      handleSelectPath(task);
+    }}
+  >
+    Choose Path
   </button>
 </div>
 

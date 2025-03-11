@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { server_address } from "constants";
+  import { evaluation_colors, server_address } from "constants";
   import * as d3 from "d3";
   import { onMount, tick } from "svelte";
   import type { tSemanticTask, tNode, tControllers } from "types";
@@ -11,10 +11,14 @@
   let {
     semantic_tasks = $bindable([]),
     next_expansion = $bindable(undefined),
-    streaming_states,
-    max_value_path,
+    streaming_states = $bindable({
+      started: false,
+      paused: false,
+      finished: false,
+    }),
+    selected_semantic_task_path = $bindable([]),
     decomposing_goal,
-    handleConvert,
+    handleRegenerate = () => {},
   }: {
     semantic_tasks: tSemanticTask[];
     next_expansion: tSemanticTask | undefined;
@@ -23,9 +27,9 @@
       paused: boolean;
       finished: boolean;
     };
-    max_value_path: [string[], number];
+    selected_semantic_task_path: tSemanticTask[];
     decomposing_goal: boolean;
-    handleConvert: Function;
+    handleRegenerate: Function;
   } = $props();
   const session_id = (getContext("session_id") as Function)();
   const id_key = "MCT_id"; // id key for the semantic task
@@ -40,6 +44,9 @@
   let semantic_tasks_flattened: tSemanticTask[] = $derived(
     flatten(semantic_tasks, semantic_tasks_show_sub_tasks)
   );
+  let max_value_path: string[] = $derived(
+    selected_semantic_task_path.map((t) => t[id_key])
+  );
   let controllers: tControllers = $state({
     show_max_value_path: false,
     show_next_expansion: true,
@@ -53,7 +60,6 @@
       !streaming_states.paused &&
       !streaming_states.finished
   );
-  let hovered_task_id: string = $state("");
 
   $effect(() => {
     update_dag(semantic_tasks_flattened, max_value_path, controllers);
@@ -116,7 +122,7 @@
    */
   async function update_dag(
     _semantic_tasks_flattened: tSemanticTask[],
-    _max_value_path: [string[], number],
+    _best_path: string[],
     _controllers: tControllers
   ) {
     console.log("updating semantic dag:", _semantic_tasks_flattened);
@@ -133,10 +139,8 @@
           ? 1
           : d3.zoomTransform(d3.select(`#${svgId}`).node()).k;
       return {
-        id: node_data["MCT_id"],
-        parentIds: node_data["MCT_parent_id"]
-          ? [node_data["MCT_parent_id"]]
-          : [],
+        id: node_data.MCT_id,
+        parentIds: node_data.MCT_parent_id ? [node_data.MCT_parent_id] : [],
         data: node_data,
         bbox: {
           ...div.getBoundingClientRect(),
@@ -147,12 +151,7 @@
     });
 
     // call renderer
-    dag_renderer.update(
-      dag_data,
-      semantic_tasks_show_sub_tasks,
-      _max_value_path[0],
-      _controllers
-    );
+    dag_renderer.update(dag_data, _best_path, _controllers, true);
   }
 
   // UI handlers
@@ -222,11 +221,11 @@
     // }
 
     // delete this node from its parent's children_ids
-    const parent = task_dict[task["MCT_parent_id"]];
+    const parent = task_dict[task.MCT_parent_id];
     parent.MCT_children_ids = parent.MCT_children_ids.filter(
       (id) => id !== task[id_key]
     );
-    task_dict[task["MCT_parent_id"]] = parent;
+    task_dict[task.MCT_parent_id] = parent;
 
     // delete the branch in the Monte Carlo Tree
     let queue = [task];
@@ -239,14 +238,6 @@
       );
     }
 
-    update_with_server();
-  }
-
-  function handleDeleteSubTasks(task: tSemanticTask) {
-    task.sub_tasks = [];
-    semantic_tasks = semantic_tasks.map((_task) =>
-      _task.id === task.id ? task : _task
-    );
     update_with_server();
   }
 
@@ -275,26 +266,53 @@
 
   function handleTaskHovered(task_id: string, hovered: boolean) {
     const hovered_path_ids = hovered ? trace_path(semantic_tasks, task_id) : [];
-    update_hovered_path(hovered_path_ids);
+    update_hovered_path(hovered_path_ids, hovered);
     dag_renderer.update_links(
       controllers.show_max_value_path
-        ? hovered_path_ids.concat(max_value_path[0])
+        ? hovered_path_ids.concat(max_value_path)
         : hovered_path_ids,
       true
     );
   }
 
-  function update_hovered_path(path_ids: string[]) {
+  function update_hovered_path(path_ids: string[], hovered: boolean) {
     document
       .querySelectorAll(".semantic-task-card-container")
       .forEach((div) => {
         const id = (div as HTMLElement).dataset.id || "";
-        div.classList.remove("on-hovered-path");
-        if (path_ids.includes(id)) {
-          div.classList.add("on-hovered-path");
+        if (hovered) {
+          div.classList.add("not-on-hovered-path");
+          if (path_ids.includes(id)) {
+            div.classList.remove("not-on-hovered-path");
+            div.classList.add("on-hovered-path");
+          }
+        } else {
+          div.classList.remove("not-on-hovered-path");
+          div.classList.remove("on-hovered-path");
         }
       });
   }
+
+  function handleSelectPath(task: tSemanticTask) {
+    console.log("handle select path", task);
+    const path_ids = trace_path(semantic_tasks, task[id_key]);
+    selected_semantic_task_path = path_ids.map(
+      (id) => semantic_tasks.find((task) => task[id_key] === id)!
+    );
+  }
+
+  function handleClear() {
+    selected_semantic_task_path = [];
+    semantic_tasks = [];
+    next_expansion = undefined;
+    streaming_states = {
+      started: false,
+      paused: false,
+      finished: false,
+    };
+    update_with_server();
+  }
+
   function trace_path(
     _semantic_tasks: tSemanticTask[],
     task_id: string
@@ -333,6 +351,9 @@
   onMount(() => {
     dag_renderer.init();
     update_dag(semantic_tasks, max_value_path, controllers);
+    evaluation_colors.create_color_scale_legend(
+      document.querySelector(".color-scale-legend")
+    );
   });
 </script>
 
@@ -348,12 +369,29 @@
   <img src="cpu.svg" alt="importance" class="pointer-events-none" />
 {/snippet}
 
-<div class="flex flex-col grow">
+<div class="flex flex-col gap-y-1 grow">
   <div class="relative bg-orange-100 w-full flex justify-center z-10">
-    <span
-      class="canvas-header text-[1.5rem] text-slate-600 font-semibold italic"
-    >
-      Semantic Tasks
+    <span class="flex">
+      <span
+        class="canvas-header text-[1.5rem] text-slate-600 font-semibold italic relative"
+      >
+        Searching Tree
+        <span
+          class="info-trigger cursor-help absolute w-max text-sm left-[calc(100%+1rem)] bottom-0 flex flex-col gap-y-2"
+        >
+          <div class="flex items-center gap-x-1 underline relative">
+            <img src="info.svg" class="w-5 h-5" alt="info" />What is
+            Exploitation vs. Exploration?
+          </div>
+          <div
+            class="info scale-0 absolute top-[calc(100%+0.15rem)] left-[1.5rem] flex flex-wrap min-w-[15rem] max-w-[20rem] text-sm mt-[-0.15rem] pt-[0.15rem]"
+          >
+            <span class="outline-2 outline-slate-700 p-2 rounded bg-gray-50">
+              Explain Exploitation vs. Exploration in more detail...
+            </span>
+          </div>
+        </span>
+      </span>
     </span>
     <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
@@ -399,7 +437,15 @@
         Next Expansion
       </button>
       <button
-        class="new-node-legend text-orange-900 font-mono absolute text-xs left-[calc(50%+8rem)] top-2 -translate-x-1/2 px-2 py-1 rounded bg-orange-200"
+        class="best-path-legend text-orange-900 font-mono font-bold absolute text-xs left-[calc(50%+8.1rem)] top-1.5 -translate-x-1/2 px-2 py-1 rounded bg-[#fbfaec] border-3 border-black"
+        class:inactive={!controllers.show_max_value_path}
+        onclick={() =>
+          (controllers.show_max_value_path = !controllers.show_max_value_path)}
+      >
+        Best Path
+      </button>
+      <button
+        class="new-node-legend font-bold text-orange-900 font-mono absolute text-xs left-[calc(50%-8rem)] top-2 -translate-x-1/2 px-2 py-1 rounded outline-2 outline-orange-900 bg-[#fbfaec]"
         class:inactive={!controllers.show_new_nodes}
         onclick={() => {
           controllers.show_new_nodes = !controllers.show_new_nodes;
@@ -408,32 +454,34 @@
         New Nodes
       </button>
       <button
-        class="best-path-legend text-orange-900 font-mono font-bold absolute text-xs left-[calc(50%-8.1rem)] top-1.5 -translate-x-1/2 px-2 py-1 rounded bg-[#fbfaec] border-3 border-black"
-        class:inactive={!controllers.show_max_value_path}
-        onclick={() =>
-          (controllers.show_max_value_path = !controllers.show_max_value_path)}
+        class="clear-button font-bold text-slate-500 font-mono absolute text-xs right-0 top-2 -translate-x-1/2 px-2 py-1 rounded outline-2 outline-gray-300 bg-gray-50 hover:bg-gray-200"
+        class:inactive={!controllers.show_new_nodes}
+        onclick={handleClear}
       >
-        Best Path
+        Clear
       </button>
       <div
         class="evaluation-legends-container absolute left-2 top-2 px-2 py-1 rouned flex flex-col gap-y-2"
       >
-        <div class="flex justify-around gap-x-1 italic">
+        <div class="px-2 w-[12rem] h-[1rem]">
+          <svg class="color-scale-legend w-full h-full overflow-visible"></svg>
+        </div>
+        <div class="flex justify-between gap-x-1 italic mt-1">
           <div
             class="flex text-xs items-center gap-x-1 text-slate-600 select-none"
           >
             <svg class="w-6 h-6" viewBox="0 0 10 10">
-              <circle cx="5" cy="5" r="5" fill="lightgreen" />
+              <circle cx="5" cy="5" r="5" fill={evaluation_colors.bad} />
             </svg>
-            <span>Good</span>
+            <span>Bad</span>
           </div>
           <div
             class="flex text-xs items-center gap-x-1 text-slate-600 select-none"
           >
             <svg class="w-6 h-6" viewBox="0 0 10 10">
-              <circle cx="5" cy="5" r="5" fill="#ffa2a2" />
+              <circle cx="5" cy="5" r="5" fill={evaluation_colors.good} />
             </svg>
-            <span>Bad</span>
+            <span>Good</span>
           </div>
         </div>
         <button
@@ -484,10 +532,11 @@
             show_explanation={task_card_show_explanation.includes(task[id_key])}
             handleSetAsNextExpansion={() => handleSetAsNextExpansion(task)}
             {handleTaskHovered}
+            {handleRegenerate}
             {handleDecompose}
-            {handleDeleteSubTasks}
             {handleToggleShowSubTasks}
             {handleDeleteTask}
+            {handleSelectPath}
             handleToggleExpand={() => handleToggleExpand(task[id_key])}
             handleToggleExplain={() => handleToggleExplain(task[id_key])}
             {complexity_icon}
@@ -497,7 +546,7 @@
         </div>
       {/each}
     </div>
-    {#if semantic_tasks_flattened.length > 0}
+    <!-- {#if semantic_tasks_flattened.length > 0}
       <button
         class="self-end py-1 mx-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10"
         tabindex="0"
@@ -506,14 +555,18 @@
       >
         Convert
       </button>
-    {/if}
+    {/if} -->
   </div>
 </div>
 
 <style lang="postcss">
   @reference "../app.css";
+  .info-trigger:hover > .info {
+    @apply scale-100;
+    transition: all 0.3s;
+  }
   .evaluation-legend {
-    @apply flex items-center px-2 py-1 rounded bg-white outline-2 outline-slate-700 text-xs text-slate-700 gap-x-1;
+    @apply flex items-center px-2 py-1 rounded bg-white outline-2 outline-slate-700 text-xs text-slate-700 gap-x-1 max-w-[7.5rem];
   }
   .disabled {
     @apply pointer-events-none opacity-50;
@@ -526,5 +579,16 @@
   .next-expansion-legend:hover,
   .evaluation-legend:hover {
     @apply scale-110 transition-all;
+  }
+  .new-node-legend::before {
+    content: "";
+    position: absolute;
+    right: calc(100% + 4px);
+    top: 4px;
+    width: 5px;
+    height: 5px;
+    background-color: #7e2a0c;
+    border-radius: 50%;
+    transform: translateY(-50%);
   }
 </style>

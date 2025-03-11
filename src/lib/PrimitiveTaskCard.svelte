@@ -29,86 +29,93 @@
 </script>
 
 <div
-  class="task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline outline-2 outline-blue-100 bg-[#F2F8FD] shadow rounded relative flex gap-y-1 gap-x-2"
+  class="container task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline-2 outline-blue-100 bg-[#F2F8FD] shadow rounded relative flex gap-y-1 gap-x-2"
 >
   {#if compiling}
-    <div
-      class="absolute top-0 bottom-0 left-0 right-0 flex items-center justify-center"
-    >
-      <div
-        class="absolute top-0 bottom-0 left-0 right-0 opacity-50 bg-slate-200"
-      ></div>
-      <img src="loader_circle.svg" class="w-8 h-8 animate-spin" alt="loading" />
+    <div class="absolute bottom-[calc(100%+3px)] left-0 flex items-end gap-x-1">
+      <img
+        src="loader_circle.svg"
+        alt="loading"
+        class="w-6 h-6 animate-spin opacity-80"
+      />
+      <span class="text-sm animate-pulse italic text-gray-500">
+        compiling...
+      </span>
     </div>
   {/if}
   <div class="flex flex-col grow px-2 gap-y-2">
     <div
       class="border-b border-gray-300 text-[1.2rem] italic flex items-center"
+      style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
     >
       <span class="card-label mr-2 capitalize">{task.label}</span>
-      <!-- <span
-        tabindex="0"
-        role="button"
-        class="ml-auto right-0 mb-0.5 shrink-0 w-7 p-1 self-stretch flex cursor-pointer hover:!bg-gray-200 rounded"
-        style:background-color={expand ? "rgb(187 247 208)" : "unset"}
-        onclick={() => {
-          expand = !expand;
-        }}
-        onkeyup={() => {}}
+      <button
+        class="shrink-0 ml-auto cursor-pointer hover:bg-blue-300 p-0.5 rounded"
+        onclick={() => handleToggleExpand(task.id)}
+        ><img
+          src="panel_top_open_blue.svg"
+          alt="more"
+          class="w-6 h-6"
+        /></button
       >
-        {#if expand}
-          <img src="panel_left_close.svg" class="" alt="collapse" />
-        {:else}
-          <img src="panel_left_open.svg" class="" alt="expand" />
-        {/if}
-      </span> -->
     </div>
-    <div in:slide class="border-b border-gray-300 flex flex-col min-w-[15rem]">
-      <div class="text-sm text-gray-400 italic">Description</div>
-      {task.description}
-    </div>
-    <div class="flex flex-col justify-between gap-y-2 mt-1">
-      <div class="flex gap-x-2">
-        <button
-          class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
-          class:disabled={!executable}
-          onclick={() => handleExecute(task)}>Execute</button
-        >
-        <button
-          class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"
-          onclick={() => handleInspectTask(task)}>Inspect</button
-        >
-        <div
-          role="button"
-          tabindex="0"
-          class={`action-trigger action-button ml-auto flex justify-center outline outline-gray-200 bg-green-100 hover:bg-green-300 relative cursor-pointer`}
-          class:showing-actions={show_actions}
-          onclick={() => (show_actions = !show_actions)}
-          onkeyup={() => {}}
-        >
-          More Actions
-          {#if show_actions}
-            <div
-              class="more-actions absolute top-[calc(100%+5px)] left-1/2 -translate-x-1/2"
-            >
-              <div class="flex gap-x-2">
-                <button
-                  class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
-                  >Edit</button
-                >
-                <button
-                  class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
-                  onclick={() => handleDeleteTask(task)}
-                >
-                  <!-- <img src="close.svg" alt="x" /> -->
-                  Delete
-                </button>
+    {#if expand}
+      <div
+        in:slide
+        class="border-b border-gray-300 flex flex-col min-w-[15rem]"
+      >
+        <div class="text-sm text-gray-400 italic">Description</div>
+        {task.description}
+      </div>
+      <div class="flex flex-col justify-between gap-y-2 mt-1">
+        <div class="flex gap-x-2">
+          <button
+            class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
+            class:disabled={!executable}
+            onclick={() => handleExecute(task)}>Execute</button
+          >
+          <button
+            class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"
+            onclick={() => handleInspectTask(task)}>Inspect</button
+          >
+          <button
+            class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+            onclick={() => handleDeleteTask(task)}
+          >
+            <!-- <img src="close.svg" alt="x" /> -->
+            Delete
+          </button>
+          <!-- <div
+            role="button"
+            tabindex="0"
+            class={`action-trigger action-button ml-auto flex justify-center outline outline-gray-200 bg-green-100 hover:bg-green-300 relative cursor-pointer`}
+            class:showing-actions={show_actions}
+            onclick={() => (show_actions = !show_actions)}
+            onkeyup={() => {}}
+          >
+            More Actions
+            {#if show_actions}
+              <div
+                class="more-actions absolute top-[calc(100%+5px)] left-1/2 -translate-x-1/2"
+              >
+                <div class="flex gap-x-2">
+                  <button
+                    class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
+                    >Edit</button
+                  >
+                  <button
+                    class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+                    onclick={() => handleDeleteTask(task)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-            </div>
-          {/if}
+            {/if}
+          </div> -->
         </div>
       </div>
-    </div>
+    {/if}
   </div>
   {#if expand}
     <div
@@ -124,111 +131,45 @@
         <span class="mx-2 overflow-auto">
           {task.explanation}
         </span>
-        <button
-          class="p-0.5 bg-blue-200 mt-auto hover:bg-blue-400"
-          onclick={() => handleToggleExpand(task.id)}
-        >
-          <img
-            src="chevron_left.svg"
-            class="mt-0.5 w-5 h-4 pointer-events-none"
-            alt="handle"
-          />
-        </button>
       </div>
     </div>
   {/if}
-  {#if false}
+  {#if !expand}
     <div
-      class="flex flex-col absolute left-[100.7%] top-0 bottom-0 bg-[#F2F8FD] border-r-2 border-y-2 border-blue-100"
+      in:slide
+      class="more-actions hidden absolute top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
     >
-      <div class="flex divide-x divide-white py-0.5">
-        <div in:slide class="flex flex-col text-xs min-w-[15rem] max-w-[20rem]">
-          <div class="flex text-lg justify-center">Input/Output Format</div>
-          {#if compiling}
-            <div class="self-center h-full flex items-center">Compiling...</div>
-          {:else if task.execution === undefined}
-            <div class="self-center h-full flex items-center">
-              Needs Compilation
-            </div>
-          {:else}
-            <div class="flex items-center gap-x-2 px-1">
-              <div class="option-label">State Input Key</div>
-              <div class="flex items-center justify-center option-value">
-                {task.state_input_key}
-              </div>
-            </div>
-            <div class="flex flex-col px-1">
-              <div class="option-label">Doc Input Keys</div>
-              {#if task.doc_input_keys}
-                <div class="flex gap-x-2">
-                  {#each task.doc_input_keys as input_key}
-                    <div class="option-value">
-                      {input_key}
-                    </div>
-                  {/each}
-                </div>
-              {/if}
-            </div>
-            <div class="flex px-1 items-center gap-x-2">
-              <div class="option-label">State Output Key</div>
-              <div class="flex">
-                <div class="option-value">
-                  {task.state_output_key}
-                </div>
-              </div>
-            </div>
-          {/if}
-        </div>
-        <div in:slide class="flex flex-col min-w-[15rem] text-xs">
-          <div class="flex text-lg justify-center">Execution</div>
-          {#if compiling}
-            <div class="self-center h-full flex items-center">Compiling...</div>
-          {:else if task.execution === undefined}
-            <div class="self-center h-full flex items-center">
-              Needs Compilation
-            </div>
-          {:else}
-            <div class="flex items-center gap-x-2">
-              <div class="option-label">Tool:</div>
-              <div class="flex items-center justify-center option-value">
-                {task.execution?.tool || "N/A"}
-              </div>
-            </div>
-            <div class="flex flex-col">
-              <div class="option-label">Parameters:</div>
-              {#each Object.keys(task.execution?.parameters || {}) as key}
-                {#if key !== "api_key"}
-                  <div class="flex items-center gap-x-2 gap-y-1">
-                    <div class="option-label min-w-[3rem]">{key}:</div>
-                    <div
-                      class="flex items-center justify-center option-value !my-0 max-w-[10rem] overflow-scroll"
-                    >
-                      {task.execution?.parameters[key]}
-                    </div>
-                  </div>
-                {/if}
-              {/each}
-            </div>
-          {/if}
-        </div>
+      <div class="flex gap-x-2">
+        <button
+          class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
+          class:disabled={!executable}
+          onclick={() => handleExecute(task)}>Execute</button
+        >
+        <button
+          class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"
+          onclick={() => handleInspectTask(task)}>Inspect</button
+        >
+        <!-- <button
+          class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
+          >Edit</button
+        > -->
+        <button
+          class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
+          onclick={() => handleDeleteTask(task)}
+        >
+          <!-- <img src="close.svg" alt="x" /> -->
+          Delete
+        </button>
       </div>
-      <button
-        class="p-0.5 bg-blue-200 mt-auto hover:bg-blue-400"
-        onclick={() => handleToggleExpand(task.id)}
-      >
-        <img
-          src="chevron_left.svg"
-          class="mt-0.5 w-5 h-4 pointer-events-none"
-          alt="handle"
-        />
-      </button>
     </div>
   {/if}
 </div>
 
 <style lang="postcss">
   @reference "../app.css";
-
+  .container:hover > .more-actions {
+    @apply flex flex-wrap;
+  }
   .option-label {
     @apply text-gray-500 italic;
   }

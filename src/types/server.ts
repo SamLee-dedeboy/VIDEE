@@ -8,6 +8,7 @@ export type tMCT_Node = {
     MCT_id: string;
     MCT_parent_id: string;
     MCT_children_ids: string[];
+    new_node: boolean;
     level: number;
     llm_evaluation: {
         complexity: boolean;
@@ -21,6 +22,7 @@ export type tMCT_Node = {
     }
     value: number;
     visits: number;
+    path_value: number;
 }
 
 export type tSemanticTaskDescription = {
@@ -35,6 +37,7 @@ export type tSemanticTaskDescription = {
 } 
 export type tSemanticTask = tSemanticTaskDescription & tMCT_Node
 
+export type tPrimitiveTask = tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution> 
 export type tPrimitiveTaskDescription = {
     id: string;
     label: string;
@@ -42,11 +45,10 @@ export type tPrimitiveTaskDescription = {
     explanation: string;
     parentIds: string[];
     children: string[];
-    confidence: number;
-    complexity: number;
+    solves: string;
 }
 
-export type tPrimitiveTaskExecution = tPrimitiveTaskDescription & {
+export type tPrimitiveTaskExecution = {
     state_input_key: string,
     doc_input_keys: string[],
     state_output_key: any,
@@ -60,4 +62,31 @@ export type tExecutionState = {
     executable: boolean,
 }
 
-export type tTask = tSemanticTask | tPrimitiveTaskDescription | tPrimitiveTaskExecution
+export type tTask = tSemanticTask | tPrimitiveTask
+
+export type tExecutionEvaluator = {
+    name: string;
+    definition: string;
+    task: string;
+  } & Partial<tExecutionEvaluatorParams>;
+
+export type tExecutionEvaluatorParams = {
+    state_input_key: string;
+    doc_input_keys: string[];
+    state_output_key: string;
+    parameters: {
+      name: string;
+      model: string;
+      format: string;
+      prompt_template: [
+        {
+          role: string;
+          content: string;
+        },
+        {
+          role: string;
+          content: string;
+        },
+      ];
+    };
+  };

@@ -1,0 +1,152 @@
+[
+    {
+        "solves": "1",
+        "label": "Label Generation",
+        "id": "Label Generation-1",
+        "description": "Create a structured codebook that categorizes themes from transcripts, identifying key themes and their definitions.",
+        "explanation": "This task is needed to establish a framework for annotating the transcripts, ensuring consistency in theme identification.",
+        "parentIds": [],
+        "children": [
+            "Entity Extraction-1"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content"
+        ],
+        "state_output_key": "themes",
+        "execution": {
+            "tool": "prompt_tool",
+            "parameters": {
+                "name": "Label Generation",
+                "model": "gpt-4o-mini",
+                "api_key": "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",
+                "format": "json",
+                "prompt_template": [
+                    {
+                        "role": "system",
+                        "content": "\n                    ** Context **\n                    You are tasked with generating a structured codebook that categorizes themes from the provided transcripts. This involves identifying key themes and providing definitions for each theme to ensure consistency in theme identification.\n                    ** Task **\n                    Analyze the content of the transcripts to extract and categorize key themes. For each theme identified, provide a clear definition that explains its significance and context within the transcripts.\n                    ** Requirements **\n                    Ensure that the themes are distinct and comprehensive, covering all relevant aspects of the transcripts. The output should be structured in a way that allows for easy reference and annotation.\n                    Reply with the following JSON format:\n                    {{ \"themes\": [ {{ \"theme_name\": str, \"definition\": str }} ] }}\n                    "
+                    },
+                    {
+                        "role": "human",
+                        "content": "content: {content}"
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "solves": "2",
+        "label": "Entity Extraction",
+        "id": "Entity Extraction-1",
+        "description": "Annotate the transcripts by identifying and categorizing relevant themes based on the developed codebook.",
+        "explanation": "This task is necessary to systematically label the transcripts with themes, which will facilitate further analysis.",
+        "parentIds": [
+            "Label Generation-1"
+        ],
+        "children": [
+            "Clustering Analysis-1"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content",
+            "themes"
+        ],
+        "state_output_key": "entities",
+        "execution": {
+            "tool": "prompt_tool",
+            "parameters": {
+                "name": "Entity Extraction",
+                "model": "gpt-4o-mini",
+                "api_key": "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",
+                "format": "json",
+                "prompt_template": [
+                    {
+                        "role": "system",
+                        "content": "\n                    ** Context **\n                    You are tasked with annotating transcripts by identifying and categorizing relevant themes based on a developed codebook. This will help in systematically labeling the transcripts for further analysis.\n                    ** Task **\n                    Analyze the provided content to extract entities and categorize them according to the specified themes. Ensure that each identified entity is linked to the appropriate theme from the codebook.\n                    ** Requirements **\n                    Focus on accuracy in theme categorization and ensure that all relevant entities are extracted. Provide clear annotations for each entity identified.\n                    Reply with the following JSON format:\n                    {{ \"entities\": [ {{ \"entity\": \"string\", \"theme\": \"string\" }} ] }}\n                    "
+                    },
+                    {
+                        "role": "human",
+                        "content": "content: {content}\nthemes: {themes}"
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "solves": "3",
+        "label": "Clustering Analysis",
+        "id": "Clustering Analysis-1",
+        "description": "Categorize the annotated themes into higher-level themes by grouping similar themes together.",
+        "explanation": "This task helps in identifying overarching themes from the detailed annotations, providing a clearer structure for analysis.",
+        "parentIds": [
+            "Entity Extraction-1"
+        ],
+        "children": [
+            "Clustering Analysis-2"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "themes"
+        ],
+        "state_output_key": "higher_level_themes",
+        "execution": {
+            "tool": "prompt_tool",
+            "parameters": {
+                "name": "Clustering Analysis",
+                "model": "gpt-4o-mini",
+                "api_key": "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",
+                "format": "json",
+                "prompt_template": [
+                    {
+                        "role": "system",
+                        "content": "\n                    ** Context **\n                    You are tasked with categorizing the annotated themes into higher-level themes by grouping similar themes together. This will help in identifying overarching themes from the detailed annotations.\n                    ** Task **\n                    Analyze the provided themes and identify clusters of similar themes. Group these themes into higher-level categories that represent broader concepts.\n                    ** Requirements **\n                    Ensure that the clustering is based on thematic similarities and that the resulting higher-level themes are clearly defined and distinct from one another.\n                    Reply with the following JSON format:\n                    {{ \"higher_level_themes\": [ {{ \"theme\": \"string\", \"sub_themes\": [\"string\", \"string\"] }} ] }}\n                    "
+                    },
+                    {
+                        "role": "human",
+                        "content": "themes: {themes}"
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "solves": "4",
+        "label": "Clustering Analysis",
+        "id": "Clustering Analysis-2",
+        "description": "Analyze the categorized themes for patterns and insights by examining the clusters formed in the previous step.",
+        "explanation": "This task is essential for deriving insights and understanding the relationships between different themes, which can inform further research or decision-making.",
+        "parentIds": [
+            "Clustering Analysis-1"
+        ],
+        "children": [],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "themes",
+            "higher_level_themes"
+        ],
+        "state_output_key": "insights",
+        "execution": {
+            "tool": "prompt_tool",
+            "parameters": {
+                "name": "Clustering Analysis",
+                "model": "gpt-4o-mini",
+                "api_key": "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",
+                "format": "json",
+                "prompt_template": [
+                    {
+                        "role": "system",
+                        "content": "\n                    ** Context **\n                    You are tasked with analyzing the categorized themes from the provided text to identify patterns and insights. This analysis will help in understanding the relationships between different themes, which is crucial for informing further research or decision-making.\n                    ** Task **\n                    Examine the themes and higher-level themes to identify any clusters or patterns that emerge. Look for connections, similarities, and differences among the themes, and summarize the insights gained from this clustering analysis.\n                    ** Requirements **\n                    Focus on the relationships between themes and higher-level themes. Provide a detailed analysis that highlights key patterns and insights, and ensure that the analysis is clear and actionable.\n                    Reply with the following JSON format:\n                    {{ \"insights\": [ {{ \"pattern\": str, \"themes_related\": [str], \"summary\": str }} ] }}\n                    "
+                    },
+                    {
+                        "role": "human",
+                        "content": "themes: {themes}\nhigher_level_themes: {higher_level_themes}"
+                    }
+                ]
+            }
+        }
+    }
+]

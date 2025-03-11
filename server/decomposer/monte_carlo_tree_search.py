@@ -12,12 +12,13 @@ MAX_STEPS = 10
 
 def init_MCTS():
     root = MCT_Node(
-        id="root",
+        id="0",
         label="Root",
         MCT_id="-1",
         print_label="Root",
         description="Root node",
         explanation="Root node",
+        new_node=False,
         parentIds=[],
         MCT_parent_id=None,
     )
@@ -46,7 +47,7 @@ async def stream_MCTS(
 ):
     try:
         while True:
-            root = await MCTS_step(
+            root, node_dict = await MCTS_step(
                 root,
                 node_dict,
                 next_selection=next_selection,
@@ -58,7 +59,7 @@ async def stream_MCTS(
             )
             next_selection = select(root, node_dict)
             max_value_path = get_max_value_path(root, node_dict)
-            yield root, next_selection, max_value_path
+            yield root, node_dict, next_selection, max_value_path
             if all_END(root, node_dict):
                 yield root, None, None
     except Exception as e:
@@ -76,31 +77,99 @@ async def MCTS_step(
     next_selection=None,
     eval_definitions=None,
     eval_few_shot_examples=[],
-) -> MCT_Node:
+) -> tuple[MCT_Node, dict]:
+    # update node status
+    for node_id, node in node_dict.items():
+        node_dict[node_id].new_node = False
+
+    # select a node to expand
+    if next_selection is None:
+        node = select(root, node_dict)
+    else:
+        node = node_dict[next_selection.MCT_id]
+    # expand the node with children
+    children = await expand(node, node_dict, goal, model, api_key)
+    # run evaluation on *ALL* the children
+    reward_value_list = await reward(
+        goal,
+        children,
+        node_dict,
+        model=model,
+        api_key=api_key,
+        eval_definitions=eval_definitions,
+        eval_few_shot_examples=eval_few_shot_examples,
+    )
+    # backpropagate the reward values
+    for child, reward_value in zip(children, reward_value_list):
+        backpropagate(child, reward_value, node_dict)
+    return root, node_dict
+    # try:
+    # except Exception as e:
+    #     print(f"Error in MCTS_step: {e}")
+    #     raise e
+    #     return root
+
+
+async def MCTS_regenerate(
+    root: MCT_Node,
+    target_node: MCT_Node,
+    node_dict: dict,
+    goal: str,
+    model: str,
+    api_key: str,
+    eval_definitions=None,
+    eval_few_shot_examples=[],
+):
     try:
-        # select a node to expand
-        if next_selection is None:
-            node = select(root, node_dict)
-        else:
-            node = node_dict[next_selection.MCT_id]
-        # expand the node with children
-        children = await expand(node, node_dict, goal, model, api_key)
-        # run evaluation on *ALL* the children
-        reward_value_list = await reward(
+        # update node status
+        for node_id, node in node_dict.items():
+            node_dict[node_id].new_node = False
+        parent_node = node_dict[target_node.MCT_parent_id]
+        node_dict = remove_branch(target_node, node_dict)
+
+        previous_steps = get_previous_steps(parent_node, node_dict)
+        new_generation = await query.run_goal_decomposition_agent_stepped(
             goal,
-            children,
+            previous_steps,
+            model=model,
+            api_key=api_key,
+            temperature=1.0,
+            n=1,
+            remain_steps=MAX_STEPS - parent_node.level,
+        )
+        new_generation = new_generation[0]
+        new_generation_as_MCT_node = MCT_Node(
+            **new_generation,
+            MCT_id=target_node.MCT_id,
+            id=target_node.id,
+            print_label=f"{new_generation['label']} (0/0)",
+            MCT_parent_id=target_node.MCT_parent_id,
+            level=target_node.level,
+            new_node=True,
+        )
+        node_dict[new_generation_as_MCT_node.MCT_id] = new_generation_as_MCT_node
+        update_end_paths(parent_node, node_dict)
+
+        # evaluation
+        reward_value = await reward(
+            goal,
+            [new_generation_as_MCT_node],
             node_dict,
             model=model,
             api_key=api_key,
             eval_definitions=eval_definitions,
             eval_few_shot_examples=eval_few_shot_examples,
         )
-        # backpropagate the reward values
-        for child, reward_value in zip(children, reward_value_list):
-            backpropagate(child, reward_value, node_dict)
-        return root
+        reward_value = reward_value[0]
+        backpropagate(new_generation_as_MCT_node, reward_value, node_dict)
+
+        next_selection = select(root, node_dict)
+        max_value_path = get_max_value_path(root, node_dict)
+        return root, node_dict, next_selection, max_value_path
+
     except Exception as e:
-        print(f"Error in MCTS_step: {e}")
+        print(f"Error in MCTS_regenerate: {e}")
+        raise e
         return root
 
 
@@ -128,6 +197,7 @@ def select(node: MCT_Node, node_dict: dict) -> MCT_Node:
             )
         )
         if not candidate_children_ids:
+            print("No candidate children")
             break  # this means the MCTS simulation is finished
         node = max(
             list(map(lambda node_id: node_dict[node_id], candidate_children_ids)),
@@ -140,38 +210,32 @@ async def expand(
     parent_node: MCT_Node, node_dict: dict, goal: str, model: str, api_key: str, n=2
 ) -> MCT_Node:
     """Expands the node by adding one of its possible children"""
-
-    # new_node = MCT_Node(id=f"{parent_node.MCT_id}/{-1}", label="END", description="END", explanation="END", parentIds=[parent_node.MCT_id], MCT_id=f"{parent_node.MCT_id}/{-1}", MCT_parent_id=parent_node.MCT_id)
-    # node_dict[new_node.MCT_id] = new_node
-    # parent_node.MCT_children_ids.append(new_node.MCT_id)
-    # return new_node
     try:
         previous_steps = get_previous_steps(parent_node, node_dict)
-        if not is_END(parent_node):
-            children = await query.run_goal_decomposition_agent_stepped(
-                goal,
-                previous_steps,
-                model=model,
-                api_key=api_key,
-                temperature=1.0,
-                n=n,
-                remain_steps=MAX_STEPS - parent_node.level,
+        children = await query.run_goal_decomposition_agent_stepped(
+            goal,
+            previous_steps,
+            model=model,
+            api_key=api_key,
+            temperature=1.0,
+            n=n,
+            remain_steps=MAX_STEPS - parent_node.level,
+        )
+        for index, child_node in enumerate(children):
+            child_as_MCT_node = MCT_Node(
+                **child_node,
+                MCT_id=f"{parent_node.MCT_id}/{index}",
+                id=f"{int(parent_node.id)+1}",
+                print_label=f"{child_node['label']} (0/0)",
+                MCT_parent_id=parent_node.MCT_id,
+                level=parent_node.level + 1,
+                new_node=True,
             )
-            for index, child_node in enumerate(children):
-                child_as_MCT_node = MCT_Node(
-                    **child_node,
-                    MCT_id=f"{parent_node.MCT_id}/{index}",
-                    print_label=f"{child_node['label']} (0/0)",
-                    MCT_parent_id=parent_node.MCT_id,
-                    level=parent_node.level + 1,
-                )
-                node_dict[child_as_MCT_node.MCT_id] = child_as_MCT_node
-                parent_node.MCT_children_ids.append(child_as_MCT_node.MCT_id)
-            update_end_paths(parent_node, node_dict)
+            node_dict[child_as_MCT_node.MCT_id] = child_as_MCT_node
+            parent_node.MCT_children_ids.append(child_as_MCT_node.MCT_id)
+        update_end_paths(parent_node, node_dict)
 
-            return [node_dict[child_id] for child_id in parent_node.MCT_children_ids]
-            # return node_dict[random.choice(parent_node.MCT_children_ids)]
-        return parent_node  # No expansion if node is terminal
+        return [node_dict[child_id] for child_id in parent_node.MCT_children_ids]
     except Exception as e:
         print(f"Error in expand: {e}")
 
@@ -228,9 +292,12 @@ async def reward(
             node.user_evaluation.complexity = node.llm_evaluation.complexity
             node.user_evaluation.coherence = node.llm_evaluation.coherence
             node.user_evaluation.importance = node.llm_evaluation.importance
+            node.value = reward_value
+            node.path_value = node_dict[node.MCT_parent_id].path_value * reward_value
             reward_value_list.append(reward_value)
         return reward_value_list
     except Exception as e:
+        raise e
         print(f"Error in reward: {e}")
 
 
@@ -238,7 +305,7 @@ def backpropagate(node: MCT_Node, reward: float, node_dict: dict) -> None:
     """Updates the tree with the simulation results"""
     while node is not None:
         node.visits += 1
-        node.value += reward  # Should we do some normalization here to avoid inflation?
+        # node.value += reward  # Should we do some normalization here to avoid inflation?
         node.print_label = f"{node.label} ({node.value}/{node.visits})"
         node = node_dict[node.MCT_parent_id] if node.MCT_parent_id else None
 
@@ -285,6 +352,19 @@ def all_END(node: MCT_Node, node_dict: dict):
     if not node.MCT_children_ids:
         return is_END(node)
     return all(all_END(node_dict[child], node_dict) for child in node.MCT_children_ids)
+
+
+def remove_branch(node: MCT_Node, node_dict: dict):
+    # recursively remove the children of the node
+    removed_ids = []
+    stack = [node]
+    while stack:
+        node = stack.pop()
+        removed_ids += node.MCT_children_ids
+        stack += list(map(lambda id: node_dict[id], node.MCT_children_ids))
+    for id in removed_ids:
+        del node_dict[id]
+    return node_dict
 
 
 from treelib import Node, Tree

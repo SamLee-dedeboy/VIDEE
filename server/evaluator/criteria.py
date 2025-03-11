@@ -3,7 +3,7 @@ from autogen_agentchat.messages import TextMessage
 import asyncio
 import itertools
 from server.custom_types import MCT_Node
-from agents import get_agents, get_response, get_openai_client
+from .agents import get_agents, get_response, get_openai_client
 
 import json
 import re
@@ -33,7 +33,7 @@ def parse_result(result_text: str, flip: bool = False) -> dict:
     reasoning_match = re.search(r"<REASONING>(.*?)</REASONING>", result_text, re.DOTALL)
     if not reasoning_match:
         raise ValueError("Missing <REASONING> section in result text.")
-    
+
     result_match = re.search(r"<RESULT>(.*?)</RESULT>", result_text, re.DOTALL)
     if not result_match:
         raise ValueError("Missing <RESULT> section in result text.")
@@ -46,15 +46,15 @@ def parse_result(result_text: str, flip: bool = False) -> dict:
     elif final_result == "No":
         value = 0
     else:
-        raise ValueError(f"Unexpected <RESULT> value: '{final_result}'. Expected 'Yes' or 'No'.")
+        raise ValueError(
+            f"Unexpected <RESULT> value: '{final_result}'. Expected 'Yes' or 'No'."
+        )
 
     if flip:
         value = 1 - value
 
-    return {
-        "value": value,
-        "reason": reasoning
-    }
+    return {"value": value, "reason": reasoning}
+
 
 async def run_all_evaluations(
     goal: str,
@@ -208,19 +208,28 @@ async def run_complexity_evaluation_agent(
         if not user_reasoning:
             user_reasoning = await get_llm_reasoning(
                 criteria="complexity",
-                content=task_def_toString(MCT_Node.model_validate(example["node"]), goal),
+                content=task_def_toString(
+                    MCT_Node.model_validate(example["node"]), goal
+                ),
                 answer=example["user_evaluation"],
-                definition=complexity_definition
+                definition=complexity_definition,
             )
 
-        few_shot_messages.extend([
-            TextMessage(content=task_def_toString(MCT_Node.model_validate(example["node"]), goal), source="user"),
-            TextMessage(
-                content=f"<REASONING>{user_reasoning}</REASONING>\n"
-                        f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>", 
-                source="assistant"
-            ),
-        ])
+        few_shot_messages.extend(
+            [
+                TextMessage(
+                    content=task_def_toString(
+                        MCT_Node.model_validate(example["node"]), goal
+                    ),
+                    source="user",
+                ),
+                TextMessage(
+                    content=f"<REASONING>{user_reasoning}</REASONING>\n"
+                    f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
+                    source="assistant",
+                ),
+            ]
+        )
 
     user_message = task_def_toString(node, goal)
     messages = few_shot_messages + [TextMessage(content=user_message, source="user")]
@@ -284,23 +293,25 @@ async def run_coherence_evaluation_agent(
                     MCT_Node.model_validate(example["node"]),
                 ),
                 answer=example["user_evaluation"],
-                definition=coherence_definition
+                definition=coherence_definition,
             )
 
-        few_shot_messages.extend([
-            TextMessage(
-                content=user_message_generator(
-                    MCT_Node.model_validate(example["parent_node"]),
-                    MCT_Node.model_validate(example["node"]),
+        few_shot_messages.extend(
+            [
+                TextMessage(
+                    content=user_message_generator(
+                        MCT_Node.model_validate(example["parent_node"]),
+                        MCT_Node.model_validate(example["node"]),
+                    ),
+                    source="user",
                 ),
-                source="user"
-            ),
-            TextMessage(
-                content=f"<REASONING>{user_reasoning}</REASONING>\n"
-                        f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>", 
-                source="assistant",
-            ),
-        ])
+                TextMessage(
+                    content=f"<REASONING>{user_reasoning}</REASONING>\n"
+                    f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
+                    source="assistant",
+                ),
+            ]
+        )
 
     user_message = user_message_generator(parent_node, child_node)
     messages = few_shot_messages + [TextMessage(content=user_message, source="user")]
@@ -357,22 +368,28 @@ async def run_importance_evaluation_agent(
         if not user_reasoning:
             user_reasoning = await get_llm_reasoning(
                 criteria="importance",
-                content=user_message_generator(goal, MCT_Node.model_validate(example["node"])),
+                content=user_message_generator(
+                    goal, MCT_Node.model_validate(example["node"])
+                ),
                 answer=example["user_evaluation"],
-                definition=importance_definition
+                definition=importance_definition,
             )
 
-        few_shot_messages.extend([
-            TextMessage(
-                content=user_message_generator(goal, MCT_Node.model_validate(example["node"])),
-                source="user"
-            ),
-            TextMessage(
-                content=f"<REASONING>{user_reasoning}</REASONING>\n"
-                        f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
-                source="assistant",
-            ),
-        ])
+        few_shot_messages.extend(
+            [
+                TextMessage(
+                    content=user_message_generator(
+                        goal, MCT_Node.model_validate(example["node"])
+                    ),
+                    source="user",
+                ),
+                TextMessage(
+                    content=f"<REASONING>{user_reasoning}</REASONING>\n"
+                    f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
+                    source="assistant",
+                ),
+            ]
+        )
 
     user_message = user_message_generator(goal, node)
     messages = few_shot_messages + [TextMessage(content=user_message, source="user")]
@@ -390,12 +407,11 @@ async def run_importance_evaluation_agent(
 
 
 async def get_llm_reasoning(
-        criteria: str, 
-        content: str, 
-        answer: bool, 
-        definition: str = ""
-        ) -> str:
-    system_message = load_system_message(f"{criteria}_reasoner").format(definition=definition)
+    criteria: str, content: str, answer: bool, definition: str = ""
+) -> str:
+    system_message = load_system_message(f"{criteria}_reasoner").format(
+        definition=definition
+    )
     with open("../../model_list.yaml", "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
         model_name = data.get("reason-model", "o1")
@@ -404,14 +420,16 @@ async def get_llm_reasoning(
     if model_client is None:
         raise RuntimeError(
             "Missing OpenAI API key. Please set 'OPENAI_API_KEY' in the dot environment file '.env'."
-            )
-    
+        )
+
     answer_map = {
         "complexity": {True: "simple", False: "complex"},
         "coherence": {True: "coherent", False: "incoherent"},
         "importance": {True: "important", False: "unimportant"},
     }
-    answer_text = answer_map.get(criteria, {True: "Yes", False: "No"}).get(answer, "Unknown")
+    answer_text = answer_map.get(criteria, {True: "Yes", False: "No"}).get(
+        answer, "Unknown"
+    )
 
     prompt = f"""Given content: {content}
 
@@ -423,9 +441,11 @@ Provide a reasoning explanation:
     reasoning_agent = AssistantAgent(
         name="llm_reasoning_agent",
         model_client=model_client,
-        system_message=system_message
+        system_message=system_message,
     )
 
-    response = await get_response(reasoning_agent, [TextMessage(content=prompt, source="user")])
+    response = await get_response(
+        reasoning_agent, [TextMessage(content=prompt, source="user")]
+    )
 
     return response

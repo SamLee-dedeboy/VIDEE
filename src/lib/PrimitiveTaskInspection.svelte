@@ -8,6 +8,8 @@
   import { onMount } from "svelte";
   import { server_address } from "constants";
   import { getContext } from "svelte";
+  import ExecutionEvaluators from "./ExecutionEvaluators.svelte";
+  import PromptTemplate from "./PromptTemplate.svelte";
   let {
     task,
   }: {
@@ -43,11 +45,11 @@
   });
 </script>
 
-<div class="flex flex-col px-1">
+<div class="flex flex-col px-1 gap-y-2">
   <div
     class="text-[1.5rem] text-slate-600 font-semibold italic bg-[#f2f8fd] flex justify-center"
   >
-    Inspection
+    {task.label} - Detail
   </div>
   {#if task}
     <div class="flex flex-col px-2 gap-y-1">
@@ -59,7 +61,7 @@
             show_description = !show_description;
           }}
         >
-          {task.label}
+          Description
           <img
             src="chevron_down.svg"
             alt="expand"
@@ -173,48 +175,11 @@
                   {#if key === "api_key"}
                     <div></div>
                   {:else if key === "prompt_template"}
-                    <div
-                      class="flex flex-col border-x-2 border-t-2 border-dashed border-blue-300 shadow"
-                    >
-                      <div
-                        class="flex text-slate-500 justify-center font-mono text-lg bg-blue-50 border-b border-gray-300"
-                      >
-                        Prompt Template
-                      </div>
-                      <div class="flex">
-                        {#each value as prompt_template_message}
-                          {#if prompt_template_message.role === "system"}
-                            <div
-                              class="flex flex-[2_2_0%] flex-col gap-x-2 divide-x"
-                            >
-                              <div
-                                class="flex justify-center bg-blue-100 font-mono"
-                              >
-                                System Instruction
-                              </div>
-                              <div
-                                class="bg-blue-50 px-1 whitespace-pre-line max-h-[20rem] overflow-y-auto"
-                              >
-                                {prompt_template_message.content.trim()}
-                              </div>
-                            </div>
-                          {:else if prompt_template_message.role === "human"}
-                            <div class="flex flex-1 flex-col gap-x-2 divide-x">
-                              <div
-                                class="flex justify-center bg-orange-100 font-mono"
-                              >
-                                Input Data
-                              </div>
-                              <div
-                                class="bg-orange-50 grow px-1 whitespace-pre-line"
-                              >
-                                {prompt_template_message.content.trim()}
-                              </div>
-                            </div>
-                          {/if}
-                        {/each}
-                      </div>
-                    </div>
+                    <PromptTemplate
+                      messages={value}
+                      --bg-color="oklch(0.97 0.014 254.604)"
+                      --border-color="#bedbff"
+                    ></PromptTemplate>
                   {:else}
                     <div class="flex items-center gap-x-2">
                       <div class="italic text-gray-600 w-[3rem]">{key}</div>
@@ -270,6 +235,8 @@
       {/if}
     </div>
   {/if}
+  <!-- <ExecutionEvaluators --bg-color={"#f2f8fd"} tasks={primitive_tasks}
+  ></ExecutionEvaluators> -->
 </div>
 
 <style lang="postcss">
@@ -281,10 +248,10 @@
     @apply block;
   }
   .option-label {
-    @apply text-slate-600 bg-gray-200 w-full flex justify-center font-mono;
+    @apply text-slate-600 bg-gray-100 w-full flex justify-center font-mono text-sm;
   }
   .option-value {
-    @apply outline-1 outline-gray-300 rounded px-2 hover:bg-gray-200 transition-all cursor-pointer flex justify-center font-mono;
+    @apply outline-1 outline-gray-300 rounded px-2 hover:bg-gray-200 transition-all cursor-pointer flex justify-center font-mono text-sm;
   }
   .option:hover > .delete {
     @apply flex;

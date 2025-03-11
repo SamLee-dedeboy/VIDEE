@@ -3,10 +3,12 @@
   import { onMount, tick } from "svelte";
   import type { tSemanticTask, tNode } from "types";
   import { DAG } from "renderer/dag";
+  import * as d3 from "d3";
   import SemanticTaskCard from "./SemanticTaskCard.svelte";
   import { fly, fade, blur } from "svelte/transition";
   import { draggable } from "./draggable";
   import { getContext } from "svelte";
+  import SimpleSemanticTaskCard from "./SimpleSemanticTaskCard.svelte";
   let {
     semantic_tasks = $bindable([]),
     decomposing_goal,
@@ -29,8 +31,8 @@
   );
   let task_card_expanded: string[] = $state([]);
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
-  const svgId = "dag-svg";
-  const node_size: [number, number] = [150, 100];
+  const svgId = "plan-dag-svg";
+  const node_size: [number, number] = [500, 250];
   let dag_renderer = new DAG(
     svgId,
     node_size,
@@ -42,6 +44,9 @@
     update_dag(semantic_tasks_flattened);
   });
 
+  export function rerender_plan() {
+    update_dag(semantic_tasks_flattened);
+  }
   /**
    * Flatten the semantic tasks
    * @param _semantic_tasks
@@ -58,6 +63,7 @@
     while (queue.length) {
       let task = queue.shift()!;
       if (task.label === "END") continue;
+      if (task.label === "Root") continue;
       flattened.push(task);
       if (task?.sub_tasks && _semantic_tasks_show_sub_tasks.includes(task.id)) {
         queue.push(...task.sub_tasks);
@@ -76,22 +82,31 @@
   async function update_dag(_semantic_tasks_flattened: tSemanticTask[]) {
     console.log("updating semantic dag:", _semantic_tasks_flattened);
     // get the bounding box of each task card
-    const semantic_task_divs = document.querySelectorAll(
-      ".semantic-task-card-container"
-    );
+    const semantic_task_divs: NodeListOf<HTMLElement> =
+      document.querySelectorAll(".semantic-task-card-container");
     const dag_data: tNode[] = Array.from(semantic_task_divs).map((div) => {
       const id = (div as HTMLElement).dataset.id || "";
       const node_data: tSemanticTask = _semantic_tasks_flattened.find(
         (task) => task.id === id
       )!;
+      const transform_scale =
+        div.style.transform === ""
+          ? 1
+          : d3.zoomTransform(d3.select(`#${svgId}`).node()).k;
       return {
-        ...node_data,
-        bbox: div.getBoundingClientRect(),
+        id: node_data.id,
+        parentIds: node_data.parentIds,
+        data: node_data,
+        bbox: {
+          ...div.getBoundingClientRect(),
+          width: div.getBoundingClientRect().width / transform_scale,
+          height: div.getBoundingClientRect().height / transform_scale,
+        },
       };
     });
 
     // call renderer
-    dag_renderer.update(dag_data, semantic_tasks_show_sub_tasks);
+    dag_renderer.update(dag_data, undefined, undefined, false);
   }
 
   // UI handlers
@@ -101,12 +116,6 @@
     )
       ? semantic_tasks_show_sub_tasks.filter((id) => id !== task_id)
       : [...semantic_tasks_show_sub_tasks, task_id];
-  }
-
-  function handleToggleExpand(task_id: string) {
-    task_card_expanded = task_card_expanded.includes(task_id)
-      ? task_card_expanded.filter((id) => id !== task_id)
-      : [...task_card_expanded, task_id];
   }
 
   // handlers with server-side updates
@@ -174,6 +183,16 @@
       });
   }
 
+  async function handleToggleExpand(task_id: string) {
+    task_card_expanded = task_card_expanded.includes(task_id)
+      ? task_card_expanded.filter((id) => id !== task_id)
+      : [...task_card_expanded, task_id];
+
+    // trigger re-render
+    await tick();
+    update_dag(semantic_tasks_flattened);
+  }
+
   function update_with_server() {
     fetch(`${server_address}/semantic_task/update/`, {
       method: "POST",
@@ -191,18 +210,20 @@
       });
   }
 
+  const updateGlobalLinks: Function = getContext("updateGlobalLinks");
   onMount(() => {
-    dag_renderer.init();
+    console.log("Semantic Tasks init");
+    dag_renderer.init(updateGlobalLinks);
     update_dag(semantic_tasks);
   });
 </script>
 
-<div class="flex flex-col grow">
+<div class="flex flex-col gap-y-1 grow">
   <div class="relative bg-orange-100 w-full flex justify-center z-10">
     <span
       class="canvas-header text-[1.5rem] text-slate-600 font-semibold italic"
     >
-      Semantic Tasks
+      Plan
     </span>
     <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
@@ -218,7 +239,7 @@
       semantic_tasks_flattened.length * 2 * node_size[1] * 1.5,
       1000
     ) + "px"} -->
-  <div class="relative bg-gray-50 flex flex-col gap-y-1 grow">
+  <div class="relative flex flex-col gap-y-1 grow">
     {#if decomposing_goal}
       <div
         class="absolute top-0 left-0 right-0 flex items-center justify-center"
@@ -242,7 +263,7 @@
           style:z-index={semantic_tasks_flattened.length - index}
           data-id={task.id}
         >
-          <SemanticTaskCard
+          <SimpleSemanticTaskCard
             {task}
             expand={task_card_expanded.includes(task.id)}
             {handleDecompose}
@@ -250,20 +271,7 @@
             {handleToggleShowSubTasks}
             {handleDeleteTask}
             handleToggleExpand={() => handleToggleExpand(task.id)}
-          ></SemanticTaskCard>
-          {#if !task_card_expanded.includes(task.id)}
-            <button
-              class="flex p-0.5 hover:bg-orange-400 justify-center"
-              onclick={() =>
-                (task_card_expanded = [...task_card_expanded, task.id])}
-            >
-              <img
-                src="chevron_right.svg"
-                class="mt-0.5 w-5 h-4 pointer-events-none"
-                alt="handle"
-              />
-            </button>
-          {/if}
+          ></SimpleSemanticTaskCard>
         </div>
       {/each}
     </div>

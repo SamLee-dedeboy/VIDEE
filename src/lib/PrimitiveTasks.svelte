@@ -1,12 +1,13 @@
 <script lang="ts">
   import { server_address } from "constants";
-  import { onMount, tick } from "svelte";
+  import { onMount, setContext, tick } from "svelte";
   import type {
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
     tExecutionState,
     tNode,
     tTask,
+    tPrimitiveTask,
   } from "types";
   import * as d3 from "d3";
   import { DAG } from "renderer/dag";
@@ -15,22 +16,22 @@
   import { draggable } from "./draggable";
   import { getContext } from "svelte";
   let {
-    primitive_tasks,
+    primitive_tasks = $bindable([]),
+    execution_states,
     converting,
+    compiling,
     handleInspectPrimitiveTask = () => {},
   }: {
-    primitive_tasks: (tPrimitiveTaskDescription &
-      Partial<tPrimitiveTaskExecution>)[];
+    primitive_tasks: tPrimitiveTask[];
+    execution_states: Record<string, tExecutionState> | undefined;
     converting: boolean;
+    compiling: boolean;
     handleInspectPrimitiveTask: Function;
   } = $props();
   let task_card_expanded: string[] = $state([]);
-  let execution_states: Record<string, tExecutionState> | undefined =
-    $state(undefined);
-  let compiling = $state(false);
   const session_id = (getContext("session_id") as Function)();
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
-  const svgId = "dag-svg";
+  const svgId = "execution-dag-svg";
   const node_size: [number, number] = [150, 80];
   let dag_renderer = new DAG(
     svgId,
@@ -42,6 +43,10 @@
   $effect(() => {
     update_dag(primitive_tasks);
   });
+
+  export function rerender_execution() {
+    update_dag(primitive_tasks);
+  }
 
   /**
    * Prepare the data for the dag renderer
@@ -72,40 +77,41 @@
         },
       };
     });
-
     // call renderer
     dag_renderer.update(dag_data, []);
   }
 
   // UI handlers
-  function handleToggleExpand(task_id: string) {
+  async function handleToggleExpand(task_id: string) {
     task_card_expanded = task_card_expanded.includes(task_id)
       ? task_card_expanded.filter((id) => id !== task_id)
       : [...task_card_expanded, task_id];
+    await tick();
+    update_dag(primitive_tasks);
   }
 
   // handlers with server-side updates
-  function handleCompile() {
-    console.log("Compiling...", { primitive_tasks, session_id });
-    compiling = true;
-    fetch(`${server_address}/primitive_task/compile/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ primitive_tasks, session_id }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        compiling = false;
-        primitive_tasks = data.primitive_tasks;
-        execution_states = data.execution_state;
-        console.log({ data });
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
+  // function handleCompile() {
+  //   console.log("Compiling...", { primitive_tasks, session_id });
+  //   compiling = true;
+  //   fetch(`${server_address}/primitive_task/compile/`, {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({ primitive_tasks, session_id }),
+  //   })
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       compiling = false;
+  //       primitive_tasks = data.primitive_tasks;
+  //       execution_states = data.execution_state;
+  //       console.log({ data });
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error:", error);
+  //     });
+  // }
 
   function handleExecute(
     execute_node: tPrimitiveTaskDescription & tPrimitiveTaskExecution
@@ -132,14 +138,13 @@
     primitive_tasks = [
       ...primitive_tasks,
       {
+        solves: "",
         id: Math.random().toString(),
         label: "New Task",
         description: "New Task Description",
         explanation: "N/A",
         parentIds: [],
         children: [],
-        confidence: 0.5,
-        complexity: 0.5,
       },
     ];
     update_with_server();
@@ -185,17 +190,21 @@
       });
   }
 
+  const updateGlobalLinks: Function = getContext("updateGlobalLinks");
   onMount(() => {
-    dag_renderer.init();
+    dag_renderer.init(updateGlobalLinks);
     update_dag(primitive_tasks);
     console.log({ execution_states });
   });
 </script>
 
 <div class="flex flex-col gap-y-1 grow">
-  <div class="relative bg-[#f2f8fd] w-full flex justify-center z-10">
+  <div
+    class="relative bg-[#f2f8fd] w-full flex justify-center z-10"
+    class:loading-canvas={converting}
+  >
     <span class="text-[1.5rem] text-slate-600 font-semibold italic">
-      Primitive Tasks
+      Execution
     </span>
     <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
       <button
@@ -211,7 +220,7 @@
       primitive_tasks.length * 2 * node_size[1] * 1.5,
       800
     ) + "px"} -->
-  <div class="relative bg-gray-50 flex flex-col gap-y-1 grow">
+  <div class="relative flex flex-col gap-y-1 grow">
     {#if converting}
       <div
         class="absolute top-0 left-0 right-0 flex items-center justify-center"
@@ -244,23 +253,10 @@
             handleInspectTask={handleInspectPrimitiveTask}
             handleToggleExpand={() => handleToggleExpand(task.id)}
           ></PrimitiveTaskCard>
-          {#if !task_card_expanded.includes(task.id)}
-            <button
-              class="flex p-0.5 hover:bg-blue-400 justify-center"
-              onclick={() =>
-                (task_card_expanded = [...task_card_expanded, task.id])}
-            >
-              <img
-                src="chevron_right.svg"
-                class="mt-0.5 w-5 h-4 pointer-events-none"
-                alt="handle"
-              />
-            </button>
-          {/if}
         </div>
       {/each}
     </div>
-    <button
+    <!-- <button
       class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10 mx-2"
       class:disabled={primitive_tasks === undefined}
       tabindex="0"
@@ -268,12 +264,26 @@
       onkeyup={() => {}}
     >
       Compile Graph
-    </button>
+    </button> -->
   </div>
 </div>
 
 <style lang="postcss">
   .disabled {
     @apply opacity-50 pointer-events-none;
+  }
+
+  .loading-canvas {
+    position: relative;
+    background: linear-gradient(
+      90deg,
+      #c2e2fd 20%,
+      #87f2f7 40%,
+      #86c6ff 60%,
+      transparent 80%
+    );
+    background-size: 200% 200%;
+    animation: dash 3s linear infinite;
+    border: 4px solid transparent;
   }
 </style>
