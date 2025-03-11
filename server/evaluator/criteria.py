@@ -72,6 +72,8 @@ async def run_all_evaluations(
         eval_few_shot_examples: Few-shot examples for the evaluation. (optional)
         model: The model to use for evaluation.
         api_key: The API key for the model.
+    Returns:
+        Tuple of (results_grouped, reasons_grouped)
     """
     nested_tasks = []
     for goal, node, parent_node in eval_params:
@@ -125,6 +127,7 @@ async def run_all_evaluations(
     # group results so that each group contains results for a single node
     num_of_evaluators = 3
     results_grouped = []
+    reasons_grouped = []
     
     for i in range(0, len(results_sequence), num_of_evaluators):
         node_results = results_sequence[i:i + num_of_evaluators]
@@ -139,9 +142,16 @@ async def run_all_evaluations(
             sum(importance_results[model_name]["value"] for model_name in importance_results.keys()) / len(importance_results),
         ]
         
+        reasons = [
+            await summarize_reason([complexity_results[model_name]["reason"] for model_name in complexity_results.keys()]),
+            await summarize_reason([coherence_results[model_name]["reason"] for model_name in coherence_results.keys()]),
+            await summarize_reason([importance_results[model_name]["reason"] for model_name in importance_results.keys()]),
+        ]
+        
         results_grouped.append(averaged_results)
+        reasons_grouped.append(reasons)
     
-    return results_grouped
+    return results_grouped, reasons_grouped
 
 
 def balance_few_shot_examples(few_shot_examples: list[dict], max_diff: int = 1) -> list[dict]:
@@ -350,7 +360,6 @@ async def run_importance_evaluation_agent(
     few_shot_examples = balance_few_shot_examples(few_shot_examples)
 
     system_message = load_system_message("importance_evaluator").format(definition=importance_definition)
-
     agents = get_agents(agent_name="importance_evaluator", system_message=system_message)
 
     def user_message_generator(_goal, _node):
@@ -449,3 +458,41 @@ Provide a reasoning explanation:
     )
 
     return response
+
+
+async def summarize_reason(reasons: list[str]) -> str:
+    """Summarize a list of reasons into a single coherent reason using an LLM.
+    
+    Args:
+        reasons: List of reasoning strings from different models
+        
+    Returns:
+        A summarized reason string
+    """
+    with open("../../model_list.yaml", "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+        model_name = data.get("summarization-model", "gpt-4o")
+
+    model_client = get_openai_client(model_name)
+    if model_client is None:
+        raise RuntimeError(
+            "Missing OpenAI API key. Please set 'OPENAI_API_KEY' in the dot environment file '.env'."
+        )
+
+    system_message = load_system_message("reason_summarizer")
+    
+    summarization_agent = AssistantAgent(
+        name="reason_summarization_agent",
+        model_client=model_client,
+        system_message=system_message,
+    )
+
+    reasons_text = "\n---\n".join(reasons)
+    prompt = f"Here are the different reasoning explanations to summarize:\n\n{reasons_text}"
+
+    response = await get_response(
+        summarization_agent,
+        [TextMessage(content=prompt, source="user")]
+    )
+
+    return response.strip()
