@@ -20,9 +20,9 @@ class Node(SemanticTaskResponse):
 
 
 class Evaluation(BaseModel):
-    complexity: bool = False
-    coherence: bool = False
-    importance: bool = False
+    complexity: float = 0.0
+    coherence: float = 0.0
+    importance: float = 0.0
 
 
 class MCT_Node(SemanticTaskResponse):

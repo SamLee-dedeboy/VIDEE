@@ -124,11 +124,58 @@ async def run_all_evaluations(
     results_sequence = await asyncio.gather(*tasks)
     # group results so that each group contains results for a single node
     num_of_evaluators = 3
-    results_grouped = [
-        results_sequence[i : i + num_of_evaluators]
-        for i in range(0, len(results_sequence), num_of_evaluators)
-    ]
+    results_grouped = []
+    
+    for i in range(0, len(results_sequence), num_of_evaluators):
+        node_results = results_sequence[i:i + num_of_evaluators]
+        
+        complexity_results = node_results[0]
+        coherence_results = node_results[1]
+        importance_results = node_results[2]
+        
+        averaged_results = [
+            sum(complexity_results[model_name]["value"] for model_name in complexity_results.keys()) / len(complexity_results),
+            sum(coherence_results[model_name]["value"] for model_name in coherence_results.keys()) / len(coherence_results),
+            sum(importance_results[model_name]["value"] for model_name in importance_results.keys()) / len(importance_results),
+        ]
+        
+        results_grouped.append(averaged_results)
+    
     return results_grouped
+
+
+def balance_few_shot_examples(few_shot_examples: list[dict], max_diff: int = 1) -> list[dict]:
+    """Balance the few shot examples so that the difference between positive and negative examples
+    is not more than max_diff.
+    
+    Args:
+        few_shot_examples: List of examples, each containing 'user_evaluation' (0 or 1)
+        max_diff: Maximum allowed difference between number of positive and negative examples
+    
+    Returns:
+        Balanced list of examples
+    """
+    if not few_shot_examples:
+        return []
+        
+    positive_examples = [ex for ex in few_shot_examples if ex['user_evaluation']]
+    negative_examples = [ex for ex in few_shot_examples if not ex['user_evaluation']]
+    
+    pos_count = len(positive_examples)
+    neg_count = len(negative_examples)
+    
+    if abs(pos_count - neg_count) <= max_diff:
+        return few_shot_examples
+        
+    if pos_count > neg_count + max_diff:
+        target_pos_count = neg_count + max_diff
+        return negative_examples + positive_examples[:target_pos_count]
+        
+    if neg_count > pos_count + max_diff:
+        target_neg_count = pos_count + max_diff
+        return positive_examples + negative_examples[:target_neg_count]
+    
+    return few_shot_examples
 
 
 async def run_complexity_evaluation_agent(
@@ -149,6 +196,8 @@ async def run_complexity_evaluation_agent(
         complexity_definition: The definition of complexity.
         few_shot_examples: Few-shot examples for the evaluation. (optional)
     """
+
+    few_shot_examples = balance_few_shot_examples(few_shot_examples)
 
     system_message = load_system_message("complexity_evaluator").format(definition=complexity_definition)
     agents = get_agents(agent_name="complexity_evaluator", system_message=system_message)
@@ -208,6 +257,8 @@ async def run_coherence_evaluation_agent(
         coherence_definition: The definition of coherence.
         few_shot_examples: Few-shot examples for the evaluation. (optional)
     """
+
+    few_shot_examples = balance_few_shot_examples(few_shot_examples)
 
     system_message = load_system_message("coherence_evaluator").format(definition=coherence_definition)
     agents = get_agents(agent_name="coherence_evaluator", system_message=system_message)
@@ -284,6 +335,8 @@ async def run_importance_evaluation_agent(
         importance_definition: The definition of importance.
         few_shot_examples: Few-shot examples for the evaluation. (optional)
     """
+
+    few_shot_examples = balance_few_shot_examples(few_shot_examples)
 
     system_message = load_system_message("importance_evaluator").format(definition=importance_definition)
 

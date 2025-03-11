@@ -215,19 +215,15 @@ async def reward(
         # update the eval results for each child
         for node, eval_result in zip(children, eval_results):
             [
-                node.llm_evaluation.complexity,
-                node.llm_evaluation.coherence,
-                node.llm_evaluation.importance,
+                complexity_value,
+                coherence_value,
+                importance_value,
             ] = eval_result
-            reward_value = (
-                node.llm_evaluation.complexity
-                + node.llm_evaluation.coherence
-                + node.llm_evaluation.importance
-            ) / 3
+            reward_value = (complexity_value + coherence_value + importance_value) / 3
 
-            node.llm_evaluation.complexity = bool(node.llm_evaluation.complexity)
-            node.llm_evaluation.coherence = bool(node.llm_evaluation.coherence)
-            node.llm_evaluation.importance = bool(node.llm_evaluation.importance)
+            node.llm_evaluation.complexity = bool(complexity_value >= 0.5)
+            node.llm_evaluation.coherence = bool(coherence_value >= 0.5)
+            node.llm_evaluation.importance = bool(importance_value >= 0.5)
 
             node.user_evaluation.complexity = node.llm_evaluation.complexity
             node.user_evaluation.coherence = node.llm_evaluation.coherence
