@@ -85,7 +85,7 @@ async def get_documents(request: Request):
     request = json.loads(request)
     session_id = request["session_id"]
     assert session_id in user_sessions
-    return json.load(open(relative_path("executor/docs.json")))
+    return json.load(open(relative_path("data/papers.json")))
 
 
 @app.post("/documents/dr/")
@@ -98,23 +98,24 @@ async def get_dr(request: Request):
     if "dr_data" in user_sessions[session_id]:
         return user_sessions[session_id]["dr_data"]
     else:
-        data = request["data"]
-        texts = list(map(lambda x: x["content"], data))
+        if dev:
+            return json.load(open(relative_path("dev_data/test_dr.json")))
+        else:
+            data = request["data"]
+            texts = list(map(lambda x: x["content"], data))
 
-        # using OpenAI client here because the 'radial_dr' is a legacy function I copied from another project.
-        # this should be refactored to use AutoGen in the future.
-        openai_client = OpenAI(api_key=api_key)
-        clusters, cluster_orders, cluster_topics, all_angles = executor.radial_dr(
-            texts, openai_client
-        )
+            clusters, cluster_orders, cluster_topics, all_angles = (
+                await executor.radial_dr(texts, model=default_model, api_key=api_key)
+            )
 
-        for i, datum in enumerate(data):
-            data[i]["cluster"] = cluster_orders[clusters[i]]
-            data[i]["cluster_label"] = cluster_topics[clusters[i]]
-            data[i]["angle"] = all_angles[i]
+            for i, datum in enumerate(data):
+                data[i]["cluster"] = cluster_orders[clusters[i]]
+                data[i]["cluster_label"] = cluster_topics[clusters[i]]
+                data[i]["angle"] = all_angles[i]
+            save_json(data, relative_path("dev_data/test_dr.json"))
 
-        user_sessions[session_id]["dr_data"] = data
-        return data
+            user_sessions[session_id]["dr_data"] = data
+            return data
 
 
 @app.post("/eval/definitions/")

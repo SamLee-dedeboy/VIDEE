@@ -2,36 +2,54 @@ import concurrent
 from tqdm import tqdm
 import tiktoken
 import numpy as np
-from sklearn.cluster import AgglomerativeClustering, OPTICS
+from sklearn.cluster import AgglomerativeClustering, OPTICS, KMeans
 from sklearn.metrics.pairwise import cosine_distances
 from scipy.optimize import minimize
 from collections import defaultdict
 from openai import RateLimitError, APITimeoutError
+from openai import OpenAI
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+from autogen_agentchat.agents import AssistantAgent
+from autogen_core import CancellationToken
+from autogen_agentchat.messages import TextMessage
 import json
 import time
 import statistics
+import random
+import asyncio
+import traceback
+from tqdm.asyncio import tqdm_asyncio
+from sklearn.feature_extraction.text import TfidfVectorizer
+from server.utils import extract_json_content
 
 
-def radial_dr(texts: list[str], openai_client):
-    embeddings = multithread_embeddings(openai_client, texts)
+async def radial_dr(texts: list[str], model: str, api_key: str):
+    print("generating embeddings...")
+    # embeddings = await multithread_embeddings(texts, api_key)
+    embeddings = tf_idf_embeddings(texts)
     # clusters = cluster.optics(embeddings)
+    print("generating clusters...")
     clusters = cluster(embeddings)
     # topic labels, dict: cluster label -> topic
-    cluster_topics = cluster_topic_assignments(openai_client, clusters, texts)
+    print("generating clusters topics...")
+    cluster_topics = await cluster_topic_assignments(clusters, texts, model, api_key)
 
-    all_angles = circular_dr(embeddings)
-    cluster_angles = defaultdict(list)
-    for cluster_label, angle in zip(clusters, all_angles):
-        cluster_angles[cluster_label].append(angle)
-    cluster_mean_angles = [
-        (cluster_label, statistics.mean(angles))
-        for cluster_label, angles in cluster_angles.items()
-    ]
-    cluster_orders = sorted(cluster_mean_angles, key=lambda x: x[1])
-    # create a dict such that the key is the cluster label and the value is the index in the cluster_orders
-    cluster_orders = {
-        cluster_label: i for i, (cluster_label, _) in enumerate(cluster_orders)
-    }
+    # print("calculating dr...")
+    # all_angles = circular_dr(embeddings)
+    # cluster_angles = defaultdict(list)
+    # for cluster_label, angle in zip(clusters, all_angles):
+    #     cluster_angles[cluster_label].append(angle)
+    # cluster_mean_angles = [
+    #     (cluster_label, statistics.mean(angles))
+    #     for cluster_label, angles in cluster_angles.items()
+    # ]
+    # cluster_orders = sorted(cluster_mean_angles, key=lambda x: x[1])
+    # # create a dict such that the key is the cluster label and the value is the index in the cluster_orders
+    # cluster_orders = {
+    #     cluster_label: i for i, (cluster_label, _) in enumerate(cluster_orders)
+    # }
+    clusters, cluster_orders, all_angles = divide_by_cluster_size(clusters)
+
     return clusters, cluster_orders, cluster_topics, all_angles
     # for i, datum in enumerate(data):
     #     data[i]["cluster"] = cluster_orders[clusters[i]]
@@ -41,146 +59,150 @@ def radial_dr(texts: list[str], openai_client):
     return json.dumps(data, default=vars)
 
 
-def request_gpt(
-    client, messages, model="gpt-4o-mini", temperature=0.5, format=None, seed=None
-):
-    with open("request_log.txt", "a", encoding="utf-8") as f:
-        f.write(f"model: {model}, temperature: {temperature}, format: {format}\n")
-        f.write(json.dumps(messages, ensure_ascii=False) + "\n")
-        f.write("=====================================\n")
-    try:
-        if format == "json":
-            response = (
-                client.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    response_format={"type": "json_object"},
-                    temperature=temperature,
-                    seed=seed,
-                ),
-            )
+def divide_by_cluster_size(clusters: list[str]):
+    cluster_sizes = defaultdict(int)
+    for cluster in clusters:
+        cluster_sizes[cluster] += 1
+    cluster_orders = list(cluster_sizes.keys())
+    total_nodes = len(clusters)
+    cluster_angles = [
+        cluster_sizes[cluster] / total_nodes for cluster in cluster_orders
+    ]
+    cluster_ranges = []
+    for i, cluster in enumerate(cluster_orders):
+        start = sum(cluster_angles[:i])
+        end = sum(cluster_angles[: i + 1])
+        cluster_ranges.append((start, end))
+    all_angles = []
+    for cluster_label in clusters:
+        start, end = cluster_ranges[cluster_orders.index(cluster_label)]
+        angle = random.uniform(start, end) * 2 * np.pi
+        all_angles.append(angle)
 
-        else:
-            response = client.chat.completions.create(
-                model=model, messages=messages, temperature=temperature, seed=seed
-            )
-        return response[0].choices[0].message.content
-    except RateLimitError as e:
-        print("RateLimitError")
-        print(e)
-        time.sleep(5)
-        return request_gpt(client, messages, model, temperature, format)
-    except APITimeoutError as e:
-        print("APITimeoutError")
-        print(messages)
-        time.sleep(5)
-        return request_gpt(client, messages, model, temperature, format)
+    return clusters, cluster_orders, all_angles
 
 
-def multithread_prompts(
-    client,
-    prompts,
-    model="gpt-4o-mini",
-    temperature=0.5,
-    response_format=None,
-    seed=None,
-):
-    l = len(prompts)
-    # results = np.zeros(l)
-    with tqdm(total=l) as pbar:
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=100)
-        futures = [
-            executor.submit(
-                request_gpt, client, prompt, model, temperature, response_format, seed
-            )
-            for prompt in prompts
-        ]
-        for _ in concurrent.futures.as_completed(futures):
-            pbar.update(1)
-    concurrent.futures.wait(futures)
-    return [future.result() for future in futures]
+def tf_idf_embeddings(texts):
+    vectorizer = TfidfVectorizer(max_features=1000)
+    tfidf_matrix = vectorizer.fit_transform(texts)
+    return tfidf_matrix.toarray()
 
 
-def multithread_embeddings(client, texts):
-    l = len(texts)
-    with tqdm(total=l) as pbar:
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=100)
-        futures = [executor.submit(get_embedding, client, text) for text in texts]
-        for _ in concurrent.futures.as_completed(futures):
-            pbar.update(1)
-    concurrent.futures.wait(futures)
-    return [future.result() for future in futures]
+async def call_agent(agent, user_message):
+    enc = tiktoken.encoding_for_model("gpt-4o-mini")
+    token_length = len(enc.encode(user_message))
+    print("calling agent - token length: ", token_length)
+    response = await agent.on_messages(
+        [TextMessage(content=user_message, source="user")],
+        cancellation_token=CancellationToken(),
+    )
+    return response
 
 
-def get_embedding(client, text, model="text-embedding-3-small"):
+async def parallel_call_agents(agent, user_messages):
+    tasks = [call_agent(agent, user_message) for user_message in user_messages]
+    # results = await asyncio.gather(*tasks)
+    results = await tqdm_asyncio.gather(*tasks, desc="generating topics")
+    return results
+
+
+async def multithread_embeddings(texts, api_key):
+    tasks = [get_embedding(text, api_key) for text in texts]
+    # results = await asyncio.gather(*tasks)  # Runs network requests concurrently
+    results = await tqdm_asyncio.gather(*tasks, desc="generating embeddings")
+    return results
+
+
+async def get_embedding(text, api_key, model="text-embedding-3-small"):
+    return await asyncio.to_thread(_get_embedding_block, text, api_key, model)
+
+
+def _get_embedding_block(text, api_key, model="text-embedding-3-small"):
+    client = OpenAI(api_key=api_key)
     enc = tiktoken.encoding_for_model(model)
     # print("tokens: ", len(enc.encode(text)), len(enc.encode(text)) > 8191)
     while len(enc.encode(text)) > 8191:
         text = text[:-100]
         print("truncated: ", len(enc.encode(text)))
     try:
-        return client.embeddings.create(input=[text], model=model).data[0].embedding
+        return client.embeddings.create(input=text, model=model).data[0].embedding
     except Exception as e:
-        print(e)
-        return get_embedding(client, text, model)
+        print(traceback.format_exc())
+        # return get_embedding(text, api_key, model)
 
 
 def cluster(X):
     if len(X) == 1:
         return [1]
     X = np.array(X)
-    clustering = AgglomerativeClustering(
-        n_clusters=None,
-        distance_threshold=0.5,
-        metric="cosine",
-        linkage="average",
-    ).fit(X)
+    # clustering = AgglomerativeClustering(
+    #     n_clusters=10,
+    #     # distance_threshold=0.5,
+    #     metric="cosine",
+    #     linkage="average",
+    # ).fit(X)
+    clustering = KMeans(n_clusters=10, random_state=0, n_init="auto").fit(X)
     return list(map(lambda label: int(label), clustering.labels_))
 
 
-def cluster_topic_assignments(client, clusters, texts):
+async def cluster_topic_assignments(clusters, texts, model, api_key):
     cluster_texts = defaultdict(list)
     for cluster, text in zip(clusters, texts):
         cluster_texts[cluster].append(text)
-    prompt_list = []
     cluster_list = []
+    topic_assignment_agent = generate_topic_assignment_agent(model, api_key)
+    user_messages = []
     for cluster, texts in cluster_texts.items():
-        prompt, response_format, extract_response_func = (
-            topic_assignment_prompt_factory(texts)
-        )
-        prompt_list.append(prompt)
+        enc = tiktoken.encoding_for_model(model)
+        token_length = len(enc.encode("\n".join(texts)))
+        print(cluster, "token length: ", token_length)
+        # while token_length > 70000:  # 128000 is the max token limit for GPT-4o-mini
+        #     texts = random.sample(texts, len(texts) // 2)
+        #     token_length = len(enc.encode("\n".join(texts)))
+        texts = random.sample(texts, min(len(texts), 25))
+        token_length = len(enc.encode("\n".join(texts)))
+        print(cluster, "token length: ", token_length)
+        user_messages.append("\n".join(texts))
         cluster_list.append(cluster)
-    responses = multithread_prompts(client, prompt_list, response_format="json")
-    if response_format == "json":
-        responses = [extract_response_func(i) for i in responses]
-
+    responses = await parallel_call_agents(topic_assignment_agent, user_messages)
+    for response in responses:
+        print(response.chat_message.content)
+        print("============================")
+    responses = [
+        extract_json_content(response.chat_message.content)["topic"]
+        for response in responses
+    ]
+    # responses = [
+    #     json.loads(response.chat_message.content)["topic"] for response in responses
+    # ]
     cluster_topics = {
         cluster: response for cluster, response in zip(cluster_list, responses)
     }
     return cluster_topics
 
 
-def topic_assignment_prompt_factory(texts):
-    messages = [
-        {
-            "role": "system",
-            "content": """You are a topic assignment system. The user will provide you with a list of texts. You need to assign one topic to summarize all of them. 
+def generate_topic_assignment_agent(model: str, api_key: str):
+    model_client = OpenAIChatCompletionClient(
+        model=model,
+        api_key=api_key,
+        temperature=0.0,
+        model_capabilities={
+            "vision": False,
+            "function_calling": False,
+            "json_output": True,
+        },
+    )
+    agent = AssistantAgent(
+        name="goal_decomposition_agent",
+        model_client=model_client,
+        system_message="""You are a topic assignment system. The user will provide you with a bunch of texts. You need to assign one topic to summarize all of them. 
             The topic should be a simple noun-phrase. Only one topic should be generated.
-            Reply with the JSON format: 
+            Reply with the following JSON format:
             {{
                 topic: string 
-            }}
-            """,
-        },
-        {"role": "user", "content": "\n".join(texts)},
-    ]
-
-    def extract_response_func(response):
-        response = json.loads(response)["topic"]
-        return response
-
-    response_format = "json"
-    return messages, response_format, extract_response_func
+            }}""",
+    )
+    return agent
 
 
 def circular_dr(X):
