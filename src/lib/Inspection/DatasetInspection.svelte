@@ -8,10 +8,26 @@
   let show_documents = $state(false);
   let show_topics = $state(false);
   let documents: tDocument[] = $state([]);
+  let paged_documents = $derived.by(() => {
+    const page_size = 50;
+    let result: tDocument[][] = [];
+    for (let i = 0; i < documents.length; i += page_size) {
+      result.push(documents.slice(i, i + page_size));
+    }
+    return result;
+  });
+  let page = $state(0);
   let dr_result: tDRResult[] = $state([]);
   const session_id = (getContext("session_id") as Function)();
   const svgId = "radial-topic-chart-svg";
   let topicChart: RadialTopicChart = new RadialTopicChart(svgId);
+
+  $effect(() => {
+    if (show_topics) {
+      topicChart.clear();
+      topicChart.update(dr_result, undefined);
+    }
+  });
 
   let loading_topics = $state(false);
   function getDocuments() {
@@ -45,7 +61,6 @@
       .then((data) => {
         console.log("DR result:", data);
         dr_result = data;
-        topicChart.update(data, undefined);
         loading_topics = false;
       })
       .catch((error) => {
@@ -80,14 +95,57 @@
     </div>
 
     {#if show_documents}
-      <div in:slide class="flex flex-col gap-y-2">
-        {#each documents as document}
+      <div
+        in:slide
+        class="flex flex-col gap-y-2 max-h-[25rem] overflow-auto pr-3"
+      >
+        {#each paged_documents[page] as document}
           <DocumentCard
             {document}
             --bg-color="#f8f8f8"
             --bg-hover-color="#e3e3e3"
           />
         {/each}
+        <!-- {#each documents as document}
+          <DocumentCard
+            {document}
+            --bg-color="#f8f8f8"
+            --bg-hover-color="#e3e3e3"
+          />
+        {/each} -->
+      </div>
+      <div class="pagination flex justify-center gap-x-2 text-slate-600">
+        <button
+          class="w-[6rem] hover:bg-gray-100 flex justify-center items-center py-1 rounded outline-2 outline-gray-200 text-sm"
+          class:disabled={page === 0}
+          onclick={() => {
+            page -= 1;
+          }}
+        >
+          <img src="arrow-left.svg" alt="previous" class="w-4 h-4" />
+        </button>
+        <div class="flex items-center overflow-x-auto pb-3">
+          {#each paged_documents as _, p}
+            <button
+              class=" hover:bg-gray-200 flex justify-center py-2 px-1 rounded text-sm"
+              class:active={page === p}
+              onclick={() => {
+                page = p;
+              }}
+            >
+              {p + 1}
+            </button>
+          {/each}
+        </div>
+        <button
+          class="w-[6rem] hover:bg-gray-100 flex justify-center items-center py-1 rounded outline-2 outline-gray-200 text-sm"
+          class:disabled={page === paged_documents.length - 1}
+          onclick={() => {
+            page += 1;
+          }}
+        >
+          <img src="arrow-right.svg" alt="next" class="w-4 h-4" />
+        </button>
       </div>
     {/if}
   </div>
@@ -129,5 +187,17 @@
   }
   .disabled {
     @apply opacity-50 pointer-events-none;
+  }
+  .pagination::-webkit-scrollbar {
+    width: 2px;
+    height: 2px;
+  }
+  .active {
+    @apply bg-gray-200;
+  }
+
+  .pagination::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
   }
 </style>

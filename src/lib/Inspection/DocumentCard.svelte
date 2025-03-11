@@ -50,7 +50,7 @@
         <div class="font-mono text-sm min-w-[4rem]">
           {doc_input_key}
         </div>
-        <div class="max-h-[15rem] overflow-auto">
+        <div class="max-h-[15rem] overflow-hidden text-sm">
           {JSON.stringify(document[doc_input_key])}
         </div>
       </div>

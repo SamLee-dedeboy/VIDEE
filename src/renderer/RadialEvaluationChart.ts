@@ -53,7 +53,7 @@ export class RadialEvaluationChart {
     this.polarRadiusScale = d3
       .scaleLinear()
       .domain([0, 1])
-      .range([50, Math.min(this.innerSize.width, this.innerSize.height) / 2]);
+      .range([30, Math.min(this.innerSize.width, this.innerSize.height) / 2]);
     // this.noiseColorScale = d3.scaleSequential(d3.interpolateRainbow);
     this.noiseColorScale = () => "#c3c3c3";
     this.clusterColorScale = d3.scaleOrdinal(d3.schemeSet3);
@@ -98,7 +98,7 @@ export class RadialEvaluationChart {
   update(data: tDRResult[], highlight_ids: string[] | undefined, func_id = (d) => d.id, func_value = (d) => d.value) {
     const self = this;
     const svg = d3.select("#" + this.svgId);
-    const circle_radius = 2
+    const circle_radius = 1.5
     const clusters = data
       .map((d) => d.cluster)
       .reduce((acc, cur) => {
@@ -149,7 +149,7 @@ export class RadialEvaluationChart {
             .attr("r", circle_radius)
             .attr("fill", (d) => this.clusterColorScale("" + d.cluster))
             .attr("stroke", "black")
-            .attr("stroke-width", 1)
+            .attr("stroke-width", 0.5)
             .attr("cursor", "pointer")
             .on("click", function (e, d) {
               console.log("click", d);
@@ -165,7 +165,7 @@ export class RadialEvaluationChart {
           }
           const simulation = d3
             .forceSimulation(data_w_coordinates)
-            .alphaMin(0.35)
+            .alphaMin(0.15)
             .force(
               "radial",
               d3
@@ -286,39 +286,79 @@ export class RadialEvaluationChart {
     cluster_angles: Record<number, any>,
     cluster_labels: Record<number, string>,
   ) {
+    const self = this
     const svg = d3.select("#" + this.svgId);
-    const label_group = svg.select("g.cluster-label-group");
-    label_group
-      .selectAll("text")
+    const label_groups = svg.select("g.cluster-label-group");
+    label_groups
+      .selectAll("g.label-group")
       .data(Object.keys(cluster_angles))
-      .join("text")
-      .text((d) => cluster_labels[d])
-      .attr(
-        "x",
-        (d) =>
-          polarToCartesian(
-            this.innerSize.center,
-            // cluster_angles[d].mid,
-            cluster_angles[d].start + (cluster_angles[d].range * 1.1) / 2,
-            Math.min(this.innerSize.width, this.innerSize.height) / 2.5,
-          )[0],
-      )
-      .attr(
-        "y",
-        (d) =>
-          polarToCartesian(
-            this.innerSize.center,
-            // cluster_angles[d].mid,
-            cluster_angles[d].start + (cluster_angles[d].range * 1.1) / 2,
-            Math.min(this.innerSize.width, this.innerSize.height) / 2.5,
-          )[1],
-      )
-      .attr("text-anchor", "middle")
-      .attr("dominant-baseline", "middle")
-      .attr("font-size", 10)
-      .attr("fill", (d) => darkenColor(this.clusterColorScale("" + d), 30))
-      .attr("pointer-events", "none");
+      .join("g")
+      .attr("class", "label-group")
+      .each(function(d) {
+        const group = d3.select(this);
+        group.selectAll("text").remove();
+        group.selectAll("rect").remove(); 
+        group.selectAll("text")
+          .data([d])
+          .join("text")
+          .attr("id", (d) => d)
+          .text((d) => cluster_labels[d])
+          .attr(
+            "x",
+            (d) =>
+              polarToCartesian(
+                self.innerSize.center,
+                // cluster_angles[d].mid,
+                cluster_angles[d].start + (cluster_angles[d].range * 1.1) / 2,
+                Math.min(self.innerSize.width, self.innerSize.height) / 2.5,
+              )[0]
+          )
+          .attr(
+            "y",
+            (d) =>
+              polarToCartesian(
+                self.innerSize.center,
+                // cluster_angles[d].mid,
+                cluster_angles[d].start + (cluster_angles[d].range * 1.1) / 2,
+                Math.min(self.innerSize.width, self.innerSize.height) / 2.5,
+              )[1],
+          )
+          .attr("text-anchor", "middle")
+          .attr("dominant-baseline", "middle")
+          .attr("font-size", 9)
+          .attr("fill", (d) => darkenColor(self.clusterColorScale("" + d), 30))
+          .attr("pointer-events", "none")
+          .call(wrap, 100)
+          .call(clipLabel, self.innerSize)
+        const text_bboxes = group.selectAll("text").nodes().reduce((acc, cur) => {
+          const bbox = cur.getBBox();
+          acc[cur.getAttribute("id")] = bbox;;
+          return acc;
+        }, {});
+        group.selectAll("rect")
+          .data([d])
+          .join("rect")
+          .attr("x", (d) => text_bboxes[d].x - 3)
+          .attr("y", (d) => text_bboxes[d].y - 1)
+          .attr("width", (d) => text_bboxes[d].width + 6)
+          .attr("height", (d) => text_bboxes[d].height + 3)
+          .attr("fill", "white")
+          .attr("stroke", "black")
+          .attr("stroke-width", 0.5)
+          .attr("opacity", 0.5)
+          .lower()
+      })
+      .on("mouseover", function(e, d) {
+        d3.select(this).raise();
+      })
   }
+}
+
+function clipLabel(selection, bbox) {
+  const node_bbox = selection.node().getBBox();
+  const x = clip(node_bbox.x + node_bbox.width / 2, [bbox.x, bbox.x + bbox.width - node_bbox.width / 2]);
+  const y = clip(node_bbox.y + node_bbox.height / 2, [bbox.y, bbox.y + bbox.height - node_bbox.height / 2]);
+  selection.selectAll("tspan").attr("x", x).attr("y", y);
 }
 
 function clip(x, range) {
@@ -423,4 +463,44 @@ function darkenColor(hex, percent) {
   // Convert back to hex and return
   const toHex = (value) => value.toString(16).padStart(2, "0");
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+// text longer than `width` will be in next line
+function wrap(text, width) {
+  text.each(function (d, i) {
+      var text = d3.select(this),
+          words = text.text().split(/\s+/).reverse(),
+          word,
+          line: any[] = [],
+          lineNumber = 0,
+          lineHeight = 1.1, // ems
+          x = text.attr("x"),
+          y = text.attr("y"),
+          dy = 0, //parseFloat(text.attr("dy")),
+          tspan = text.text(null)
+              .append("tspan")
+              .attr("x", x)
+              .attr("y", y)
+              .attr("dy", dy + "em")
+              .attr("text-anchor", "bottom")
+              .attr("dominant-baseline", "central")
+      while (word = words.pop()) {
+          line.push(word);
+          tspan.text(line.join(" "));
+          if (tspan.node()!.getComputedTextLength() > width && line.length > 1) {
+              line.pop();
+              tspan.text(line.join(" "));
+              line = [word];
+              tspan = text.append("tspan")
+                  .attr("x", x)
+                  .attr("y", y)
+                  .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                  .attr("dominant-baseline", "central")
+                  .text(word);
+          }
+  }
+  const line_num = text.selectAll("tspan").nodes().length
+  const em_to_px = 16
+  text.selectAll("tspan").attr("y", parseFloat(y) - em_to_px / 2 * lineHeight * (line_num - 1) / 2)
+});
 }

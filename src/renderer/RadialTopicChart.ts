@@ -110,10 +110,10 @@ export class RadialTopicChart {
             .classed("node-highlighted", false)
             .attr("cx", (d) => (d.x = d.coordinates_2d[0]))
             .attr("cy", (d) => (d.y = d.coordinates_2d[1]))
-            .attr("r", (d) => (d.r = 2))
+            .attr("r", (d) => (d.r = 1.5))
             .attr("fill", (d) => this.clusterColorScale("" + d.cluster))
-            .attr("stroke", "black")
-            .attr("stroke-width", 1)
+            .attr("stroke", "gray")
+            .attr("stroke-width", 0.5)
             .attr("cursor", "pointer")
             .on("click", function (e, d) {
               console.log("click", d);
@@ -130,6 +130,8 @@ export class RadialTopicChart {
           const simulation = d3
             .forceSimulation(data_w_coordinates)
             .alphaMin(0.35)
+            .force("forceX", d3.forceX().x((d) => d.coordinates_2d[0]).strength(0.03))
+            .force("forceY", d3.forceY().y((d) => d.coordinates_2d[1]).strength(0.03))
             .force(
               "collide",
               d3.forceCollide((d) => d.r * 1.3),
@@ -236,43 +238,84 @@ export class RadialTopicChart {
     //   .attr("stroke-dasharray", "5,5");
   }
 
+
   updateClusterLabels(
     cluster_angles: Record<number, any>,
     cluster_labels: Record<number, string>,
   ) {
+    const self = this
     const svg = d3.select("#" + this.svgId);
-    const label_group = svg.select("g.cluster-label-group");
-    label_group
-      .selectAll("text")
+    const label_groups = svg.select("g.cluster-label-group");
+    label_groups
+      .selectAll("g.label-group")
       .data(Object.keys(cluster_angles))
-      .join("text")
-      .text((d) => cluster_labels[d])
-      .attr(
-        "x",
-        (d) =>
-          polarToCartesian(
-            this.innerSize.center,
-            // cluster_angles[d].mid,
-            cluster_angles[d].start + (cluster_angles[d].range * 1.1) / 2,
-            Math.min(this.innerSize.width, this.innerSize.height) / 2.5,
-          )[0],
-      )
-      .attr(
-        "y",
-        (d) =>
-          polarToCartesian(
-            this.innerSize.center,
-            // cluster_angles[d].mid,
-            cluster_angles[d].start + (cluster_angles[d].range * 1.1) / 2,
-            Math.min(this.innerSize.width, this.innerSize.height) / 2.5,
-          )[1],
-      )
-      .attr("text-anchor", "middle")
-      .attr("dominant-baseline", "middle")
-      .attr("font-size", 10)
-      .attr("fill", (d) => darkenColor(this.clusterColorScale("" + d), 30))
-      .attr("pointer-events", "none");
+      .join("g")
+      .attr("class", "label-group")
+      .each(function(d) {
+        const group = d3.select(this);
+        group.selectAll("text").remove();
+        group.selectAll("rect").remove(); 
+        group.selectAll("text")
+          .data([d])
+          .join("text")
+          .attr("id", (d) => d)
+          .text((d) => cluster_labels[d])
+          .attr(
+            "x",
+            (d) =>
+              polarToCartesian(
+                self.innerSize.center,
+                // cluster_angles[d].mid,
+                cluster_angles[d].start + (cluster_angles[d].range * 1.1) / 2,
+                Math.min(self.innerSize.width, self.innerSize.height) / 2.5,
+              )[0]
+          )
+          .attr(
+            "y",
+            (d) =>
+              polarToCartesian(
+                self.innerSize.center,
+                // cluster_angles[d].mid,
+                cluster_angles[d].start + (cluster_angles[d].range * 1.1) / 2,
+                Math.min(self.innerSize.width, self.innerSize.height) / 2.5,
+              )[1],
+          )
+          .attr("text-anchor", "middle")
+          .attr("dominant-baseline", "middle")
+          .attr("font-size", 9)
+          .attr("fill", (d) => darkenColor(self.clusterColorScale("" + d), 30))
+          .attr("pointer-events", "none")
+          .call(wrap, 100)
+          .call(clipLabel, self.innerSize)
+        const text_bboxes = group.selectAll("text").nodes().reduce((acc, cur) => {
+          const bbox = cur.getBBox();
+          acc[cur.getAttribute("id")] = bbox;;
+          return acc;
+        }, {});
+        group.selectAll("rect")
+          .data([d])
+          .join("rect")
+          .attr("x", (d) => text_bboxes[d].x - 3)
+          .attr("y", (d) => text_bboxes[d].y - 1)
+          .attr("width", (d) => text_bboxes[d].width + 6)
+          .attr("height", (d) => text_bboxes[d].height + 3)
+          .attr("fill", "white")
+          .attr("stroke", "black")
+          .attr("stroke-width", 0.5)
+          .attr("opacity", 0.5)
+          .lower()
+      })
+      .on("mouseover", function(e, d) {
+        d3.select(this).raise();
+      })
   }
+}
+
+function clipLabel(selection, bbox) {
+  const node_bbox = selection.node().getBBox();
+  const x = clip(node_bbox.x + node_bbox.width / 2, [bbox.x, bbox.x + bbox.width - node_bbox.width / 2]);
+  const y = clip(node_bbox.y + node_bbox.height / 2, [bbox.y, bbox.y + bbox.height - node_bbox.height / 2]);
+  selection.selectAll("tspan").attr("x", x).attr("y", y);
 }
 
 function clip(x, range) {
@@ -378,3 +421,42 @@ function darkenColor(hex, percent) {
   const toHex = (value) => value.toString(16).padStart(2, "0");
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
+
+function wrap(text, width) {
+    text.each(function (d, i) {
+        var text = d3.select(this),
+            words = text.text().split(/\s+/).reverse(),
+            word,
+            line: any[] = [],
+            lineNumber = 0,
+            lineHeight = 1.1, // ems
+            x = text.attr("x"),
+            y = text.attr("y"),
+            dy = 0, //parseFloat(text.attr("dy")),
+            tspan = text.text(null)
+                .append("tspan")
+                .attr("x", x)
+                .attr("y", y)
+                .attr("dy", dy + "em")
+                .attr("text-anchor", "bottom")
+                .attr("dominant-baseline", "central")
+        while (word = words.pop()) {
+            line.push(word);
+            tspan.text(line.join(" "));
+            if (tspan.node()!.getComputedTextLength() > width && line.length > 1) {
+                line.pop();
+                tspan.text(line.join(" "));
+                line = [word];
+                tspan = text.append("tspan")
+                    .attr("x", x)
+                    .attr("y", y)
+                    .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                    .attr("dominant-baseline", "central")
+                    .text(word);
+            }
+    }
+    const line_num = text.selectAll("tspan").nodes().length
+    const em_to_px = 16
+    text.selectAll("tspan").attr("y", parseFloat(y) - em_to_px / 2 * lineHeight * (line_num - 1) / 2)
+  });
+  }
