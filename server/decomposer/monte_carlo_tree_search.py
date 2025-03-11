@@ -62,7 +62,7 @@ async def stream_MCTS(
             max_value_path = get_max_value_path(root, node_dict)
             yield root, node_dict, next_selection, max_value_path
             if all_END(root, node_dict):
-                yield root, None, None
+                yield root, None, None, None
     except Exception as e:
         traceback.print_exc()
         print(f"Error in stream_MCTS: {e}")

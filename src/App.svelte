@@ -141,7 +141,8 @@
   }
 
   function createSession() {
-    let random_session_id = Math.random().toString(36).substring(2, 15);
+    // let random_session_id = Math.random().toString(36).substring(2, 15);
+    let random_session_id = "312321321312321";
     fetch(`${server_address}/session/create/`, {
       method: "POST",
       headers: {
@@ -172,8 +173,8 @@
   }
 
   async function handleDecomposeGoalStepped_MCTS(goal: string) {
-    dev_handleDecomposeGoalStepped_MCTS(goal);
-    return;
+    // dev_handleDecomposeGoalStepped_MCTS(goal);
+    // return;
     user_goal = goal;
     streaming_states.started = true;
     streaming_states.paused = false;
@@ -193,15 +194,10 @@
             semantic_tasks,
             next_expansion,
             eval_few_shot_examples: few_shot_examples_semantic_tasks,
-            next_expansion,
-            eval_few_shot_examples: few_shot_examples_semantic_tasks,
           }),
           signal,
         }
       );
-      if (!response.body) {
-        throw new Error("Stream error");
-      }
       if (!response.body) {
         throw new Error("Stream error");
       }
@@ -218,7 +214,6 @@
 
         // Process complete JSON objects line by line
         let lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
         buffer = lines.pop() || ""; // Keep the last incomplete part for the next iteration
 
         for (let line of lines) {

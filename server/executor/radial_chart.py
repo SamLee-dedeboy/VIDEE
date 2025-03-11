@@ -141,7 +141,9 @@ def cluster(X):
     #     metric="cosine",
     #     linkage="average",
     # ).fit(X)
-    clustering = KMeans(n_clusters=10, random_state=0, n_init="auto").fit(X)
+    clustering = KMeans(n_clusters=min(10, len(X)), random_state=0, n_init="auto").fit(
+        X
+    )
     return list(map(lambda label: int(label), clustering.labels_))
 
 

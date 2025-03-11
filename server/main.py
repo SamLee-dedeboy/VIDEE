@@ -85,7 +85,8 @@ async def get_documents(request: Request):
     request = json.loads(request)
     session_id = request["session_id"]
     assert session_id in user_sessions
-    return json.load(open(relative_path("data/papers.json")))
+    # return json.load(open(relative_path("data/papers.json")))
+    return json.load(open(relative_path("executor/docs.json")))
 
 
 @app.post("/documents/dr/")
@@ -98,7 +99,7 @@ async def get_dr(request: Request):
     if "dr_data" in user_sessions[session_id]:
         return user_sessions[session_id]["dr_data"]
     else:
-        if dev:
+        if False:
             return json.load(open(relative_path("dev_data/test_dr.json")))
         else:
             data = request["data"]

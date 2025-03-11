@@ -133,6 +133,7 @@ experiments/**/*.json
 api_key
 server/models/google_api_key
 server/models/openai_api_key
+anthropic_api_key
 server/models/client_config.json
 request_log.txt
 *.docx

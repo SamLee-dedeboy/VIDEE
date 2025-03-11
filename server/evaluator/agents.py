@@ -34,7 +34,7 @@ AnthropicModelType = Literal[
 def get_openai_client(model_name: str):
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        return None
+        raise Exception("OPENAI_API_KEY is not set")
 
     return OpenAIChatCompletionClient(model=model_name, api_key=api_key)
 
@@ -42,7 +42,7 @@ def get_openai_client(model_name: str):
 def get_claude_client(model_name: str):
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
-        return None
+        raise Exception("ANTHROPIC_API_KEY is not set")
 
     sk_client = AnthropicChatCompletion(ai_model_id=model_name, api_key=api_key)
     settings = AnthropicChatPromptExecutionSettings(temperature=0.0)
