@@ -209,14 +209,32 @@
       new_node: false,
       level: +task.level + 1,
       llm_evaluation: {
-        complexity: true,
-        coherence: true,
-        importance: true,
+        complexity: {
+          value: true,
+          reasoning: "",
+        },
+        coherence: {
+          value: true,
+          reasoning: "",
+        },
+        importance: {
+          value: true,
+          reasoning: "",
+        },
       },
       user_evaluation: {
-        complexity: true,
-        coherence: true,
-        importance: true,
+        complexity: {
+          value: true,
+          reasoning: "",
+        },
+        coherence: {
+          value: true,
+          reasoning: "",
+        },
+        importance: {
+          value: true,
+          reasoning: "",
+        },
       },
       value: 1.0,
       visits: 0,

@@ -286,18 +286,19 @@ async def reward(
                 node.llm_evaluation.importance,
             ] = eval_result
             reward_value = (
-                node.llm_evaluation.complexity
-                + node.llm_evaluation.coherence
-                + node.llm_evaluation.importance
+                node.llm_evaluation.complexity.value
+                + node.llm_evaluation.coherence.value
+                + node.llm_evaluation.importance.value
             ) / 3
 
-            node.llm_evaluation.complexity = bool(node.llm_evaluation.complexity)
-            node.llm_evaluation.coherence = bool(node.llm_evaluation.coherence)
-            node.llm_evaluation.importance = bool(node.llm_evaluation.importance)
+            # node.llm_evaluation.complexity = bool(node.llm_evaluation.complexity)
+            # node.llm_evaluation.coherence = bool(node.llm_evaluation.coherence)
+            # node.llm_evaluation.importance = bool(node.llm_evaluation.importance)
 
             node.user_evaluation.complexity = node.llm_evaluation.complexity
             node.user_evaluation.coherence = node.llm_evaluation.coherence
             node.user_evaluation.importance = node.llm_evaluation.importance
+
             node.value = reward_value
             node.path_value = node_dict[node.MCT_parent_id].path_value * reward_value
             reward_value_list.append(reward_value)
@@ -311,7 +312,7 @@ def backpropagate(node: MCT_Node, reward: float, node_dict: dict) -> None:
     """Updates the tree with the simulation results"""
     while node is not None:
         node.visits += 1
-        # node.value += reward  # Should we do some normalization here to avoid inflation?
+        # node.value += reward
         node.print_label = f"{node.label} ({node.value}/{node.visits})"
         node = node_dict[node.MCT_parent_id] if node.MCT_parent_id else None
 

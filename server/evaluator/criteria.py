@@ -209,7 +209,7 @@ async def run_complexity_evaluation_agent(
     }
 
     # TODO: Aggregate results from multiple models
-    return parsed_results[agents[0][0]].value
+    return parsed_results[agents[0][0]]
 
 
 async def run_coherence_evaluation_agent(
@@ -292,7 +292,7 @@ async def run_coherence_evaluation_agent(
     }
 
     # TODO: Aggregate results from multiple models
-    return parsed_results[agents[0][0]].value
+    return parsed_results[agents[0][0]]
 
 
 async def run_importance_evaluation_agent(
@@ -374,7 +374,7 @@ async def run_importance_evaluation_agent(
 
     # return parsed_results
     # TODO: Aggregate results from multiple models
-    return parsed_results[agents[0][0]].value
+    return parsed_results[agents[0][0]]
 
 
 async def get_llm_reasoning(

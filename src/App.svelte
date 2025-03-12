@@ -71,7 +71,8 @@
     semantic_tasks.forEach((task) => {
       evaluations.forEach((evaluation) => {
         if (
-          task.user_evaluation[evaluation] !== task.llm_evaluation[evaluation]
+          task.user_evaluation[evaluation].value !==
+          task.llm_evaluation[evaluation].value
         ) {
           if (!few_shot_examples_semantic_tasks[evaluation])
             few_shot_examples_semantic_tasks[evaluation] = [];
@@ -87,7 +88,7 @@
               ),
               user_evaluation: task.user_evaluation[evaluation],
               llm_evaluation: task.llm_evaluation[evaluation],
-              explanation: undefined,
+              user_reasoning: undefined,
             });
           }
         }
@@ -102,12 +103,12 @@
   function setFewShotExampleExplanation(
     task: tSemanticTask,
     evaluation: string,
-    explanation: string
+    user_reasoning: string
   ) {
     console.log({
       task,
       evaluation,
-      explanation,
+      user_reasoning,
       few_shot_examples_semantic_tasks: $state.snapshot(
         few_shot_examples_semantic_tasks
       ),
@@ -117,8 +118,9 @@
       .indexOf(task.MCT_id);
     console.log({ example_index });
     if (example_index !== -1) {
-      few_shot_examples_semantic_tasks[evaluation][example_index].explanation =
-        explanation;
+      few_shot_examples_semantic_tasks[evaluation][
+        example_index
+      ].user_reasoning = user_reasoning;
     }
   }
   setContext("setFewShotExampleExplanation", setFewShotExampleExplanation);
@@ -347,11 +349,11 @@
       .indexOf(task_id);
     if (target_task_index !== -1) {
       const target_task = semantic_tasks[target_task_index];
-      target_task.user_evaluation[evaluation] = value;
+      target_task.user_evaluation[evaluation].value = value;
       target_task.value =
-        (+target_task.user_evaluation.complexity +
-          +target_task.user_evaluation.coherence +
-          +target_task.user_evaluation.importance) /
+        (+target_task.user_evaluation.complexity.value +
+          +target_task.user_evaluation.coherence.value +
+          +target_task.user_evaluation.importance.value) /
         3;
 
       // update the path value

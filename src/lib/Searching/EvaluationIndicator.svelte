@@ -67,9 +67,9 @@
       ? evaluation_colors.good
       : evaluation_colors.bad}"
     onclick={() => {
+      console.log(value, llm_value);
       value = !value;
       handleToggle(value);
-      console.log(value, llm_value);
       if (value !== llm_value) {
         asking_feedback = true;
       } else {

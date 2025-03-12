@@ -8,6 +8,12 @@ export type tNode = {
     data: any;
     bbox?: DOMRect;
 }
+
+export type tScoreWithReasoning = {
+  value: boolean;
+  reasoning: string;
+}
+
 export type tMCT_Node = {
     MCT_id: string;
     MCT_parent_id: string;
@@ -15,14 +21,14 @@ export type tMCT_Node = {
     new_node: boolean;
     level: number;
     llm_evaluation: {
-        complexity: boolean;
-        coherence: boolean;
-        importance: boolean;
+        complexity: tScoreWithReasoning;
+        coherence: tScoreWithReasoning;
+        importance: tScoreWithReasoning;
     }
     user_evaluation: {
-        complexity: boolean;
-        coherence: boolean;
-        importance: boolean;
+        complexity: tScoreWithReasoning;
+        coherence: tScoreWithReasoning;
+        importance: tScoreWithReasoning;
     }
     value: number;
     visits: number;
