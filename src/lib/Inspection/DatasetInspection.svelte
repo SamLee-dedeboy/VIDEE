@@ -114,9 +114,9 @@
           />
         {/each} -->
       </div>
-      <div class="pagination flex justify-center gap-x-2 text-slate-600">
+      <div class="pagination flex justify-between gap-x-2 text-slate-600 pr-3">
         <button
-          class="w-[6rem] hover:bg-gray-100 flex justify-center items-center py-1 rounded outline-2 outline-gray-200 text-sm"
+          class="w-[2rem] hover:bg-gray-100 flex justify-center items-center py-1 rounded outline-2 outline-gray-200 text-sm"
           class:disabled={page === 0}
           onclick={() => {
             page -= 1;
@@ -138,7 +138,7 @@
           {/each}
         </div>
         <button
-          class="w-[6rem] hover:bg-gray-100 flex justify-center items-center py-1 rounded outline-2 outline-gray-200 text-sm"
+          class="w-[2rem] hover:bg-gray-100 flex justify-center items-center py-1 rounded outline-2 outline-gray-200 text-sm"
           class:disabled={page === paged_documents.length - 1}
           onclick={() => {
             page += 1;

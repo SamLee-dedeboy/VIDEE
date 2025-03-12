@@ -151,7 +151,7 @@
         </span>
         {#if !expand && task[id_key] !== "-1"}
           <div
-            class="evaluator-indicators flex absolute left-0 bottom-[calc(50%+0.5rem)] -translate-x-[calc(100%)] px-[0.5rem] translate-y-1/2 flex-col gap-y-0 z-20"
+            class="evaluator-indicators hidden absolute left-0 bottom-[calc(50%+0.5rem)] -translate-x-[calc(100%)] px-[0.5rem] translate-y-1/2 flex-col gap-y-0 z-20"
           >
             {#if controllers.show_complexity}
               <div transition:scale class="flex">

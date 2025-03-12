@@ -63,13 +63,15 @@
           <div class="table-header">Should be</div>
           <div class="table-header">Explanation</div>
         </div>
-        <div class="grid grid-cols-[1fr_1fr_2fr] gap-2">
+        <div
+          class="grid grid-cols-[1fr_1fr_2fr] gap-y-2 divide-y divide-gray-200"
+        >
           {#each few_shot_examples as example}
-            <div class="table-item text-center">
+            <div class="table-item text-sm text-center">
               {example.node.label}
             </div>
-            <div class="table-item">
-              <svg class="w-6 h-6" viewBox="0 0 10 10">
+            <div class="table-item text-sm">
+              <svg class="w-5 h-5" viewBox="0 0 10 10">
                 <circle
                   cx="5"
                   cy="5"
@@ -81,7 +83,7 @@
               </svg>
               {example.user_evaluation ? "Good" : "Bad"}
             </div>
-            <div class="table-item">
+            <div class="table-item text-sm">
               {example.user_reasoning ? example.user_reasoning : "N/A"}
             </div>
           {/each}
