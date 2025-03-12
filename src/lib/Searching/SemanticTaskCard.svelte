@@ -159,8 +159,8 @@
                   {streaming}
                   show_transition={true}
                   {task}
-                  value={task.user_evaluation.complexity.value}
-                  llm_value={task.llm_evaluation.complexity.value}
+                  value={task.user_evaluation.complexity}
+                  llm_value={task.llm_evaluation.complexity}
                   label="complexity"
                   icon={complexity_icon}
                   handleToggle={(user_value) =>
@@ -174,8 +174,8 @@
                   {streaming}
                   {task}
                   show_transition={true}
-                  value={task.user_evaluation.coherence.value}
-                  llm_value={task.llm_evaluation.coherence.value}
+                  value={task.user_evaluation.coherence}
+                  llm_value={task.llm_evaluation.coherence}
                   label="coherence"
                   icon={coherence_icon}
                   handleToggle={(user_value) =>
@@ -189,8 +189,8 @@
                   {streaming}
                   {task}
                   show_transition={true}
-                  value={task.user_evaluation.importance.value}
-                  llm_value={task.llm_evaluation.importance.value}
+                  value={task.user_evaluation.importance}
+                  llm_value={task.llm_evaluation.importance}
                   label="importance"
                   icon={importance_icon}
                   handleToggle={(user_value) =>
@@ -221,8 +221,8 @@
               {task}
               {streaming}
               show_transition={false}
-              value={task.user_evaluation.complexity.value}
-              llm_value={task.llm_evaluation.complexity.value}
+              value={task.user_evaluation.complexity}
+              llm_value={task.llm_evaluation.complexity}
               label="complexity"
               icon={complexity_icon}
               handleToggle={(user_value) =>
@@ -230,15 +230,15 @@
             />
             <div class="text-sm text-gray-500 italic w-[5rem]">Complexity</div>
             <div class="text-sm">
-              {task.user_evaluation.complexity.value ? "Good" : "Bad"}
+              {task.user_evaluation.complexity ? "Good" : "Bad"}
             </div>
           </div>
           <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
             <EvaluationIndicator
               {task}
               {streaming}
-              value={task.user_evaluation.coherence.value}
-              llm_value={task.llm_evaluation.coherence.value}
+              value={task.user_evaluation.coherence}
+              llm_value={task.llm_evaluation.coherence}
               show_transition={false}
               label="coherence"
               icon={coherence_icon}
@@ -247,7 +247,7 @@
             />
             <div class="text-sm text-gray-500 italic w-[5rem]">Coherence</div>
             <div class="text-sm">
-              {task.user_evaluation.coherence.value ? "Good" : "Bad"}
+              {task.user_evaluation.coherence ? "Good" : "Bad"}
             </div>
           </div>
           <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
@@ -255,8 +255,8 @@
               {streaming}
               {task}
               show_transition={false}
-              value={task.user_evaluation.importance.value}
-              llm_value={task.llm_evaluation.importance.value}
+              value={task.user_evaluation.importance}
+              llm_value={task.llm_evaluation.importance}
               label="importance"
               icon={importance_icon}
               handleToggle={(user_value) =>
@@ -264,7 +264,7 @@
             />
             <div class="text-sm text-gray-500 italic w-[5rem]">Importance</div>
             <div class="text-sm">
-              {task.user_evaluation.importance.value ? "Good" : "Bad"}
+              {task.user_evaluation.importance ? "Good" : "Bad"}
             </div>
           </div>
           <div class="flex gap-x-2 my-1">

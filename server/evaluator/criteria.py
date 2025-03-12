@@ -2,7 +2,7 @@ from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.messages import TextMessage
 import asyncio
 import itertools
-from server.custom_types import MCT_Node, ScoreWithReasoning
+from server.custom_types import MCT_Node
 from .agents import get_agents, get_response, get_openai_client
 
 import json
@@ -35,7 +35,7 @@ def load_system_message(criteria):
     return system_messages.get(criteria, "")
 
 
-def parse_result(result_text: str, flip: bool = False) -> ScoreWithReasoning:
+def parse_result(result_text: str, flip: bool = False) -> dict:
     reasoning_match = re.search(r"<REASONING>(.*?)</REASONING>", result_text, re.DOTALL)
     if not reasoning_match:
         raise ValueError("Missing <REASONING> section in result text.")
@@ -58,8 +58,8 @@ def parse_result(result_text: str, flip: bool = False) -> ScoreWithReasoning:
 
     if flip:
         value = 1 - value
-    return ScoreWithReasoning(value=value, reasoning=reasoning)
     return {"value": value, "reason": reasoning}
+    return ScoreWithReasoning(value=value, reasoning=reasoning)
 
 
 async def run_all_evaluations(
@@ -78,6 +78,8 @@ async def run_all_evaluations(
         eval_few_shot_examples: Few-shot examples for the evaluation. (optional)
         model: The model to use for evaluation.
         api_key: The API key for the model.
+    Returns:
+        Tuple of (results_grouped, reasons_grouped)
     """
     nested_tasks = []
     for goal, node, parent_node in eval_params:
@@ -130,11 +132,95 @@ async def run_all_evaluations(
     results_sequence = await asyncio.gather(*tasks)
     # group results so that each group contains results for a single node
     num_of_evaluators = 3
-    results_grouped = [
-        results_sequence[i : i + num_of_evaluators]
-        for i in range(0, len(results_sequence), num_of_evaluators)
-    ]
-    return results_grouped
+    results_grouped = []
+    reasons_grouped = []
+
+    for i in range(0, len(results_sequence), num_of_evaluators):
+        node_results = results_sequence[i : i + num_of_evaluators]
+
+        complexity_results = node_results[0]
+        coherence_results = node_results[1]
+        importance_results = node_results[2]
+
+        averaged_results = [
+            sum(
+                complexity_results[model_name]["value"]
+                for model_name in complexity_results.keys()
+            )
+            / len(complexity_results),
+            sum(
+                coherence_results[model_name]["value"]
+                for model_name in coherence_results.keys()
+            )
+            / len(coherence_results),
+            sum(
+                importance_results[model_name]["value"]
+                for model_name in importance_results.keys()
+            )
+            / len(importance_results),
+        ]
+
+        reasons = [
+            await summarize_reason(
+                [
+                    complexity_results[model_name]["reason"]
+                    for model_name in complexity_results.keys()
+                ]
+            ),
+            await summarize_reason(
+                [
+                    coherence_results[model_name]["reason"]
+                    for model_name in coherence_results.keys()
+                ]
+            ),
+            await summarize_reason(
+                [
+                    importance_results[model_name]["reason"]
+                    for model_name in importance_results.keys()
+                ]
+            ),
+        ]
+
+        results_grouped.append(averaged_results)
+        reasons_grouped.append(reasons)
+
+    return results_grouped, reasons_grouped
+
+
+def balance_few_shot_examples(
+    few_shot_examples: list[dict], max_diff: int = 1
+) -> list[dict]:
+    """Balance the few shot examples so that the difference between positive and negative examples
+    is not more than max_diff.
+
+    Args:
+        few_shot_examples: List of examples, each containing 'user_evaluation' (0 or 1)
+        max_diff: Maximum allowed difference between number of positive and negative examples
+
+    Returns:
+        Balanced list of examples
+    """
+    if not few_shot_examples:
+        return []
+
+    positive_examples = [ex for ex in few_shot_examples if ex["user_evaluation"]]
+    negative_examples = [ex for ex in few_shot_examples if not ex["user_evaluation"]]
+
+    pos_count = len(positive_examples)
+    neg_count = len(negative_examples)
+
+    if abs(pos_count - neg_count) <= max_diff:
+        return few_shot_examples
+
+    if pos_count > neg_count + max_diff:
+        target_pos_count = neg_count + max_diff
+        return negative_examples + positive_examples[:target_pos_count]
+
+    if neg_count > pos_count + max_diff:
+        target_neg_count = pos_count + max_diff
+        return positive_examples + negative_examples[:target_neg_count]
+
+    return few_shot_examples
 
 
 async def run_complexity_evaluation_agent(
@@ -144,7 +230,7 @@ async def run_complexity_evaluation_agent(
     api_key: str,
     complexity_definition: str,
     few_shot_examples: list[dict],
-) -> ScoreWithReasoning:
+):
     """
     Run the complexity evaluation agent to evaluate whether the node is complex.
     Args:
@@ -159,6 +245,8 @@ async def run_complexity_evaluation_agent(
         Key: The model name.
         Value: The evaluation result.
     """
+
+    few_shot_examples = balance_few_shot_examples(few_shot_examples)
 
     system_message = load_system_message("complexity_evaluator").format(
         definition=complexity_definition
@@ -208,8 +296,9 @@ async def run_complexity_evaluation_agent(
         for (model, _), result_text in zip(agents, results)
     }
 
-    # TODO: Aggregate results from multiple models
-    return parsed_results[agents[0][0]]
+    return parsed_results
+    # # TODO: Aggregate results from multiple models
+    # return parsed_results[agents[0][0]]
 
 
 async def run_coherence_evaluation_agent(
@@ -232,6 +321,8 @@ async def run_coherence_evaluation_agent(
         coherence_definition: The definition of coherence.
         few_shot_examples: Few-shot examples for the evaluation. (optional)
     """
+
+    few_shot_examples = balance_few_shot_examples(few_shot_examples)
 
     system_message = load_system_message("coherence_evaluator").format(
         definition=coherence_definition
@@ -291,6 +382,7 @@ async def run_coherence_evaluation_agent(
         for (model, _), result_text in zip(agents, results)
     }
 
+    return parsed_results
     # TODO: Aggregate results from multiple models
     return parsed_results[agents[0][0]]
 
@@ -314,10 +406,11 @@ async def run_importance_evaluation_agent(
         few_shot_examples: Few-shot examples for the evaluation. (optional)
     """
 
+    few_shot_examples = balance_few_shot_examples(few_shot_examples)
+
     system_message = load_system_message("importance_evaluator").format(
         definition=importance_definition
     )
-
     agents = get_agents(
         agent_name="importance_evaluator", system_message=system_message
     )
@@ -372,6 +465,7 @@ async def run_importance_evaluation_agent(
         for (model, _), result_text in zip(agents, results)
     }
 
+    return parsed_results
     # return parsed_results
     # TODO: Aggregate results from multiple models
     return parsed_results[agents[0][0]]
@@ -420,3 +514,43 @@ Provide a reasoning explanation:
     )
 
     return response
+
+
+async def summarize_reason(reasons: list[str]) -> str:
+    """Summarize a list of reasons into a single coherent reason using an LLM.
+
+    Args:
+        reasons: List of reasoning strings from different models
+
+    Returns:
+        A summarized reason string
+    """
+    # with open("../../model_list.yaml", "r", encoding="utf-8") as f:
+    with open(relative_path("model_list.yaml"), "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+        model_name = data.get("summarization-model", "gpt-4o")
+
+    model_client = get_openai_client(model_name)
+    if model_client is None:
+        raise RuntimeError(
+            "Missing OpenAI API key. Please set 'OPENAI_API_KEY' in the dot environment file '.env'."
+        )
+
+    system_message = load_system_message("reason_summarizer")
+
+    summarization_agent = AssistantAgent(
+        name="reason_summarization_agent",
+        model_client=model_client,
+        system_message=system_message,
+    )
+
+    reasons_text = "\n---\n".join(reasons)
+    prompt = (
+        f"Here are the different reasoning explanations to summarize:\n\n{reasons_text}"
+    )
+
+    response = await get_response(
+        summarization_agent, [TextMessage(content=prompt, source="user")]
+    )
+
+    return response.strip()

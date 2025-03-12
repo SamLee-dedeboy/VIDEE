@@ -269,7 +269,7 @@ async def reward(
             eval_params.append((goal, node, node_dict[node.MCT_parent_id]))
 
         # runs evaluation on all children in parallel
-        eval_results = await evaluator.run_all_evaluations(
+        eval_results, eval_reasons = await evaluator.run_all_evaluations(
             goal=goal,
             eval_params=eval_params,
             eval_definitions=eval_definitions,
@@ -279,21 +279,24 @@ async def reward(
         )
 
         # update the eval results for each child
-        for node, eval_result in zip(children, eval_results):
+        for node, eval_result, eval_reason in zip(children, eval_results, eval_reasons):
             [
-                node.llm_evaluation.complexity,
-                node.llm_evaluation.coherence,
-                node.llm_evaluation.importance,
+                complexity_value,
+                coherence_value,
+                importance_value,
             ] = eval_result
-            reward_value = (
-                node.llm_evaluation.complexity.value
-                + node.llm_evaluation.coherence.value
-                + node.llm_evaluation.importance.value
-            ) / 3
 
-            # node.llm_evaluation.complexity = bool(node.llm_evaluation.complexity)
-            # node.llm_evaluation.coherence = bool(node.llm_evaluation.coherence)
-            # node.llm_evaluation.importance = bool(node.llm_evaluation.importance)
+            [complexity_reason, coherence_reason, importance_reason] = eval_reason
+
+            reward_value = (complexity_value + coherence_value + importance_value) / 3
+
+            node.llm_evaluation.complexity = bool(complexity_value >= 0.5)
+            node.llm_evaluation.coherence = bool(coherence_value >= 0.5)
+            node.llm_evaluation.importance = bool(importance_value >= 0.5)
+
+            node.llm_evaluation.complexity_reason = complexity_reason
+            node.llm_evaluation.coherence_reason = coherence_reason
+            node.llm_evaluation.importance_reason = importance_reason
 
             node.user_evaluation.complexity = node.llm_evaluation.complexity
             node.user_evaluation.coherence = node.llm_evaluation.coherence

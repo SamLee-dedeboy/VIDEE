@@ -71,8 +71,7 @@
     semantic_tasks.forEach((task) => {
       evaluations.forEach((evaluation) => {
         if (
-          task.user_evaluation[evaluation].value !==
-          task.llm_evaluation[evaluation].value
+          task.user_evaluation[evaluation] !== task.llm_evaluation[evaluation]
         ) {
           if (!few_shot_examples_semantic_tasks[evaluation])
             few_shot_examples_semantic_tasks[evaluation] = [];
@@ -349,11 +348,11 @@
       .indexOf(task_id);
     if (target_task_index !== -1) {
       const target_task = semantic_tasks[target_task_index];
-      target_task.user_evaluation[evaluation].value = value;
+      target_task.user_evaluation[evaluation] = value;
       target_task.value =
-        (+target_task.user_evaluation.complexity.value +
-          +target_task.user_evaluation.coherence.value +
-          +target_task.user_evaluation.importance.value) /
+        (+target_task.user_evaluation.complexity +
+          +target_task.user_evaluation.coherence +
+          +target_task.user_evaluation.importance) /
         3;
 
       // update the path value
