@@ -439,14 +439,23 @@
           class="info-trigger cursor-help absolute w-max text-sm left-[calc(100%+1rem)] bottom-0 flex flex-col gap-y-2"
         >
           <div class="flex items-center gap-x-1 underline relative">
-            <img src="info.svg" class="w-5 h-5" alt="info" />What is
-            Exploitation vs. Exploration?
+            <img src="info.svg" class="w-5 h-5" alt="info" />Tip: Exploitation
+            vs. Exploration
           </div>
           <div
-            class="info scale-0 absolute top-[calc(100%+0.15rem)] left-[1.5rem] flex flex-wrap min-w-[15rem] max-w-[20rem] text-sm mt-[-0.15rem] pt-[0.15rem]"
+            class="info scale-0 absolute top-[calc(100%+0.15rem)] left-1/2 -translate-x-1/3 flex flex-wrap w-[25rem] text-sm text-slate-500 mt-[-0.15rem] pt-[0.15rem]"
           >
             <span class="outline-2 outline-slate-700 p-2 rounded bg-gray-50">
-              Explain Exploitation vs. Exploration in more detail...
+              A good searching process would balance between
+              <span class="font-bold text-black"
+                >sticking to what seems best (exploitation)
+              </span>
+              and <br />
+              <span class="font-bold text-black"
+                >trying new options (exploration)
+              </span>
+              to make the best decision. If only exploits, you might miss better
+              choices; If only explores, you waste time on uncertain options.
             </span>
           </div>
         </span>
