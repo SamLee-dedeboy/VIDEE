@@ -51,7 +51,7 @@
           {doc_input_key}
         </div>
         <div class="max-h-[15rem] overflow-hidden text-sm">
-          {JSON.stringify(document[doc_input_key])}
+          {JSON.stringify(document[doc_input_key]).replace(/['"]+/g, "")}
         </div>
       </div>
     {/if}
