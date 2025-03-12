@@ -151,7 +151,7 @@
         </span>
         {#if !expand && task[id_key] !== "-1"}
           <div
-            class="evaluator-indicators hidden absolute left-0 bottom-[calc(50%+0.5rem)] -translate-x-[calc(100%)] px-[0.5rem] translate-y-1/2 flex-col gap-y-1 z-20"
+            class="evaluator-indicators flex absolute left-0 bottom-[calc(50%+0.5rem)] -translate-x-[calc(100%)] px-[0.5rem] translate-y-1/2 flex-col gap-y-0 z-20"
           >
             {#if controllers.show_complexity}
               <div transition:scale class="flex">
@@ -161,6 +161,7 @@
                   {task}
                   value={task.user_evaluation.complexity}
                   llm_value={task.llm_evaluation.complexity}
+                  llm_reasoning={task.llm_evaluation.complexity_reason}
                   label="complexity"
                   icon={complexity_icon}
                   handleToggle={(user_value) =>
@@ -176,6 +177,7 @@
                   show_transition={true}
                   value={task.user_evaluation.coherence}
                   llm_value={task.llm_evaluation.coherence}
+                  llm_reasoning={task.llm_evaluation.coherence_reason}
                   label="coherence"
                   icon={coherence_icon}
                   handleToggle={(user_value) =>
@@ -191,6 +193,7 @@
                   show_transition={true}
                   value={task.user_evaluation.importance}
                   llm_value={task.llm_evaluation.importance}
+                  llm_reasoning={task.llm_evaluation.importance_reason}
                   label="importance"
                   icon={importance_icon}
                   handleToggle={(user_value) =>
@@ -223,6 +226,7 @@
               show_transition={false}
               value={task.user_evaluation.complexity}
               llm_value={task.llm_evaluation.complexity}
+              llm_reasoning={task.llm_evaluation.complexity_reason}
               label="complexity"
               icon={complexity_icon}
               handleToggle={(user_value) =>
@@ -239,6 +243,7 @@
               {streaming}
               value={task.user_evaluation.coherence}
               llm_value={task.llm_evaluation.coherence}
+              llm_reasoning={task.llm_evaluation.coherence_reason}
               show_transition={false}
               label="coherence"
               icon={coherence_icon}
@@ -257,6 +262,7 @@
               show_transition={false}
               value={task.user_evaluation.importance}
               llm_value={task.llm_evaluation.importance}
+              llm_reasoning={task.llm_evaluation.importance_reason}
               label="importance"
               icon={importance_icon}
               handleToggle={(user_value) =>
