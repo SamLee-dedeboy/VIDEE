@@ -1,5 +1,6 @@
 <script lang="ts">
   import type {
+    tPrimitiveTask,
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
   } from "types";
@@ -9,53 +10,33 @@
   import { server_address } from "constants";
   import { getContext } from "svelte";
   import PromptTemplate from "./PromptTemplate.svelte";
-  import { primitiveTaskState } from "../ExecutionStates.svelte";
+  import {
+    primitiveTaskState,
+    primitiveTaskExecutionStates,
+  } from "../ExecutionStates.svelte";
   import PagedDocuments from "./PagedDocuments.svelte";
+  import ExecutionResultInspection from "./ExecutionResultInspection.svelte";
   let {
     task,
-    // handleUpdatePrimitiveTask,
   }: {
-    task: tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>;
-    // handleUpdatePrimitiveTask: Function;
+    task: tPrimitiveTask;
   } = $props();
   let show_description = $state(true);
   let show_formats = $state(false);
   let show_execution = $state(false);
-  let show_result = $state(false);
-  let result = $state(undefined);
-  const session_id = (getContext("session_id") as Function)();
+  let execution_result_inspection_panel: any = $state();
 
-  function handleFetchTaskResult() {
-    fetch(`${server_address}/primitive_task/result/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ task_id: task.id, session_id }),
-    })
-      .then((response) => response.json())
-      .then(async (data) => {
-        console.log("Inspection fetched result:", data);
-        result = data.result;
-        await tick();
-        document.querySelector(".result-panel")?.scrollIntoView({
-          behavior: "smooth",
-        });
-        // await tick();
-        // const inspection_panel = document.querySelector(".inspection-panel");
-        // if (inspection_panel && show_result) {
-        //   inspection_panel.scrollTop = inspection_panel.scrollHeight;
-        // }
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
   function handleUpdatePrompt(messages) {
     task.execution!.parameters.prompt_template = messages;
     console.log("Updated primitive task", $state.snapshot(task));
     primitiveTaskState.updatePrimitiveTask(task.id, task);
   }
+
+  export async function navigate_to_results() {
+    await tick();
+    execution_result_inspection_panel.navigate_to_results();
+  }
+
   onMount(() => {
     console.log({ task });
   });
@@ -114,7 +95,7 @@
               await tick();
               document
                 .querySelector(".format-container")
-                ?.scrollIntoView({ behavior: "smooth" });
+                ?.scrollIntoView({ behavior: "smooth", block: "center" });
             }}
           >
             Input/Output Formats
@@ -178,10 +159,10 @@
             await tick();
             document
               .querySelector(".execution-container")
-              ?.scrollIntoView({ behavior: "smooth" });
+              ?.scrollIntoView({ behavior: "smooth", block: "center" });
           }}
         >
-          Execution
+          Execution Parameters
           <img
             src="chevron_down.svg"
             alt="expand"
@@ -224,67 +205,21 @@
           <div>Needs Compilation...</div>
         {/if}
       </div>
-      {#if true}
-        <div class="flex flex-col">
-          <div class="flex flex-col">
-            <button
-              tabindex="0"
-              class="header-2"
-              onclick={async () => {
-                show_result = !show_result;
-                handleFetchTaskResult();
-              }}
-            >
-              Result
-              <img
-                src="chevron_down.svg"
-                alt="expand"
-                class="hidden ml-auto w-5 h-5"
-              />
-            </button>
-          </div>
-          {#if show_result && result !== undefined}
-            <div in:slide class="result-panel flex flex-col">
-              {#each Object.keys(result) as state_input_key}
-                <div class="flex flex-col state-container">
-                  <button
-                    class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200"
-                    onclick={(e: any) => {
-                      console.log(e.target);
-                      const container = e.target.closest(".state-container");
-                      const state_content =
-                        container.querySelector(".state-content");
-                      state_content.classList.toggle("hide-state-content");
-                      state_content.scrollIntoView({ behavior: "smooth" });
-                    }}>{state_input_key}</button
-                  >
-                  <div class="state-content flex hide-state-content flex-col">
-                    <PagedDocuments
-                      documents={result[state_input_key]}
-                      bg_color="oklch(0.97 0.014 254.604)"
-                      bg_hover_color="oklch(0.882 0.059 254.128)"
-                    ></PagedDocuments>
-                  </div>
-                  <!-- <div class="flex flex-wrap gap-2">
-                    {#each result[state_input_key] as doc}
-                      <DocumentCard
-                        document={doc}
-                        --bg-color="oklch(0.97 0.014 254.604)"
-                        --bg-hover-color="oklch(0.882 0.059 254.128)"
-                      />
-                    {/each}
-                  </div> -->
-                </div>
-              {/each}
-            </div>
-            <div class="h-[10rem]"></div>
-          {/if}
+      {#if primitiveTaskExecutionStates.executed(task.id)}
+        <ExecutionResultInspection
+          bind:this={execution_result_inspection_panel}
+          task_id={task.id}
+        />
+      {:else}
+        <div class="flex flex-col gap-y-1">
+          <div class="header-2 pointer-events-none opacity-70">Result</div>
+          <span class="text-xs text-gray-500 itliac px-1">
+            (Not Executed)
+          </span>
         </div>
       {/if}
     </div>
   {/if}
-  <!-- <ExecutionEvaluators --bg-color={"#f2f8fd"} tasks={primitive_tasks}
-  ></ExecutionEvaluators> -->
 </div>
 
 <style lang="postcss">
@@ -312,8 +247,5 @@
   }
   .key-section:hover > .plus-button {
     @apply visible;
-  }
-  .hide-state-content {
-    @apply hidden;
   }
 </style>

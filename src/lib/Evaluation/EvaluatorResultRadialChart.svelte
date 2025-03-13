@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getContext, onMount } from "svelte";
-  import type { tDRResult, tExecutionEvaluatorResult } from "types";
+  import type { tDRResult, tExecutionEvaluatorResult, tDocument } from "types";
   import { RadialEvaluationChart } from "renderer/RadialEvaluationChart";
   import { server_address } from "constants";
   let { result }: { result: tExecutionEvaluatorResult } = $props();
@@ -43,8 +43,14 @@
     evaluationChart.update(dr_result, undefined);
   }
 
+  const navigateToDoc: (doc: tDocument) => void = getContext("navigate_to_doc");
+  function handleDocumentClicked(doc: tDocument) {
+    navigateToDoc(doc);
+  }
+
   onMount(() => {
     evaluationChart.init();
+    evaluationChart.on("node_clicked", handleDocumentClicked);
   });
 </script>
 

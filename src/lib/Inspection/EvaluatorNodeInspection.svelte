@@ -1,15 +1,22 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
-  import { tick } from "svelte";
+  import { setContext, tick } from "svelte";
   import PromptTemplate from "./PromptTemplate.svelte";
   import { trim } from "lib/trim";
-  import type { tExecutionEvaluator, tExecutionEvaluatorResult } from "types";
+  import type {
+    tExecutionEvaluator,
+    tExecutionEvaluatorResult,
+    tPrimitiveTask,
+    tDocument,
+  } from "types";
   import DocumentCard from "./DocumentCard.svelte";
   import { server_address } from "constants";
   import { getContext } from "svelte";
   import { evaluatorState } from "../ExecutionStates.svelte";
+  import ExecutionResultInspection from "./ExecutionResultInspection.svelte";
   import EvaluatorResult from "../Evaluation/EvaluatorResult.svelte";
   import EvaluatorResultRadialChart from "../Evaluation/EvaluatorResultRadialChart.svelte";
+  import PagedDocuments from "./PagedDocuments.svelte";
 
   let {
     evaluator = $bindable(),
@@ -23,6 +30,8 @@
   let show_formats = $state(false);
   let show_execution = $state(false);
   let show_result = $state(false);
+  let show_documents = $state(false);
+  let paged_document_component: any = $state();
 
   let result: tExecutionEvaluatorResult | undefined = $state(undefined);
   const session_id = (getContext("session_id") as Function)();
@@ -30,6 +39,7 @@
     handleFetchEvaluationResult(evaluator);
   });
   function handleFetchEvaluationResult(evaluator: tExecutionEvaluator) {
+    console.log({ evaluator });
     fetch(`${server_address}/primitive_task/evaluators/result/`, {
       method: "POST",
       headers: {
@@ -56,6 +66,13 @@
     console.log("Updated evaluator", $state.snapshot(evaluator));
     evaluatorState.updateEvaluator(evaluator.name, evaluator);
   }
+
+  async function handleDocumentClicked(doc: tDocument) {
+    show_documents = true;
+    await tick();
+    paged_document_component.navigateToDoc(doc);
+  }
+  setContext("navigate_to_doc", handleDocumentClicked);
 </script>
 
 <div class="flex flex-col px-1 gap-y-2">
@@ -221,6 +238,23 @@
           </button>
         </div>
         {#if show_result && result !== undefined}
+          <div class="flex flex-col">
+            <button
+              class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200"
+              onclick={() => {
+                show_documents = !show_documents;
+              }}
+              onkeyup={() => {}}
+            >
+              documents
+            </button>
+            {#if show_documents}
+              <PagedDocuments
+                bind:this={paged_document_component}
+                documents={result.result.documents}
+              ></PagedDocuments>
+            {/if}
+          </div>
           <EvaluatorResult {result}></EvaluatorResult>
           <EvaluatorResultRadialChart {result}></EvaluatorResultRadialChart>
           <!-- <div in:slide class="flex flex-col">

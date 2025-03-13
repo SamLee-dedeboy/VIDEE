@@ -10,7 +10,7 @@
   let show_topics = $state(false);
   let documents: tDocument[] = $state([]);
   let dr_result: tDRResult[] = $state([]);
-  let paged_document_component = $state();
+  let paged_document_component: any = $state();
   const session_id = (getContext("session_id") as Function)();
   const svgId = "radial-topic-chart-svg";
   let topicChart: RadialTopicChart = new RadialTopicChart(svgId);

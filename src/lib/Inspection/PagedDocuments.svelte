@@ -41,9 +41,6 @@
         if (doc_card) {
           doc_card.classList.add("highlighted");
           doc_card.scrollIntoView({ behavior: "smooth", block: "center" });
-          // setTimeout(() => {
-          //   doc_card.classList.remove("highlighted");
-          // }, 3000);
         }
       }, 100);
     }

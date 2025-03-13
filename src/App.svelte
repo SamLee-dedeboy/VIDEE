@@ -1,6 +1,6 @@
 <script lang="ts">
   import { server_address } from "constants";
-  import { onMount, setContext } from "svelte";
+  import { onMount, setContext, tick } from "svelte";
   import type {
     tExecutionEvaluator,
     tPrimitiveTask,
@@ -56,6 +56,7 @@
   let inspected_evaluator_node: tExecutionEvaluator | undefined =
     $state(undefined);
 
+  let execution_inspection_panel: any = $state();
   /**
    * Stores the state of the dag
    * @value semantic| mcts
@@ -174,8 +175,8 @@
   }
 
   async function handleDecomposeGoalStepped_MCTS(goal: string) {
-    // dev_handleDecomposeGoalStepped_MCTS(goal);
-    // return;
+    dev_handleDecomposeGoalStepped_MCTS(goal);
+    return;
     user_goal = goal;
     streaming_states.started = true;
     streaming_states.paused = false;
@@ -289,17 +290,16 @@
 
   function handleConvert() {
     controllers.converting = true;
-    // fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
-    fetch(
-      `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
-      }
-    )
+    fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
+      // fetch(
+      //   `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`,
+      //   {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
+    })
       .then((response) => response.json())
       .then((data) => {
         console.log("decomposition to primitive tasks: ", { data });
@@ -452,15 +452,25 @@
                 {handleConvert}
                 converting={controllers.converting}
                 compiling={controllers.compiling}
-                handleInspectPrimitiveTask={(task) => {
+                handleInspectPrimitiveTask={async (
+                  task,
+                  show_result = false
+                ) => {
                   console.log("inspecting task", task);
                   inspected_primitive_task = task;
                   inspected_evaluator_node = undefined;
+                  if (show_result) {
+                    execution_inspection_panel.navigate_to_primitive_task_results();
+                  } else {
+                    execution_inspection_panel.scrollIntoInspectionPanel();
+                  }
                 }}
-                handleInspectEvaluatorNode={(node) => {
+                handleInspectEvaluatorNode={async (node) => {
                   console.log("inspecting evaluator", node);
                   inspected_evaluator_node = node;
                   inspected_primitive_task = undefined;
+                  await tick();
+                  execution_inspection_panel.scrollIntoInspectionPanel();
                 }}
               ></Execution>
             {/if}
@@ -475,6 +485,7 @@
         ></SemanticTaskTreeInspection>
       {:else if show_dag === "semantic"}
         <ExecutionInspection
+          bind:this={execution_inspection_panel}
           primitive_task={inspected_primitive_task}
           evaluator_node={inspected_evaluator_node}
         ></ExecutionInspection>

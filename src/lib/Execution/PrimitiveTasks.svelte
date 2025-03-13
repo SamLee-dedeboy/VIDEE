@@ -30,6 +30,8 @@
   } = $props();
 
   let executing_task_id: string | undefined = $state(undefined);
+  let ask_to_check_results = $state(false);
+  let executed_task_id: string | undefined = $state(undefined);
   const primitive_tasks = $derived(
     primitiveTaskState.primitiveTasks
   ) as tPrimitiveTaskDescription[];
@@ -121,6 +123,7 @@
   function handleExecute(execute_node: tPrimitiveTask) {
     console.log("Executing...", { execute_node, session_id });
     executing_task_id = execute_node.id;
+
     fetch(`${server_address}/primitive_task/execute/`, {
       method: "POST",
       headers: {
@@ -132,11 +135,19 @@
       .then((data) => {
         primitiveTaskExecutionStates.execution_states = data.execution_state;
         console.log("execution: ", data);
+        executed_task_id = executing_task_id;
         executing_task_id = undefined;
+        ask_to_check_results = true;
       })
       .catch((error) => {
         console.error("Error:", error);
       });
+  }
+
+  function navigate_to_results(node_id: string) {
+    console.log("navigating to results: ", node_id);
+    const task = primitive_tasks.find((task) => task.id === node_id);
+    handleInspectPrimitiveTask(task, true);
   }
 
   function handleAddTask() {
@@ -208,6 +219,32 @@
       </button>
     </div>
   </div>
+  {#if ask_to_check_results}
+    <div class="absolute top-1/3 left-0 right-0 flex justify-center z-10">
+      <div
+        class="w-[18rem] bg-white outline-2 outline-gray-200 px-2 py-1 flex flex-col font-mono gap-y-4"
+      >
+        <span class="text-slate-600 text-sm">
+          Execution Done! Check Results?
+        </span>
+        <div class="flex justify-between text-sm">
+          <button
+            class="bg-green-100 outline-2 outline-gray-200 hover:bg-green-200 px-2 py-1 rounded text-slate-600"
+            onclick={() => {
+              ask_to_check_results = false;
+              navigate_to_results(executed_task_id);
+            }}>Yes</button
+          >
+          <button
+            class="bg-red-100 outline-2 outline-gray-200 hover:bg-red-200 px-2 py-1 rounded text-slate-600"
+            onclick={() => {
+              ask_to_check_results = false;
+            }}>No</button
+          >
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <!-- style:height={Math.max(
       primitive_tasks.length * 2 * node_size[1] * 1.5,

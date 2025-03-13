@@ -1,7 +1,7 @@
 <script lang="ts">
   import { server_address } from "constants";
   import { slide } from "svelte/transition";
-  import { onMount, setContext } from "svelte";
+  import { onMount, setContext, tick } from "svelte";
   import type {
     tExecutionEvaluator,
     tPrimitiveTaskDescription,
@@ -25,6 +25,7 @@
   const session_id = (getContext("session_id") as Function)();
   let documents: any[] = $state([]);
 
+  let primitive_task_inspection_panel: any = $state();
   let inspect_mode = $state("task");
   let show_documents = $state(false);
 
@@ -44,6 +45,23 @@
         console.error("Error:", error);
       });
   }
+  export function scrollIntoInspectionPanel() {
+    document.querySelector(".inspection-container")?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }
+
+  export async function navigate_to_primitive_task_results() {
+    await tick();
+    // console.log(
+    //   "Navigating to results",
+    //   primitive_task_inspection_panel,
+    //   primitive_task
+    // );
+    primitive_task_inspection_panel.navigate_to_results();
+  }
+
   onMount(() => {
     getDocuments();
   });
@@ -52,12 +70,15 @@
 <div class="flex flex-col px-1 gap-y-4">
   <DatasetInspection></DatasetInspection>
   {#if primitive_task}
-    <div in:slide>
-      <PrimitiveTaskInspection task={primitive_task}></PrimitiveTaskInspection>
+    <div in:slide class="inspection-container">
+      <PrimitiveTaskInspection
+        bind:this={primitive_task_inspection_panel}
+        task={primitive_task}
+      ></PrimitiveTaskInspection>
     </div>
   {/if}
   {#if evaluator_node}
-    <div in:slide>
+    <div in:slide class="inspection-container">
       <EvaluatorNodeInspection evaluator={evaluator_node}
       ></EvaluatorNodeInspection>
     </div>

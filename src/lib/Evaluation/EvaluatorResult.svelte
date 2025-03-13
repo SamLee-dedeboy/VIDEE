@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { tExecutionEvaluatorResult } from "types";
   import * as d3 from "d3";
+  import ExecutionResultInspection from "lib/Inspection/ExecutionResultInspection.svelte";
   let { result }: { result: tExecutionEvaluatorResult } = $props();
   const svgId = "evaluator-result-svg";
 

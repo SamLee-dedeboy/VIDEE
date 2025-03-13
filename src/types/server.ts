@@ -105,7 +105,7 @@ export type tExecutionEvaluatorParams = {
   export type tExecutionEvaluatorResult = {
     name: string;
     result: {
-      documents: Record<string, any>;
+      documents: tDocument[]
     }
   }
 

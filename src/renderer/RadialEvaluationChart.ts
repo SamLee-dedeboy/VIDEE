@@ -48,7 +48,7 @@ export class RadialEvaluationChart {
         this.padding.top + this.height / 2,
       ],
     };
-    this.dispatch = d3.dispatch("force_end", "snippet_clicked");
+    this.dispatch = d3.dispatch("force_end", "node_clicked");
 
     this.polarRadiusScale = d3
       .scaleLinear()
@@ -153,8 +153,8 @@ export class RadialEvaluationChart {
             .attr("cursor", "pointer")
             .on("click", function (e, d) {
               console.log("click", d);
-              self.dispatch.call("snippet_clicked", null, d);
-            });
+              self.dispatch.call("node_clicked", null, d);
+            })
           if (highlight_ids) {
             enter_nodes
               .classed("node-not-highlighted", true)
