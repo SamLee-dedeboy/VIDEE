@@ -3,11 +3,9 @@
   import { onMount, setContext, tick } from "svelte";
   import type {
     tExecutionEvaluator,
-    tPrimitiveTask,
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
     tSemanticTask,
-    tExecutionState,
   } from "types";
   import {
     primitiveTaskState,
@@ -46,13 +44,11 @@
 
   let user_goal: string = $state("");
 
-  // let primitive_tasks: tPrimitiveTask[] = $state([]);
   let primitive_tasks = $derived(primitiveTaskState.primitiveTasks);
   let inspected_primitive_task:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
     | undefined = $state(undefined);
 
-  // let evaluators: tExecutionEvaluator[] = $state([]);
   let inspected_evaluator_node: tExecutionEvaluator | undefined =
     $state(undefined);
 

@@ -1,9 +1,5 @@
 <script lang="ts">
-  import type {
-    tPrimitiveTask,
-    tPrimitiveTaskDescription,
-    tPrimitiveTaskExecution,
-  } from "types";
+  import type { tPrimitiveTask } from "types";
   import { slide } from "svelte/transition";
   let {
     task,
@@ -28,7 +24,6 @@
     handleDeleteTask?: Function;
     handleToggleExpand?: Function;
   } = $props();
-  let show_actions = $state(false);
   let adding_parent = $state(false);
 </script>
 
@@ -174,15 +169,10 @@
             </div>
           </div>
         </div>
-        <!-- <button
-          class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
-          >Edit</button
-        > -->
         <button
           class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
           onclick={() => handleDeleteTask(task)}
         >
-          <!-- <img src="close.svg" alt="x" /> -->
           Delete
         </button>
       </div>
@@ -195,30 +185,17 @@
   .container:hover > .more-actions {
     @apply flex flex-wrap;
   }
-  .option-label {
-    @apply text-gray-500 italic;
-  }
-  .option-value {
-    @apply outline-1 outline-gray-300 rounded px-2 my-2 hover:bg-gray-200 transition-all cursor-pointer;
-  }
   .action-button {
     @apply outline-2 rounded px-1 py-0.5 text-sm font-mono;
   }
   .disabled {
     @apply cursor-not-allowed pointer-events-none bg-gray-300 outline-gray-200 opacity-50;
   }
-  .active {
-    @apply outline-gray-600 bg-green-200;
-  }
+
   .task-card {
     transition:
       width 0.3s ease,
       height 0.3s ease;
-  }
-  .task-card:hover {
-    & .close-button {
-      @apply block;
-    }
   }
   .add-parent-container:hover .options {
     @apply block;

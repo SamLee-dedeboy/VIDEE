@@ -1,14 +1,9 @@
 <script lang="ts">
   import type {
     tSemanticTask,
-    tNode,
     tPrimitiveTask,
     tExecutionEvaluator,
-    tExecutionState,
-    tTask,
   } from "types";
-  import { DAG } from "renderer/dag";
-  import { slide } from "svelte/transition";
   import * as d3 from "d3";
   import { getContext, setContext, tick } from "svelte";
   import PrimitiveTasks from "./PrimitiveTasks.svelte";
@@ -43,7 +38,6 @@
     // evaluators: tExecutionEvaluator[];
     handleInspectEvaluatorNode: Function;
   } = $props();
-  const session_id = (getContext("session_id") as Function)();
   const svgId = "controller-dag-svg";
   let controllers = $state({
     show_plan: true,

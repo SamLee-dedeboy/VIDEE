@@ -52,8 +52,7 @@
     coherence_icon: Snippet;
     importance_icon: Snippet;
   } = $props();
-  let show_subtasks = $state(false);
-  let show_actions = $state(false);
+
   let regenerating = $state(false);
 
   // function showSubTasks() {
@@ -106,7 +105,6 @@
     handleTaskHovered(task[id_key], false);
   }}
 >
-  <!-- class="path-value-bar absolute left-[-0.125rem] right-[-0.125rem] bottom-[calc(100%+0.125rem)] h-[1rem] bg-slate-200" -->
   {#if task[id_key] !== "-1" && task["label"] !== "END"}
     <div
       class="path-value-bar h-[1rem] bg-gray-100 outline-2 outline-gray-300"

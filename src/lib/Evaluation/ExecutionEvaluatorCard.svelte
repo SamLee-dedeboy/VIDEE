@@ -5,7 +5,6 @@
   let {
     evaluator = $bindable(),
     expand,
-    tasks,
     handleExecute = () => {},
     handleInspectEvaluator = () => {},
     handleDeleteEvaluator = () => {},
@@ -13,16 +12,11 @@
   }: {
     evaluator: tExecutionEvaluator;
     expand: boolean;
-    tasks: [string, string][];
     handleExecute: (task: tExecutionEvaluator) => void;
     handleInspectEvaluator: Function;
     handleDeleteEvaluator?: Function;
     handleToggleExpand?: Function;
   } = $props();
-
-  function isEmpty(string: string | null | undefined): boolean {
-    return string === undefined || string === null || string === "";
-  }
 </script>
 
 <div
@@ -83,7 +77,6 @@
             class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
             onclick={() => handleDeleteEvaluator(evaluator)}
           >
-            <!-- <img src="close.svg" alt="x" /> -->
             Delete
           </button>
         </div>

@@ -1,9 +1,7 @@
 <script lang="ts">
   import { server_address } from "constants";
-  import { getContext, onMount, setContext, tick } from "svelte";
-  import { slide } from "svelte/transition";
+  import { getContext, onMount } from "svelte";
   import type { tDocument, tDRResult } from "types";
-  import DocumentCard from "./DocumentCard.svelte";
   import { RadialTopicChart } from "renderer/RadialTopicChart";
   import PagedDocuments from "./PagedDocuments.svelte";
   let show_documents = $state(false);
@@ -61,29 +59,13 @@
       });
   }
 
-  // function handleDocumentMouseover(doc: tDocument) {
-  //   console.log("mouseover: ", doc);
-  //   hovered_document = doc;
-  // }
-
-  // function handleDocumentMouseout(doc: tDocument) {
-  //   console.log("mouseover: ", doc);
-  //   hovered_document = undefined;
-  // }
-
   function handleDocumentClicked(doc: tDocument) {
     show_documents = true;
     paged_document_component.navigateToDoc(doc);
   }
 
-  // async function navigateToDoc(doc: tDocument) {
-  // }
-  // setContext("navigate_to_doc", navigateToDoc);
-
   onMount(() => {
     topicChart.init();
-    // topicChart.on("node_mouseover", handleDocumentMouseover);
-    // topicChart.on("node_mouseout", handleDocumentMouseout);
     topicChart.on("node_clicked", handleDocumentClicked);
     getDocuments();
   });
@@ -151,18 +133,6 @@
   }
   .disabled {
     @apply opacity-50 pointer-events-none;
-  }
-  .pagination::-webkit-scrollbar {
-    width: 2px;
-    height: 2px;
-  }
-  .active {
-    @apply bg-gray-200;
-  }
-
-  .pagination::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 3px;
   }
 
   .topic-chart-svg {

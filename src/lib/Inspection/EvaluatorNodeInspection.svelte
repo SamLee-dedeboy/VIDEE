@@ -2,30 +2,23 @@
   import { slide } from "svelte/transition";
   import { setContext, tick } from "svelte";
   import PromptTemplate from "./PromptTemplate.svelte";
-  import { trim } from "lib/trim";
   import type {
     tExecutionEvaluator,
     tExecutionEvaluatorResult,
-    tPrimitiveTask,
     tDocument,
   } from "types";
-  import DocumentCard from "./DocumentCard.svelte";
   import { server_address } from "constants";
   import { getContext } from "svelte";
   import { evaluatorState } from "../ExecutionStates.svelte";
-  import ExecutionResultInspection from "./ExecutionResultInspection.svelte";
   import EvaluatorResult from "../Evaluation/EvaluatorResult.svelte";
   import EvaluatorResultRadialChart from "../Evaluation/EvaluatorResultRadialChart.svelte";
   import PagedDocuments from "./PagedDocuments.svelte";
 
   let {
     evaluator = $bindable(),
-    // handleUpdateEvaluator,
   }: {
     evaluator: tExecutionEvaluator;
-    // handleUpdateEvaluator: Function;
   } = $props();
-  let show_parameters = $state(false);
   let show_description = $state(true);
   let show_formats = $state(false);
   let show_execution = $state(false);
@@ -257,22 +250,6 @@
           </div>
           <EvaluatorResult {result}></EvaluatorResult>
           <EvaluatorResultRadialChart {result}></EvaluatorResultRadialChart>
-          <!-- <div in:slide class="flex flex-col">
-            {#each Object.keys(result) as state_input_key}
-              <div class="flex flex-col">
-                <div>{state_input_key}</div>
-                <div class="flex flex-wrap gap-2">
-                  {#each result[state_input_key] as doc}
-                    <DocumentCard
-                      document={doc}
-                      --bg-color="#f6fffb"
-                      --bg-hover-color="#d0fae5"
-                    />
-                  {/each}
-                </div>
-              </div>
-            {/each}
-          </div> -->
         {/if}
       </div>
     {/if}
@@ -304,34 +281,5 @@
   }
   .key-section:hover > .plus-button {
     @apply visible;
-  }
-
-  .user-input-name:empty:before {
-    content: "Name the evaluator...";
-    color: gray;
-    pointer-events: none;
-  }
-  .user-input-description:empty:before {
-    content: "Describe the evaluation criteria...";
-    color: gray;
-    pointer-events: none;
-  }
-  .user-input-name:focus,
-  .user-input-description:focus {
-    @apply justify-start;
-  }
-  .exec-evaluator-container:hover {
-    & .delete-button {
-      @apply flex;
-    }
-  }
-  .disabled {
-    @apply cursor-not-allowed opacity-50 outline-none;
-  }
-  .disabled-button {
-    pointer-events: none;
-  }
-  .selected {
-    @apply bg-slate-200 text-slate-700;
   }
 </style>

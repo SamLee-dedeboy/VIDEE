@@ -12,22 +12,18 @@
   import { DAG } from "renderer/dag";
   import { evaluatorState } from "../ExecutionStates.svelte";
   let {
-    // evaluators = $bindable([]),
     tasks,
     handleInspectEvaluatorNode = () => {},
   }: {
-    // evaluators: tExecutionEvaluator[];
     tasks: tPrimitiveTaskDescription[];
     handleInspectEvaluatorNode: Function;
   } = $props();
-  // const evaluators: tExecutionEvaluator[] = getContext("evaluators");
   const evaluators = $derived(evaluatorState.evaluators);
   let evaluator_node_expanded: string[] = $state([]);
   let loading = $state(false);
   let adding_evaluator = $state(false);
   let generating_for_description = $state("");
   const session_id = (getContext("session_id") as Function)();
-  //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
 
   let executing_evaluator_name: string | undefined = $state(undefined);
   const svgId = "evaluation-dag-svg";
@@ -87,16 +83,8 @@
 
   function handleAddEvaluator() {
     adding_evaluator = true;
-    // evaluators = [
-    //   ...evaluators,
-    //   {
-    //     adding: true,
-    //     name: "",
-    //     definition: "",
-    //     task: "some id",
-    //   },
-    // ];
   }
+
   function handleGenerateEvaluator(description: string, task_id: string) {
     adding_evaluator = false;
     loading = true;
@@ -121,8 +109,6 @@
       .then((response) => response.json())
       .then((data) => {
         console.log(data);
-        // evaluators = [...evaluators, data["result"]];
-        // setContext("evaluators", data["result"]);
         evaluatorState.evaluators = [...evaluators, data["result"]];
         update_dag(evaluators);
         updateGlobalLinks();
@@ -188,10 +174,6 @@
       </div>
     </div>
 
-    <!-- style:height={Math.max(
-        primitive_tasks.length * 2 * node_size[1] * 1.5,
-        800
-      ) + "px"} -->
     <div class="relative flex flex-col gap-y-1 grow">
       {#if loading}
         <div
@@ -237,9 +219,6 @@
             <ExecutionEvaluatorCard
               bind:evaluator={evaluators[index]}
               expand={evaluator_node_expanded.includes(evaluator.name)}
-              tasks={tasks
-                .filter((t) => t.label !== "Root")
-                .map((t) => [t.id as string, t.label as string])}
               handleDeleteEvaluator={() => {
                 evaluatorState.evaluators = evaluators.filter(
                   (e) => e !== evaluator

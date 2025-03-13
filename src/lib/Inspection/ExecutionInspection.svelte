@@ -2,14 +2,8 @@
   import { server_address } from "constants";
   import { slide } from "svelte/transition";
   import { onMount, setContext, tick } from "svelte";
-  import type {
-    tExecutionEvaluator,
-    tPrimitiveTaskDescription,
-    tPrimitiveTaskExecution,
-    tSemanticTask,
-  } from "types";
+  import type { tExecutionEvaluator, tPrimitiveTask } from "types";
   import { getContext } from "svelte";
-  import DocumentCard from "./DocumentCard.svelte";
   import PrimitiveTaskInspection from "./PrimitiveTaskInspection.svelte";
   import EvaluatorNodeInspection from "./EvaluatorNodeInspection.svelte";
   import DatasetInspection from "./DatasetInspection.svelte";
@@ -17,17 +11,13 @@
     primitive_task,
     evaluator_node,
   }: {
-    primitive_task:
-      | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
-      | undefined;
+    primitive_task: tPrimitiveTask | undefined;
     evaluator_node: tExecutionEvaluator | undefined;
   } = $props();
   const session_id = (getContext("session_id") as Function)();
   let documents: any[] = $state([]);
 
   let primitive_task_inspection_panel: any = $state();
-  let inspect_mode = $state("task");
-  let show_documents = $state(false);
 
   function getDocuments() {
     fetch(`${server_address}/documents/`, {
@@ -54,11 +44,6 @@
 
   export async function navigate_to_primitive_task_results() {
     await tick();
-    // console.log(
-    //   "Navigating to results",
-    //   primitive_task_inspection_panel,
-    //   primitive_task
-    // );
     primitive_task_inspection_panel.navigate_to_results();
   }
 
@@ -83,6 +68,4 @@
       ></EvaluatorNodeInspection>
     </div>
   {/if}
-  <!-- <ExecutionEvaluators --bg-color="#ffedd4" tasks={semantic_tasks}
-  ></ExecutionEvaluators> -->
 </div>

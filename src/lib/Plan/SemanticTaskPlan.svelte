@@ -4,9 +4,6 @@
   import type { tSemanticTask, tNode } from "types";
   import { DAG } from "renderer/dag";
   import * as d3 from "d3";
-  import SemanticTaskCard from "../Searching/SemanticTaskCard.svelte";
-  import { fly, fade, blur } from "svelte/transition";
-  import { draggable } from "../draggable";
   import { getContext } from "svelte";
   import SimpleSemanticTaskCard from "./SimpleSemanticTaskCard.svelte";
   import { semanticTaskPlanState } from "../ExecutionStates.svelte";
@@ -123,21 +120,14 @@
   // handlers with server-side updates
   function handleAddTask() {
     semanticTaskPlanState.addTask();
-    update_with_server();
   }
 
   function handleDeleteTask(task: tSemanticTask) {
     semanticTaskPlanState.deleteTask(task);
-    update_with_server();
   }
 
   function handleDeleteSubTasks(task: tSemanticTask) {
     console.log({ task, semantic_tasks });
-    // task.sub_tasks = [];
-    // semantic_tasks = semantic_tasks.map((_task) =>
-    //   _task.id === task.id ? task : _task
-    // );
-    // update_with_server();
   }
 
   function handleDecompose(task: tSemanticTask) {
@@ -166,23 +156,6 @@
     // trigger re-render
     await tick();
     update_dag(semantic_tasks_flattened);
-  }
-
-  function update_with_server() {
-    fetch(`${server_address}/semantic_task/update/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ semantic_tasks, session_id }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
   }
 
   const updateGlobalLinks: Function = getContext("updateGlobalLinks");

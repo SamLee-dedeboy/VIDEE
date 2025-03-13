@@ -5,9 +5,7 @@
   import type { tSemanticTask, tNode, tControllers } from "types";
   import { DAG } from "renderer/dag";
   import SemanticTaskCard from "./SemanticTaskCard.svelte";
-  import { fly, fade, blur, scale } from "svelte/transition";
-  import { draggable } from "../draggable";
-  import { getContext } from "svelte";
+  import { fade } from "svelte/transition";
   import AddMctNode from "./AddMCTNode.svelte";
   let {
     semantic_tasks = $bindable([]),
@@ -32,7 +30,6 @@
     decomposing_goal: boolean;
     handleRegenerate: Function;
   } = $props();
-  const session_id = (getContext("session_id") as Function)();
   const id_key = "MCT_id"; // id key for the semantic task
   // const id_key = "id"; // id key for the semantic task
   /**
@@ -185,21 +182,6 @@
       : [...task_card_show_explanation, task_id];
   }
 
-  // TODO: decide how a task should be initialized: Should we allow adding a task during Monte Carlo Tree search?
-  // handlers with server-side updates
-  // function handleAddTask() {
-  // semantic_tasks.push({
-  //   id: Math.random().toString(),
-  //   label: "New Task",
-  //   description: "New Task Description",
-  //   explanation: "N/A",
-  //   parentIds: [],
-  //   sub_tasks: [],
-  //   children: [],
-  // });
-  // update_with_server();
-  // }
-
   function addChild(name: string, description: string, task: tSemanticTask) {
     const new_task: tSemanticTask = {
       id: "" + (+task.level + 1),
@@ -308,7 +290,6 @@
 
   function handleSetAsNextExpansion(task: tSemanticTask) {
     next_expansion = task;
-    // dag_renderer.update_next_expansion_link(next_expansion[id_key]);
   }
 
   function handleTaskHovered(task_id: string, hovered: boolean) {
@@ -357,7 +338,6 @@
       paused: false,
       finished: false,
     };
-    // update_with_server();
   }
 
   function trace_path(
@@ -377,23 +357,6 @@
     }
     return path;
   }
-
-  // function update_with_server() {
-  //   fetch(`${server_address}/semantic_task/update/`, {
-  //     method: "POST",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify({ semantic_tasks, session_id }),
-  //   })
-  //     .then((response) => response.json())
-  //     .then((data) => {
-  //       console.log(data);
-  //     })
-  //     .catch((error) => {
-  //       console.error("Error:", error);
-  //     });
-  // }
 
   onMount(() => {
     dag_renderer.init();
@@ -449,20 +412,8 @@
         </span>
       </span>
     </span>
-    <!-- <div class="absolute right-3 top-0 bottom-0 flex items-center gap-x-2">
-      <button
-        class="flex items-center justify-center p-0.5 hover:bg-orange-300 rounded-full outline-2 outline-gray-800"
-        onclick={() => (adding_task = true)}
-      >
-        <img src="plus.svg" alt="add" class="w-4 h-4" />
-      </button>
-    </div> -->
   </div>
 
-  <!-- style:height={Math.max(
-      semantic_tasks_flattened.length * 2 * node_size[1] * 1.5,
-      1000
-    ) + "px"} -->
   <div class="relative bg-gray-50 flex flex-col gap-y-1 grow">
     {#if adding_child && adding_child_for}
       <div
@@ -631,16 +582,6 @@
         </div>
       {/each}
     </div>
-    <!-- {#if semantic_tasks_flattened.length > 0}
-      <button
-        class="self-end py-1 mx-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10"
-        tabindex="0"
-        onclick={() => handleConvert()}
-        onkeyup={() => {}}
-      >
-        Convert
-      </button>
-    {/if} -->
   </div>
 </div>
 

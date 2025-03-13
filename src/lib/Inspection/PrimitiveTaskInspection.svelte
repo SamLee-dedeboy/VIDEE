@@ -1,20 +1,12 @@
 <script lang="ts">
-  import type {
-    tPrimitiveTask,
-    tPrimitiveTaskDescription,
-    tPrimitiveTaskExecution,
-  } from "types";
-  import DocumentCard from "./DocumentCard.svelte";
+  import type { tPrimitiveTask } from "types";
   import { slide } from "svelte/transition";
   import { onMount, tick } from "svelte";
-  import { server_address } from "constants";
-  import { getContext } from "svelte";
   import PromptTemplate from "./PromptTemplate.svelte";
   import {
     primitiveTaskState,
     primitiveTaskExecutionStates,
   } from "../ExecutionStates.svelte";
-  import PagedDocuments from "./PagedDocuments.svelte";
   import ExecutionResultInspection from "./ExecutionResultInspection.svelte";
   let {
     task,
@@ -68,9 +60,6 @@
         {#if show_description}
           <div in:slide class="flex flex-col divide-y">
             <div class="flex">
-              <!-- <div class="flex shrink-0 px-2 mt-1">
-              <img src="info.svg" alt="info" class="w-7 h-7" />
-            </div> -->
               <div class="px-1">
                 <span class="text-sm text-gray-500">Description - </span>
                 {task.description}

@@ -2,7 +2,6 @@
   import { server_address } from "constants";
   import { slide } from "svelte/transition";
   import { getContext, tick } from "svelte";
-  import type { tPrimitiveTask } from "types";
   import PagedDocuments from "./PagedDocuments.svelte";
   let { task_id }: { task_id: string } = $props();
   let show_result = $state(false);
