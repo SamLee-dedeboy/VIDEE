@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { tPrimitiveTask } from "types";
   import { slide } from "svelte/transition";
+  import { custom_confirm } from "lib/customConfirm";
   let {
     task,
     task_options,
@@ -104,7 +105,12 @@
           </div>
           <button
             class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
-            onclick={() => handleDeleteTask(task)}
+            onclick={async () => {
+              const result = await custom_confirm(
+                `Are you sure you want to delete ${task.label}?`
+              );
+              if (result) handleDeleteTask(task);
+            }}
           >
             Delete
           </button>
@@ -171,7 +177,12 @@
         </div>
         <button
           class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
-          onclick={() => handleDeleteTask(task)}
+          onclick={async () => {
+            const result = await custom_confirm(
+              `Are you sure you want to delete ${task.label}?`
+            );
+            if (result) handleDeleteTask(task);
+          }}
         >
           Delete
         </button>

@@ -2,6 +2,7 @@
   import type { tSemanticTask } from "types";
   import { slide, scale } from "svelte/transition";
   import EvaluationIndicator from "../Searching/EvaluationIndicator.svelte";
+  import { custom_confirm } from "lib/customConfirm";
   let {
     task,
     task_options,
@@ -140,7 +141,12 @@
               </div>
               <button
                 class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
-                onclick={() => handleDeleteTask(task)}
+                onclick={async () => {
+                  const result = await custom_confirm(
+                    `Are you sure you want to delete ${task.label}?`
+                  );
+                  if (result) handleDeleteTask(task);
+                }}
               >
                 <!-- <img src="close.svg" alt="x" /> -->
                 Delete
@@ -213,9 +219,13 @@
           </div>
           <button
             class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
-            onclick={() => handleDeleteTask(task)}
+            onclick={async () => {
+              const result = await custom_confirm(
+                `Are you sure you want to delete ${task.label}?`
+              );
+              if (result) handleDeleteTask(task);
+            }}
           >
-            <!-- <img src="close.svg" alt="x" /> -->
             Delete
           </button>
           <!-- <button
