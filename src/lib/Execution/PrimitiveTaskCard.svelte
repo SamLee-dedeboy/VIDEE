@@ -90,7 +90,7 @@
               Add Parent
             </button>
             <div
-              class="absolute top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
+              class="absolute hidden top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
             >
               <div class="flex flex-col w-max">
                 {#each task_options as option}

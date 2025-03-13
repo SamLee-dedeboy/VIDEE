@@ -5,11 +5,12 @@
   } from "types";
   import DocumentCard from "./DocumentCard.svelte";
   import { slide } from "svelte/transition";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { server_address } from "constants";
   import { getContext } from "svelte";
   import PromptTemplate from "./PromptTemplate.svelte";
   import { primitiveTaskState } from "../ExecutionStates.svelte";
+  import PagedDocuments from "./PagedDocuments.svelte";
   let {
     task,
     // handleUpdatePrimitiveTask,
@@ -33,9 +34,18 @@
       body: JSON.stringify({ task_id: task.id, session_id }),
     })
       .then((response) => response.json())
-      .then((data) => {
+      .then(async (data) => {
         console.log("Inspection fetched result:", data);
         result = data.result;
+        await tick();
+        document.querySelector(".result-panel")?.scrollIntoView({
+          behavior: "smooth",
+        });
+        // await tick();
+        // const inspection_panel = document.querySelector(".inspection-panel");
+        // if (inspection_panel && show_result) {
+        //   inspection_panel.scrollTop = inspection_panel.scrollHeight;
+        // }
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -99,8 +109,12 @@
           <button
             class="header-2"
             tabindex="0"
-            onclick={() => {
+            onclick={async () => {
               show_formats = !show_formats;
+              await tick();
+              document
+                .querySelector(".format-container")
+                ?.scrollIntoView({ behavior: "smooth" });
             }}
           >
             Input/Output Formats
@@ -112,7 +126,10 @@
           </button>
           {#if task.doc_input_keys}
             {#if show_formats}
-              <div in:slide class="flex justify-around divide-x">
+              <div
+                in:slide
+                class="format-container flex justify-around divide-x"
+              >
                 <div class="key-section">
                   <div class="option-label">State Input Key</div>
                   <div class="option-value">
@@ -156,7 +173,13 @@
         <button
           tabindex="0"
           class="header-2"
-          onclick={() => (show_execution = !show_execution)}
+          onclick={async () => {
+            show_execution = !show_execution;
+            await tick();
+            document
+              .querySelector(".execution-container")
+              ?.scrollIntoView({ behavior: "smooth" });
+          }}
         >
           Execution
           <img
@@ -169,7 +192,7 @@
           {#if show_execution}
             <div
               in:slide
-              class="flex flex-col divide-y divide-gray-400 divide-dashed pb-2 px-1"
+              class="execution-container flex flex-col divide-y divide-gray-400 divide-dashed pb-2 px-1"
             >
               <div class="flex gap-x-2 items-center py-1">
                 <div class="text-gray-700">Execution Method -</div>
@@ -207,7 +230,7 @@
             <button
               tabindex="0"
               class="header-2"
-              onclick={() => {
+              onclick={async () => {
                 show_result = !show_result;
                 handleFetchTaskResult();
               }}
@@ -221,11 +244,28 @@
             </button>
           </div>
           {#if show_result && result !== undefined}
-            <div in:slide class="flex flex-col">
+            <div in:slide class="result-panel flex flex-col">
               {#each Object.keys(result) as state_input_key}
-                <div class="flex flex-col">
-                  <div>{state_input_key}</div>
-                  <div class="flex flex-wrap gap-2">
+                <div class="flex flex-col state-container">
+                  <button
+                    class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200"
+                    onclick={(e: any) => {
+                      console.log(e.target);
+                      const container = e.target.closest(".state-container");
+                      const state_content =
+                        container.querySelector(".state-content");
+                      state_content.classList.toggle("hide-state-content");
+                      state_content.scrollIntoView({ behavior: "smooth" });
+                    }}>{state_input_key}</button
+                  >
+                  <div class="state-content flex hide-state-content flex-col">
+                    <PagedDocuments
+                      documents={result[state_input_key]}
+                      bg_color="oklch(0.97 0.014 254.604)"
+                      bg_hover_color="oklch(0.882 0.059 254.128)"
+                    ></PagedDocuments>
+                  </div>
+                  <!-- <div class="flex flex-wrap gap-2">
                     {#each result[state_input_key] as doc}
                       <DocumentCard
                         document={doc}
@@ -233,10 +273,11 @@
                         --bg-hover-color="oklch(0.882 0.059 254.128)"
                       />
                     {/each}
-                  </div>
+                  </div> -->
                 </div>
               {/each}
             </div>
+            <div class="h-[10rem]"></div>
           {/if}
         </div>
       {/if}
@@ -271,5 +312,8 @@
   }
   .key-section:hover > .plus-button {
     @apply visible;
+  }
+  .hide-state-content {
+    @apply hidden;
   }
 </style>

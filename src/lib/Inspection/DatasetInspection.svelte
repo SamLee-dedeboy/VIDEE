@@ -1,23 +1,16 @@
 <script lang="ts">
   import { server_address } from "constants";
-  import { getContext, onMount, tick } from "svelte";
+  import { getContext, onMount, setContext, tick } from "svelte";
   import { slide } from "svelte/transition";
   import type { tDocument, tDRResult } from "types";
   import DocumentCard from "./DocumentCard.svelte";
   import { RadialTopicChart } from "renderer/RadialTopicChart";
+  import PagedDocuments from "./PagedDocuments.svelte";
   let show_documents = $state(false);
   let show_topics = $state(false);
   let documents: tDocument[] = $state([]);
-  const page_size = 50;
-  let paged_documents = $derived.by(() => {
-    let result: tDocument[][] = [];
-    for (let i = 0; i < documents.length; i += page_size) {
-      result.push(documents.slice(i, i + page_size));
-    }
-    return result;
-  });
-  let page = $state(0);
   let dr_result: tDRResult[] = $state([]);
+  let paged_document_component = $state();
   const session_id = (getContext("session_id") as Function)();
   const svgId = "radial-topic-chart-svg";
   let topicChart: RadialTopicChart = new RadialTopicChart(svgId);
@@ -79,35 +72,13 @@
   // }
 
   function handleDocumentClicked(doc: tDocument) {
-    navigateToDoc(doc);
+    show_documents = true;
+    paged_document_component.navigateToDoc(doc);
   }
 
-  async function navigateToDoc(doc: tDocument) {
-    console.log("clicked: ", doc.id);
-    // get the index of the doc
-    const doc_index = documents.map((d) => d.id).indexOf(doc.id);
-    if (doc_index !== -1) {
-      // get the page number
-      page = Math.floor(doc_index / page_size);
-      show_documents = true;
-      document
-        .querySelector(".doc-container.highlighted")
-        ?.classList.remove("highlighted");
-      setTimeout(() => {
-        const doc_card = document.querySelector(
-          `.doc-container[data-attribute-id="${doc.id}"]`
-        );
-        console.log("doc_card: ", doc_card);
-        if (doc_card) {
-          doc_card.classList.add("highlighted");
-          doc_card.scrollIntoView({ behavior: "smooth", block: "center" });
-          // setTimeout(() => {
-          //   doc_card.classList.remove("highlighted");
-          // }, 3000);
-        }
-      }, 100);
-    }
-  }
+  // async function navigateToDoc(doc: tDocument) {
+  // }
+  // setContext("navigate_to_doc", navigateToDoc);
 
   onMount(() => {
     topicChart.init();
@@ -139,58 +110,7 @@
     </div>
 
     {#if show_documents}
-      <div
-        in:slide
-        class="flex flex-col gap-y-2 max-h-[25rem] overflow-auto pr-3 pl-0.5 py-1"
-      >
-        {#each paged_documents[page] as document}
-          <DocumentCard
-            {document}
-            --bg-color="#f8f8f8"
-            --bg-hover-color="#e3e3e3"
-          />
-        {/each}
-        <!-- {#each documents as document}
-          <DocumentCard
-            {document}
-            --bg-color="#f8f8f8"
-            --bg-hover-color="#e3e3e3"
-          />
-        {/each} -->
-      </div>
-      <div class="pagination flex justify-between gap-x-2 text-slate-600 pr-3">
-        <button
-          class="w-[2rem] shrink-0 hover:bg-gray-100 flex justify-center items-center py-1 rounded outline-2 outline-gray-200 text-sm"
-          class:disabled={page === 0}
-          onclick={() => {
-            page -= 1;
-          }}
-        >
-          <img src="arrow-left.svg" alt="previous" class="w-4 h-4" />
-        </button>
-        <div class="flex items-center overflow-x-auto pb-3">
-          {#each paged_documents as _, p}
-            <button
-              class=" hover:bg-gray-200 flex justify-center py-2 px-1 rounded text-sm"
-              class:active={page === p}
-              onclick={() => {
-                page = p;
-              }}
-            >
-              {p + 1}
-            </button>
-          {/each}
-        </div>
-        <button
-          class="w-[2rem] shrink-0 hover:bg-gray-100 flex justify-center items-center py-1 rounded outline-2 outline-gray-200 text-sm"
-          class:disabled={page === paged_documents.length - 1}
-          onclick={() => {
-            page += 1;
-          }}
-        >
-          <img src="arrow-right.svg" alt="next" class="w-4 h-4" />
-        </button>
-      </div>
+      <PagedDocuments bind:this={paged_document_component} {documents} />
     {/if}
   </div>
   <div class="flex flex-col gap-y-2 px-1">
