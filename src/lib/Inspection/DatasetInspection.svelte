@@ -8,8 +8,8 @@
   let show_documents = $state(false);
   let show_topics = $state(false);
   let documents: tDocument[] = $state([]);
+  const page_size = 50;
   let paged_documents = $derived.by(() => {
-    const page_size = 50;
     let result: tDocument[][] = [];
     for (let i = 0; i < documents.length; i += page_size) {
       result.push(documents.slice(i, i + page_size));
@@ -68,8 +68,52 @@
       });
   }
 
+  // function handleDocumentMouseover(doc: tDocument) {
+  //   console.log("mouseover: ", doc);
+  //   hovered_document = doc;
+  // }
+
+  // function handleDocumentMouseout(doc: tDocument) {
+  //   console.log("mouseover: ", doc);
+  //   hovered_document = undefined;
+  // }
+
+  function handleDocumentClicked(doc: tDocument) {
+    navigateToDoc(doc);
+  }
+
+  async function navigateToDoc(doc: tDocument) {
+    console.log("clicked: ", doc.id);
+    // get the index of the doc
+    const doc_index = documents.map((d) => d.id).indexOf(doc.id);
+    if (doc_index !== -1) {
+      // get the page number
+      page = Math.floor(doc_index / page_size);
+      show_documents = true;
+      document
+        .querySelector(".doc-container.highlighted")
+        ?.classList.remove("highlighted");
+      setTimeout(() => {
+        const doc_card = document.querySelector(
+          `.doc-container[data-attribute-id="${doc.id}"]`
+        );
+        console.log("doc_card: ", doc_card);
+        if (doc_card) {
+          doc_card.classList.add("highlighted");
+          doc_card.scrollIntoView({ behavior: "smooth", block: "center" });
+          // setTimeout(() => {
+          //   doc_card.classList.remove("highlighted");
+          // }, 3000);
+        }
+      }, 100);
+    }
+  }
+
   onMount(() => {
     topicChart.init();
+    // topicChart.on("node_mouseover", handleDocumentMouseover);
+    // topicChart.on("node_mouseout", handleDocumentMouseout);
+    topicChart.on("node_clicked", handleDocumentClicked);
     getDocuments();
   });
 </script>
@@ -97,7 +141,7 @@
     {#if show_documents}
       <div
         in:slide
-        class="flex flex-col gap-y-2 max-h-[25rem] overflow-auto pr-3"
+        class="flex flex-col gap-y-2 max-h-[25rem] overflow-auto pr-3 pl-0.5 py-1"
       >
         {#each paged_documents[page] as document}
           <DocumentCard
@@ -172,7 +216,7 @@
       class="flex flex-col aspect-square bg-gray-50 px-4 transition-all max-h-auto"
       class:hide={!show_topics}
     >
-      <svg id={svgId} class="w-full h-full"> </svg>
+      <svg id={svgId} class="topic-chart-svg w-full h-full"> </svg>
     </div>
   </div>
 </div>
@@ -199,5 +243,11 @@
   .pagination::-webkit-scrollbar-thumb {
     background: #888;
     border-radius: 3px;
+  }
+
+  .topic-chart-svg {
+    & :global(.node-hover) {
+      stroke: black;
+    }
   }
 </style>
