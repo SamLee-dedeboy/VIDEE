@@ -2,11 +2,13 @@
   let {
     user_goal = $bindable(""),
     mode = $bindable(),
+    disable_decompose,
     streaming_states,
     handleDecomposeGoal,
   }: {
     user_goal: string;
     mode: string;
+    disable_decompose: boolean;
     streaming_states: {
       started: boolean;
       paused: boolean;
@@ -48,27 +50,32 @@
       ></span>
       Streaming Mode
     </button>
-    <button
+    <div
       class="grow outline-2 outline-green-300 bg-green-100 hover:bg-green-200 rounded px-2 flex items-center justify-center"
-      class:disabled={running}
-      onclick={() => {
-        const goal = document.querySelector(".goal-input")?.textContent || "";
-        user_goal = goal;
-        handleDecomposeGoal(user_goal);
-      }}
+      class:disabled={running || disable_decompose}
     >
-      {#if paused}
-        Continue
-      {:else if running}
-        <img
-          src="loader_circle.svg"
-          class="w-6 h-6 animate-spin opacity-50"
-          alt="loading"
-        />
-      {:else if idle}
-        Decompose
-      {/if}
-    </button>
+      <button
+        class="w-full h-full"
+        class:disabled-button={running || disable_decompose}
+        onclick={() => {
+          const goal = document.querySelector(".goal-input")?.textContent || "";
+          user_goal = goal;
+          handleDecomposeGoal(user_goal);
+        }}
+      >
+        {#if paused}
+          Continue
+        {:else if running}
+          <img
+            src="loader_circle.svg"
+            class="w-6 h-6 animate-spin opacity-50"
+            alt="loading"
+          />
+        {:else if idle}
+          Decompose
+        {/if}
+      </button>
+    </div>
   </div>
 </div>
 
@@ -76,6 +83,9 @@
   @reference "tailwindcss";
   .disabled {
     @apply cursor-not-allowed bg-gray-300 outline-gray-200 opacity-50;
+  }
+  .disabled-button {
+    @apply pointer-events-none;
   }
   .circle[data-attribute-mode="streaming"] {
     @apply bg-green-300;

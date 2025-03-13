@@ -55,7 +55,7 @@
   let execution_inspection_panel: any = $state();
   /**
    * Stores the state of the dag
-   * @value semantic| mcts
+   * @value mcts | execution
    */
   let show_dag = $state("mcts");
 
@@ -393,6 +393,7 @@
       <div class="bg-white flex gap-x-2">
         <GoalInput
           handleDecomposeGoal={handleDecomposeGoalStepped_MCTS}
+          disable_decompose={show_dag === "execution"}
           bind:user_goal
           bind:mode
           {streaming_states}
@@ -420,8 +421,8 @@
             class="min-w-[6rem] px-2 py-1 font-mono rounded-r outline-1 outline-gray-400 text-slate-700 hover:outline-blue-300 hover:outline-2 hover:z-10 hover:!text-slate-700"
             class:disabled={streaming_states.started &&
               !streaming_states.paused}
-            style={`${show_dag === "semantic" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa;  color: rgba(0, 0, 0, 0.2)"}`}
-            onclick={() => (show_dag = "semantic")}>Execution</button
+            style={`${show_dag === "execution" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa;  color: rgba(0, 0, 0, 0.2)"}`}
+            onclick={() => (show_dag = "execution")}>Execution</button
           >
         </div>
       </div>
@@ -443,7 +444,7 @@
                 bind:next_expansion
                 bind:selected_semantic_task_path
               ></SemanticTasksTree>
-            {:else if show_dag == "semantic"}
+            {:else if show_dag == "execution"}
               <Execution
                 {decomposing_goal}
                 {handleConvert}
@@ -480,7 +481,7 @@
         <SemanticTaskTreeInspection
           few_shot_examples={few_shot_examples_semantic_tasks}
         ></SemanticTaskTreeInspection>
-      {:else if show_dag === "semantic"}
+      {:else if show_dag === "execution"}
         <ExecutionInspection
           bind:this={execution_inspection_panel}
           primitive_task={inspected_primitive_task}
