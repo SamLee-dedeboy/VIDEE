@@ -244,7 +244,7 @@
     {:else}
       <div
         class="px-2 bg-emerald-50 flex h-fit hover:bg-emerald-200"
-        class:disabled={compiling || converting}
+        class:disabled={compiling || converting || primitive_tasks.length === 0}
       >
         <button
           class="z-20 flex text-[1.5rem] text-slate-600 font-semibold italic"

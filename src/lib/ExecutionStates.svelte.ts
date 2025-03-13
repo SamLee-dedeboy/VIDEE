@@ -18,6 +18,31 @@ export const semanticTaskPlanState = {
             parentIds: [],
             sub_tasks: [],
             children: [],
+            // MCT types
+            MCT_id: semantic_tasks.length.toString(),
+            MCT_children_ids: [],
+            MCT_parent_id: "",
+            new_node: false,
+            level: semantic_tasks.length,
+            value: 0,
+            visits: 0,
+            path_value: 0,
+            llm_evaluation: {
+                complexity: true,
+                coherence: true,
+                importance: true,
+                complexity_reason: "",
+                coherence_reason: "",
+                importance_reason: "",
+              },
+              user_evaluation: {
+                complexity: true,
+                coherence: true,
+                importance: true,
+                complexity_reason: "",
+                coherence_reason: "",
+                importance_reason: "",
+              },
         });
     },
 

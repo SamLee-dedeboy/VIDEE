@@ -333,6 +333,7 @@
         console.error("Error:", error);
       });
   }
+  setContext("handleCompile", handleCompile);
 
   function handleUserFeedback(
     task_id: string,

@@ -1,10 +1,6 @@
 <script lang="ts">
   import { getContext, onMount, setContext, tick } from "svelte";
-  import type {
-    tExecutionEvaluator,
-    tPrimitiveTaskDescription,
-    tNode,
-  } from "types";
+  import type { tExecutionEvaluator, tPrimitiveTask, tNode } from "types";
   import ExecutionEvaluatorCard from "./ExecutionEvaluatorCard.svelte";
   import AddExecutionEvaluator from "../Execution/AddExecutionEvaluator.svelte";
   import { server_address } from "constants";
@@ -15,7 +11,7 @@
     tasks,
     handleInspectEvaluatorNode = () => {},
   }: {
-    tasks: tPrimitiveTaskDescription[];
+    tasks: tPrimitiveTask[];
     handleInspectEvaluatorNode: Function;
   } = $props();
   const evaluators = $derived(evaluatorState.evaluators);
@@ -201,9 +197,30 @@
             <AddExecutionEvaluator
               tasks={tasks
                 .filter((t) => t.label !== "Root")
+                .filter((t) => t.execution)
                 .map((t) => [t.id as string, t.label as string])}
               {handleGenerateEvaluator}
             ></AddExecutionEvaluator>
+            <button
+              aria-label="close"
+              class="absolute right-1 top-0.5"
+              onclick={() => (adding_evaluator = false)}
+            >
+              <svg
+                class="w-5 h-5 hover:bg-red-200 rounded-full hover:stroke-black"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="gray"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path
+                  d="m9 9 6 6"
+                /></svg
+              >
+            </button>
           </div>
         </div>
       {/if}

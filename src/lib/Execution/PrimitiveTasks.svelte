@@ -1,19 +1,10 @@
 <script lang="ts">
   import { server_address } from "constants";
   import { onMount, setContext, tick } from "svelte";
-  import type {
-    tPrimitiveTaskDescription,
-    tPrimitiveTaskExecution,
-    tExecutionState,
-    tNode,
-    tTask,
-    tPrimitiveTask,
-  } from "types";
+  import type { tPrimitiveTaskDescription, tNode, tPrimitiveTask } from "types";
   import * as d3 from "d3";
   import { DAG } from "renderer/dag";
   import PrimitiveTaskCard from "./PrimitiveTaskCard.svelte";
-  import { fly, fade, blur } from "svelte/transition";
-  import { draggable } from "../draggable";
   import { getContext } from "svelte";
   import {
     primitiveTaskState,
@@ -98,6 +89,7 @@
   }
 
   // handlers with server-side updates
+  const handleCompile: Function = getContext("handleCompile");
   // function handleCompile() {
   //   console.log("Compiling...", { primitive_tasks, session_id });
   //   compiling = true;
@@ -232,7 +224,7 @@
             class="bg-green-100 outline-2 outline-gray-200 hover:bg-green-200 px-2 py-1 rounded text-slate-600"
             onclick={() => {
               ask_to_check_results = false;
-              navigate_to_results(executed_task_id);
+              navigate_to_results(executed_task_id!);
             }}>Yes</button
           >
           <button
@@ -297,15 +289,17 @@
         </div>
       {/each}
     </div>
-    <!-- <button
-      class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10 mx-2"
-      class:disabled={primitive_tasks === undefined}
-      tabindex="0"
-      onclick={() => handleCompile()}
-      onkeyup={() => {}}
-    >
-      Compile Graph
-    </button> -->
+    {#if primitive_tasks.length > 0}
+      <button
+        class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10 mx-2"
+        class:disabled={primitive_tasks === undefined}
+        tabindex="0"
+        onclick={() => handleCompile()}
+        onkeyup={() => {}}
+      >
+        Compile
+      </button>
+    {/if}
   </div>
 </div>
 
