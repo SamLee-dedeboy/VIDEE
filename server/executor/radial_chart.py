@@ -170,10 +170,11 @@ async def cluster_topic_assignments(clusters, texts, model, api_key):
     for response in responses:
         print(response.chat_message.content)
         print("============================")
-    responses = [
-        extract_json_content(response.chat_message.content)["topic"]
-        for response in responses
-    ]
+    responses = [response.chat_message.content for response in responses]
+    # responses = [
+    #     extract_json_content(response.chat_message.content)["topic"]
+    #     for response in responses
+    # ]
     # responses = [
     #     json.loads(response.chat_message.content)["topic"] for response in responses
     # ]
@@ -191,7 +192,7 @@ def generate_topic_assignment_agent(model: str, api_key: str):
         model_capabilities={
             "vision": False,
             "function_calling": False,
-            "json_output": True,
+            "json_output": False,
         },
     )
     agent = AssistantAgent(
@@ -199,10 +200,8 @@ def generate_topic_assignment_agent(model: str, api_key: str):
         model_client=model_client,
         system_message="""You are a topic assignment system. The user will provide you with a bunch of texts. You need to assign one topic to summarize all of them. 
             The topic should be a simple noun-phrase. Only one topic should be generated.
-            Reply with the following JSON format:
-            {{
-                topic: string 
-            }}""",
+            Reply with a single noun-phrase as the topic.
+            """,
     )
     return agent
 
