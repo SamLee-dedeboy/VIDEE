@@ -56,6 +56,7 @@
       })
       .catch((error) => {
         console.error("Error:", error);
+        loading_topics = false;
       });
   }
 

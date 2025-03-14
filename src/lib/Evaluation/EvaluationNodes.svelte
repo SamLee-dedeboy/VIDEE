@@ -121,6 +121,7 @@
       })
       .catch((error) => {
         console.error("Error:", error);
+        loading = false;
       });
   }
 
@@ -140,6 +141,10 @@
       .then((response) => response.json())
       .then((data) => {
         console.log("evaluator execution result: ", data);
+        executing_evaluator_name = undefined;
+      })
+      .catch((error) => {
+        console.error("Error:", error);
         executing_evaluator_name = undefined;
       });
   }

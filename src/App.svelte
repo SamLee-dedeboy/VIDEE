@@ -243,6 +243,8 @@
         console.log("Stream aborted");
       } else {
         console.error("Error:", error);
+        stream_controller.abort(); // Stop streaming
+        stream_controller = undefined;
       }
     } finally {
       stream_controller = undefined;
@@ -279,6 +281,8 @@
       })
       .catch((error) => {
         console.error("Error:", error);
+        streaming_states.started = false;
+        streaming_states.paused = false;
       });
   }
 
@@ -304,6 +308,10 @@
         primitiveTaskState.primitiveTasks = data;
         controllers.converting = false;
         handleCompile();
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        controllers.converting = false;
       });
   }
 
@@ -335,6 +343,7 @@
       })
       .catch((error) => {
         console.error("Error:", error);
+        controllers.compiling = false;
       });
   }
   setContext("handleCompile", handleCompile);

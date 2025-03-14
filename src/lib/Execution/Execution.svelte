@@ -195,6 +195,7 @@
       })
       .catch((error) => {
         console.error("Error:", error);
+        generating_recommendations = false;
       });
   }
 </script>
@@ -264,6 +265,8 @@
       <div class="plane flex-1 flex relative">
         <EvaluationNodes
           {generating_recommendations}
+          handleGenerateRecommendations={() =>
+            generate_evaluator_recommendations(primitive_tasks)}
           bind:this={evaluation_component}
           tasks={primitive_tasks}
           {handleInspectEvaluatorNode}

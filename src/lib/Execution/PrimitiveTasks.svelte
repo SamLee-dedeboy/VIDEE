@@ -133,6 +133,7 @@
       })
       .catch((error) => {
         console.error("Error:", error);
+        executing_task_id = undefined;
       });
   }
 
