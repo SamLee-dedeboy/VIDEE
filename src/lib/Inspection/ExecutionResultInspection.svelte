@@ -67,7 +67,7 @@
       {#each Object.keys(result) as state_input_key}
         <div class="flex flex-col state-container">
           <button
-            class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200"
+            class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200 shadow-xs"
             onclick={(e: any) => {
               console.log(e.target);
               const container = e.target.closest(".state-container");

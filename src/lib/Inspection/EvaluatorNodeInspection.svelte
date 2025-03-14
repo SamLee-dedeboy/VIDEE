@@ -239,7 +239,7 @@
         {#if show_result}
           <div class="evaluation-result-panel flex flex-col gap-y-2">
             <button
-              class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200"
+              class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200 shadow-xs"
               onclick={() => {
                 show_documents = !show_documents;
               }}
@@ -248,15 +248,17 @@
               documents
             </button>
             {#if show_documents}
-              <PagedDocuments
-                bind:this={paged_document_component}
-                documents={result.result.documents}
-                bg_color="#f6fffb"
-                bg_hover_color="oklch(0.905 0.093 164.15)"
-              ></PagedDocuments>
+              <div class="shadow-xs">
+                <PagedDocuments
+                  bind:this={paged_document_component}
+                  documents={result.result.documents}
+                  bg_color="#f6fffb"
+                  bg_hover_color="oklch(0.905 0.093 164.15)"
+                ></PagedDocuments>
+              </div>
             {/if}
             <div
-              class="flex border-b-2 border-gray-200 italic text-slate-600 divide-x divide-gray-200"
+              class="flex border-b-2 border-gray-200 italic text-slate-600 divide-x divide-gray-200 shadow-xs"
             >
               <button
                 class="flex-1 hover:bg-gray-200 text-center"
