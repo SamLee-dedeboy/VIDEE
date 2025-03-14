@@ -10,10 +10,12 @@
   let {
     tasks,
     generating_recommendations,
+    handleGenerateRecommendations = () => {},
     handleInspectEvaluatorNode = () => {},
   }: {
     tasks: tPrimitiveTask[];
     generating_recommendations: boolean;
+    handleGenerateRecommendations: Function;
     handleInspectEvaluatorNode: Function;
   } = $props();
   const evaluators = $derived(evaluatorState.evaluators);
@@ -44,46 +46,49 @@
    * @param _primitive_tasks
    */
   async function update_dag(_evaluator_nodes: tExecutionEvaluator[]) {
-    await tick();
+    // await tick();
     console.log("updating evaluator dag:", _evaluator_nodes);
     // get the bounding box of each task card
-    const evaluator_card_divs: HTMLElement[] = Array.from(
-      document.querySelectorAll(".evaluator-card-container")
+    const evaluator_card_divs: NodeListOf<HTMLElement> =
+      document.querySelectorAll(".evaluator-card-container");
+    const dag_data: tNode[] = Array.from(evaluator_card_divs).map(
+      (div, index) => {
+        const id = (div as HTMLElement).dataset.id;
+        // const parentIds =
+        //   index % 3 === 0
+        //     ? []
+        //     : [evaluator_card_divs[index - 1].dataset.id as string];
+        const parentIds =
+          index === 0
+            ? []
+            : [evaluator_card_divs[index - 1].dataset.id as string];
+        const node_data: tExecutionEvaluator = _evaluator_nodes.find(
+          (evaluator) => evaluator.name === id
+        )!;
+        const transform_scale =
+          div.style.transform === ""
+            ? 1
+            : d3.zoomTransform(d3.select(`#${svgId}`).node()).k;
+        console.log(id, div.getBoundingClientRect(), transform_scale);
+        return {
+          id: node_data.name,
+          parentIds: parentIds,
+          ...node_data,
+          data: node_data,
+          bbox: {
+            width: div.getBoundingClientRect().width / transform_scale,
+            height: div.getBoundingClientRect().height / transform_scale,
+          },
+        };
+      }
     );
-    const dag_data: tNode[] = evaluator_card_divs.map((div, index) => {
-      const id = (div as HTMLElement).dataset.id;
-      const parentIds =
-        index === 0
-          ? []
-          : [evaluator_card_divs[index - 1].dataset.id as string];
-      const node_data: tExecutionEvaluator = _evaluator_nodes.find(
-        (task) => task.name === id
-      )!;
-      const transform_scale =
-        div.style.transform === ""
-          ? 1
-          : d3.zoomTransform(d3.select(`#${svgId}`).node()).k;
-      return {
-        id: node_data.name,
-        parentIds: parentIds,
-        ...node_data,
-        data: node_data,
-        bbox: {
-          ...div.getBoundingClientRect(),
-          width: div.getBoundingClientRect().width / transform_scale,
-          height: div.getBoundingClientRect().height / transform_scale,
-        },
-      };
-    });
     // call renderer
-    dag_renderer.update(dag_data, []);
+    dag_renderer.update(dag_data, [], undefined, false, false);
   }
 
   function handleAddEvaluator() {
     adding_evaluator = true;
   }
-
-  function handleGenerateRecommendations() {}
 
   function handleGenerateEvaluator(description: string, task_id: string) {
     adding_evaluator = false;
@@ -254,7 +259,7 @@
       <div class="evaluattor-nodes relative w-full flex flex-col-reverse">
         {#each evaluators as evaluator, index}
           <div
-            class="evaluator-card-container absolute task-wrapper bg-[#f6fffb] flex flex-col justify-center gap-8 outline-1 outline-gray-300 rounded-sm shadow transition-all"
+            class="evaluator-card-container absolute task-wrapper bg-[#f6fffb] flex flex-col justify-center outline-1 outline-gray-300 rounded-sm shadow transition-all"
             class:executing={executing_evaluator_name === evaluator.name}
             style:z-index={evaluators.length - index}
             data-id={evaluator.name}

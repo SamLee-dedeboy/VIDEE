@@ -65,11 +65,11 @@
         div.style.transform === ""
           ? 1
           : d3.zoomTransform(d3.select(`#${svgId}`).node()).k;
+      console.log(id, div.getBoundingClientRect());
       return {
         ...node_data,
         data: node_data,
         bbox: {
-          ...div.getBoundingClientRect(),
           width: div.getBoundingClientRect().width / transform_scale,
           height: div.getBoundingClientRect().height / transform_scale,
         },

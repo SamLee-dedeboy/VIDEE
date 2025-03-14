@@ -43,7 +43,7 @@ export class DAG {
         svg.append("g").attr("class", "next_expansion_link");
         svg.append("g").attr("class", "links");
         svg.append("g").attr("class", "nodes");
-        svg.append("g").attr("class", "bubbles");
+        // svg.append("g").attr("class", "bubbles");
         svg.call(this.zoom)
         // .call(this.zoom.transform, d3.zoomIdentity);
         // this.handleClick = handleClick
@@ -52,7 +52,7 @@ export class DAG {
         console.log("init done")
     }
 
-    update(data: tNode[], max_value_path_ids: string[] = [], controllers?: tControllers, mcts=true) {
+    update(data: tNode[], max_value_path_ids: string[] = [], controllers?: tControllers, mcts=true, rect_visible=true) {
         const self = this
         console.log("dag update", data)
         const svg = d3.select(`#${this.svgId}`);
@@ -64,14 +64,14 @@ export class DAG {
         const stratify = d3_dag.graphStratify();
         this.dag = stratify(data);
 
+        // const tweaks = vertical? [d3_dag.tweakFlip("diagonal")] : []
         const rect_size: [number, number] = this.nodeRadius
-        const layout = d3_dag
-        .sugiyama()
-        .coord(d3_dag.coordQuad())
-        .nodeSize((node: any) => {
-            return [(node.data.bbox?.width || rect_size[0])  , (node.data.bbox?.height || rect_size[1])]
-        })
-        .gap([50, 50])
+        const layout = d3_dag.sugiyama()
+            .coord(d3_dag.coordQuad())
+            .nodeSize((node: any) => {
+                return [(node.data.bbox?.width || rect_size[0])  , (node.data.bbox?.height || rect_size[1])]
+            })
+            .gap([50, 50])
 
         const { width, height } = layout(this.dag);
 
@@ -100,7 +100,9 @@ export class DAG {
             .selectAll("rect.node")
             .data(Object.keys(self.bbox_dict), (d) => d)
             .join(
-                enter => enter.append("rect").attr("class", "node")
+                enter => enter.append("rect")
+                        .attr("id", d => d)
+                        .attr("class", "node")
                         .attr("width",  0)
                         .attr("height",  0)
                         .attr("fill", "oklch(0.985 0.002 247.839)")
@@ -114,6 +116,7 @@ export class DAG {
                         //     .filter((div_data) => div_data.dataset.id === d)[0].style.visibility = "visible"
                         // })
                         // .transition().duration(300)
+                        .attr("opacity", rect_visible? 1 : 0)
                         .attr("width", (d) => self.bbox_dict[d].width)
                         .attr("height", (d) => self.bbox_dict[d].height)
                         .each(function(d) {

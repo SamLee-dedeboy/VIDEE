@@ -6,7 +6,10 @@ export type tNode = {
     id: string;
     parentIds: string[];
     data: any;
-    bbox?: DOMRect;
+    bbox?: {
+      width: number,
+      height: number
+    };
 }
 
 // export type tScoreWithReasoning = {
