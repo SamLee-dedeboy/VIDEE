@@ -26,6 +26,7 @@
     handleToggle?: Function;
     show_transition: boolean;
   } = $props();
+  $inspect(llm_reasoning);
 
   const setFewShotExampleExplanation: Function = getContext(
     "setFewShotExampleExplanation"
@@ -69,7 +70,9 @@
           Explanation by AI
         </div>
         <span class="font-thin">
-          {llm_reasoning}
+          {llm_reasoning === undefined
+            ? "No reasoning provided"
+            : llm_reasoning}
         </span>
         <div class="font-semibold text-sm mt-1 inline px-1">
           If you disagree with the AI, click the icon to flip the score <img

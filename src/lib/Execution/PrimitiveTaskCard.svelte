@@ -2,6 +2,8 @@
   import type { tPrimitiveTask } from "types";
   import { slide } from "svelte/transition";
   import { custom_confirm } from "lib/customConfirm";
+  import { trim } from "lib/trim";
+  import { primitiveTaskState } from "lib/ExecutionStates.svelte";
   let {
     task,
     task_options,
@@ -48,7 +50,15 @@
       class="border-b border-gray-300 text-[1.2rem] italic flex items-center"
       style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
     >
-      <span class="card-label mr-2 capitalize">{task.label}</span>
+      <span
+        class="card-label mr-2 mt-1 capitalize"
+        use:trim
+        contenteditable
+        onblur={(e) => {
+          task.label = (e.target as HTMLElement).innerText.trim();
+          primitiveTaskState.updatePrimitiveTask(task.id, task);
+        }}>{task.label}</span
+      >
       <button
         class="shrink-0 ml-auto cursor-pointer hover:bg-blue-300 p-0.5 rounded"
         title="Expand/Hide"
@@ -66,7 +76,16 @@
         class="border-b border-gray-300 flex flex-col min-w-[15rem]"
       >
         <div class="text-sm text-gray-400 italic">Description</div>
-        {task.description}
+        <div
+          use:trim
+          contenteditable
+          onblur={(e) => {
+            task.description = (e.target as HTMLElement).innerText.trim();
+            primitiveTaskState.updatePrimitiveTask(task.id, task);
+          }}
+        >
+          {task.description}
+        </div>
       </div>
       <div class="flex flex-col justify-between gap-y-2 mt-1">
         <div class="flex gap-x-2">

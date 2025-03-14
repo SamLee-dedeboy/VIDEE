@@ -1,8 +1,12 @@
 <script lang="ts">
   import type { tExecutionEvaluator } from "types";
   import { slide } from "svelte/transition";
-  import { primitiveTaskExecutionStates } from "../ExecutionStates.svelte";
+  import {
+    evaluatorState,
+    primitiveTaskExecutionStates,
+  } from "../ExecutionStates.svelte";
   import { custom_confirm } from "lib/customConfirm";
+  import { trim } from "lib/trim";
   let {
     evaluator = $bindable(),
     expand,
@@ -29,7 +33,15 @@
       class="border-b border-gray-300 text-[1.2rem] italic flex items-center"
       style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
     >
-      <span class="card-label mr-2 capitalize">{evaluator.name}</span>
+      <span
+        class="card-label mr-2 capitalize mt-1"
+        use:trim
+        contenteditable
+        onblur={(e) => {
+          evaluator.name = (e.target as HTMLElement).innerText.trim();
+          evaluatorState.updateEvaluator(evaluator.name, evaluator);
+        }}>{evaluator.name}</span
+      >
       <button
         class="shrink-0 ml-auto cursor-pointer hover:bg-emerald-200 p-0.5 rounded"
         title="Expand/Hide"
@@ -48,7 +60,16 @@
         class="border-b border-gray-300 flex flex-col min-w-[18rem]"
       >
         <div class="text-sm text-gray-400 italic">Definition</div>
-        {evaluator.definition}
+        <div
+          use:trim
+          contenteditable
+          onblur={(e) => {
+            evaluator.definition = (e.target as HTMLElement).innerText.trim();
+            evaluatorState.updateEvaluator(evaluator.name, evaluator);
+          }}
+        >
+          {evaluator.definition}
+        </div>
         <button
           class="delete-button hidden absolute top-1/2 -translate-y-1/2 left-0 opacity-60 hover:opacity-100"
           onclick={async () => {
