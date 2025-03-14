@@ -18,6 +18,7 @@
   let documents: any[] = $state([]);
 
   let primitive_task_inspection_panel: any = $state();
+  let evaluator_inspection_panel: any = $state();
 
   function getDocuments() {
     fetch(`${server_address}/documents/`, {
@@ -47,6 +48,11 @@
     primitive_task_inspection_panel.navigate_to_results();
   }
 
+  export async function navigate_to_evaluator_results() {
+    await tick();
+    evaluator_inspection_panel.navigate_to_results();
+  }
+
   onMount(() => {
     getDocuments();
   });
@@ -64,7 +70,9 @@
   {/if}
   {#if evaluator_node}
     <div in:slide class="inspection-container">
-      <EvaluatorNodeInspection evaluator={evaluator_node}
+      <EvaluatorNodeInspection
+        bind:this={evaluator_inspection_panel}
+        evaluator={evaluator_node}
       ></EvaluatorNodeInspection>
     </div>
   {/if}

@@ -213,33 +213,6 @@
       </button>
     </div>
   </div>
-  {#if ask_to_check_results}
-    <div class="absolute top-1/3 left-0 right-0 flex justify-center z-10">
-      <div
-        class="w-[18rem] bg-white outline-2 outline-gray-200 px-2 py-1 flex flex-col font-mono gap-y-4"
-      >
-        <span class="text-slate-600 text-sm">
-          Execution Done! Check Results?
-        </span>
-        <div class="flex justify-between text-sm">
-          <button
-            class="bg-green-100 outline-2 outline-gray-200 hover:bg-green-200 px-2 py-1 rounded text-slate-600"
-            onclick={() => {
-              ask_to_check_results = false;
-              navigate_to_results(executed_task_id!);
-            }}>Yes</button
-          >
-          <button
-            class="bg-red-100 outline-2 outline-gray-200 hover:bg-red-200 px-2 py-1 rounded text-slate-600"
-            onclick={() => {
-              ask_to_check_results = false;
-            }}>No</button
-          >
-        </div>
-      </div>
-    </div>
-  {/if}
-
   <!-- style:height={Math.max(
       primitive_tasks.length * 2 * node_size[1] * 1.5,
       800
@@ -265,9 +238,37 @@
         <div
           class="primitive-task-card-container absolute task-wrapper bg-blue-200 flex outline-1 outline-gray-300 rounded-sm shadow transition-all"
           class:executing={executing_task_id === task.id}
-          style:z-index={primitive_tasks.length - index}
           data-id={task.id}
         >
+          {#if ask_to_check_results && executed_task_id === task.id}
+            <div
+              class="absolute bottom-[calc(100%+2px)] left-4 right-4 flex justify-center z-20"
+            >
+              <div
+                class="rounded w-[18rem] bg-[#f6faff] outline-0 outline-gray-200 border-t-6 border-blue-200 shadow-[0px_0px_1px_1px_lightgray] px-2 py-1 flex flex-col font-mono gap-y-4"
+              >
+                <span class="text-slate-600 text-sm">
+                  Execution Done! <br /> Would you like to see the results?
+                </span>
+                <div class="flex justify-between text-sm">
+                  <button
+                    class="bg-green-100 outline-2 outline-gray-200 hover:bg-green-200 px-2 py-1 rounded text-slate-600"
+                    onclick={() => {
+                      ask_to_check_results = false;
+                      navigate_to_results(executed_task_id!);
+                    }}>Yes</button
+                  >
+                  <button
+                    class="bg-red-100 outline-2 outline-gray-200 hover:bg-red-200 px-2 py-1 rounded text-slate-600"
+                    onclick={() => {
+                      ask_to_check_results = false;
+                    }}>No</button
+                  >
+                </div>
+              </div>
+            </div>
+          {/if}
+
           <PrimitiveTaskCard
             task_options={primitive_tasks
               .filter(

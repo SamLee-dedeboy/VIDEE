@@ -478,12 +478,18 @@
                     execution_inspection_panel.scrollIntoInspectionPanel();
                   }
                 }}
-                handleInspectEvaluatorNode={async (node) => {
+                handleInspectEvaluatorNode={async (
+                  node,
+                  show_result = false
+                ) => {
                   console.log("inspecting evaluator", node);
                   inspected_evaluator_node = node;
                   inspected_primitive_task = undefined;
-                  await tick();
-                  execution_inspection_panel.scrollIntoInspectionPanel();
+                  if (show_result) {
+                    execution_inspection_panel.navigate_to_evaluator_results();
+                  } else {
+                    execution_inspection_panel.scrollIntoInspectionPanel();
+                  }
                 }}
               ></Execution>
             {/if}

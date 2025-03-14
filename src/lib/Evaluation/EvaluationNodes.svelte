@@ -24,8 +24,10 @@
   let adding_evaluator = $state(false);
   let generating_for_description = $state("");
   const session_id = (getContext("session_id") as Function)();
+  let ask_to_check_results = $state(false);
 
   let executing_evaluator_name: string | undefined = $state(undefined);
+  let executed_evaluator_name: string | undefined = $state(undefined);
   const svgId = "evaluation-dag-svg";
   const node_size: [number, number] = [150, 80];
   let dag_renderer = new DAG(
@@ -142,6 +144,8 @@
       .then((data) => {
         console.log("evaluator execution result: ", data);
         executing_evaluator_name = undefined;
+        executed_evaluator_name = evaluator.name;
+        ask_to_check_results = true;
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -155,6 +159,12 @@
       : [...evaluator_node_expanded, evaluator_name];
     await tick();
     update_dag(evaluators);
+  }
+
+  function navigate_to_results(node_name: string) {
+    console.log("navigating to results: ", node_name);
+    const evaluator = evaluators.find((task) => task.name === node_name);
+    handleInspectEvaluatorNode(evaluator, true);
   }
 
   const updateGlobalLinks: Function = getContext("updateGlobalLinks");
@@ -280,6 +290,35 @@
             style:z-index={evaluators.length - index}
             data-id={evaluator.name}
           >
+            {#if ask_to_check_results && executed_evaluator_name === evaluator.name}
+              <div
+                class="absolute bottom-[calc(100%+2px)] left-4 right-4 flex justify-center z-20"
+              >
+                <div
+                  class="rounded w-[18rem] bg-[#f6fffb] outline-0 outline-gray-200 border-t-6 border-emerald-200 shadow-[0px_0px_1px_1px_lightgray] px-2 py-1 flex flex-col font-mono gap-y-4"
+                >
+                  <span class="text-slate-600 text-sm">
+                    Execution Done! <br /> Would you like to see the results?
+                  </span>
+                  <div class="flex justify-between text-sm">
+                    <button
+                      class="bg-green-100 outline-2 outline-gray-200 hover:bg-green-200 px-2 py-1 rounded text-slate-600"
+                      onclick={() => {
+                        ask_to_check_results = false;
+                        navigate_to_results(executed_evaluator_name!);
+                      }}>Yes</button
+                    >
+                    <button
+                      class="bg-red-100 outline-2 outline-gray-200 hover:bg-red-200 px-2 py-1 rounded text-slate-600"
+                      onclick={() => {
+                        ask_to_check_results = false;
+                      }}>No</button
+                    >
+                  </div>
+                </div>
+              </div>
+            {/if}
+
             <ExecutionEvaluatorCard
               bind:evaluator={evaluators[index]}
               expand={evaluator_node_expanded.includes(evaluator.name)}

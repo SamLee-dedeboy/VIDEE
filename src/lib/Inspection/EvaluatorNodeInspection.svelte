@@ -23,7 +23,7 @@
   let show_formats = $state(false);
   let show_execution = $state(false);
   let show_result = $state(false);
-  let show_documents = $state(false);
+  let show_documents = $state(true);
   let paged_document_component: any = $state();
 
   let result: tExecutionEvaluatorResult | undefined = $state(undefined);
@@ -45,9 +45,16 @@
       }),
     })
       .then((response) => response.json())
-      .then((data) => {
+      .then(async (data) => {
         console.log("Evaluation result:", data);
         result = data.result;
+        await tick();
+        const inspection_panel = document.querySelector(".inspection-panel");
+        if (inspection_panel)
+          inspection_panel.scroll({
+            top: inspection_panel.scrollHeight,
+            behavior: "smooth",
+          });
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -66,6 +73,12 @@
     paged_document_component.navigateToDoc(doc);
   }
   setContext("navigate_to_doc", handleDocumentClicked);
+
+  export async function navigate_to_results() {
+    await tick();
+    show_result = true;
+    handleFetchEvaluationResult(evaluator);
+  }
 </script>
 
 <div class="flex flex-col px-1 gap-y-2">
@@ -203,7 +216,7 @@
         {/if}
       {/if}
     </div>
-    {#if true}
+    {#if result}
       <div class="flex flex-col">
         <div class="flex flex-col">
           <button
@@ -212,14 +225,6 @@
             onclick={async () => {
               show_result = !show_result;
               handleFetchEvaluationResult(evaluator);
-              await tick();
-              const inspection_panel =
-                document.querySelector(".inspection-panel");
-              if (inspection_panel)
-                inspection_panel.scroll({
-                  top: inspection_panel.scrollHeight,
-                  behavior: "smooth",
-                });
             }}
           >
             Result
@@ -230,8 +235,8 @@
             />
           </button>
         </div>
-        {#if show_result && result !== undefined}
-          <div class="flex flex-col">
+        {#if show_result}
+          <div class="evaluation-result-panel flex flex-col">
             <button
               class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200"
               onclick={() => {
@@ -245,12 +250,19 @@
               <PagedDocuments
                 bind:this={paged_document_component}
                 documents={result.result.documents}
+                bg_color="#f6fffb"
+                bg_hover_color="#08d595"
               ></PagedDocuments>
             {/if}
           </div>
           <EvaluatorResult {result}></EvaluatorResult>
           <EvaluatorResultRadialChart {result}></EvaluatorResultRadialChart>
         {/if}
+      </div>
+    {:else}
+      <div class="flex flex-col gap-y-1">
+        <div class="header-2 pointer-events-none opacity-70">Result</div>
+        <span class="text-xs text-gray-500 itliac px-1"> (Not Executed) </span>
       </div>
     {/if}
   </div>
