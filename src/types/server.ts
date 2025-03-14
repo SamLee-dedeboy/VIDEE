@@ -89,6 +89,7 @@ export type tExecutionEvaluatorParams = {
     state_input_key: string;
     doc_input_keys: string[];
     state_output_key: string;
+    possible_scores: string[];
     parameters: {
       name: string;
       model: string;
@@ -108,6 +109,7 @@ export type tExecutionEvaluatorParams = {
 
   export type tExecutionEvaluatorResult = {
     name: string;
+    possible_scores: string[];
     result: {
       documents: tDocument[]
     }

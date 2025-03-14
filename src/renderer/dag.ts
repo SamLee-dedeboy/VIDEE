@@ -52,7 +52,7 @@ export class DAG {
         console.log("init done")
     }
 
-    update(data: tNode[], max_value_path_ids: string[] = [], controllers?: tControllers, mcts=true, use_simplex=false) {
+    update(data: tNode[], max_value_path_ids: string[] = [], controllers?: tControllers, mcts=true, use_simplex=false, center_by_root=false) {
         const self = this
         console.log("dag update", data)
         const svg = d3.select(`#${this.svgId}`);
@@ -159,6 +159,10 @@ export class DAG {
 
         // translate to make new nodes in the center
         if(enter_nodes.length !== 0) {
+            if(center_by_root) {
+                const roots = data.filter((d: any) => d.isRoot).map(d => d.id)
+                enter_nodes = enter_nodes.filter((d) => roots.includes(d))
+            }
             const new_nodes_bboxes = enter_nodes.map(d => self.bbox_dict[d])
             const new_nodes_center = [
                 d3.mean(new_nodes_bboxes.map(d => d.x)),

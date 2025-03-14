@@ -25,6 +25,7 @@
   let show_result = $state(false);
   let show_documents = $state(true);
   let paged_document_component: any = $state();
+  let viz_mode = $state("bar"); // "bar" or "radial"
 
   let result: tExecutionEvaluatorResult | undefined = $state(undefined);
   const session_id = (getContext("session_id") as Function)();
@@ -236,7 +237,7 @@
           </button>
         </div>
         {#if show_result}
-          <div class="evaluation-result-panel flex flex-col">
+          <div class="evaluation-result-panel flex flex-col gap-y-2">
             <button
               class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200"
               onclick={() => {
@@ -251,12 +252,27 @@
                 bind:this={paged_document_component}
                 documents={result.result.documents}
                 bg_color="#f6fffb"
-                bg_hover_color="#08d595"
+                bg_hover_color="oklch(0.905 0.093 164.15)"
               ></PagedDocuments>
             {/if}
+            <div
+              class="flex border-b-2 border-gray-200 italic text-slate-600 divide-x divide-gray-200"
+            >
+              <button
+                class="flex-1 hover:bg-gray-200 text-center"
+                onclick={() => (viz_mode = "bar")}>Frequency</button
+              >
+              <button
+                class="flex-1 hover:bg-gray-200 text-center"
+                onclick={() => (viz_mode = "radial")}>Distribution</button
+              >
+            </div>
+            {#if viz_mode === "bar"}
+              <EvaluatorResult {result}></EvaluatorResult>
+            {:else if viz_mode === "radial"}
+              <EvaluatorResultRadialChart {result}></EvaluatorResultRadialChart>
+            {/if}
           </div>
-          <EvaluatorResult {result}></EvaluatorResult>
-          <EvaluatorResultRadialChart {result}></EvaluatorResultRadialChart>
         {/if}
       </div>
     {:else}

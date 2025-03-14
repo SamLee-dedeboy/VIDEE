@@ -85,7 +85,7 @@
       }
     );
     // call renderer
-    dag_renderer.update(dag_data, [], undefined, false, true);
+    dag_renderer.update(dag_data, [], undefined, false, true, true);
   }
 
   function handleAddEvaluator() {

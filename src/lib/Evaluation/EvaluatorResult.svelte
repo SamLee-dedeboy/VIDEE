@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { tExecutionEvaluatorResult } from "types";
   import * as d3 from "d3";
-  import ExecutionResultInspection from "lib/Inspection/ExecutionResultInspection.svelte";
   let { result }: { result: tExecutionEvaluatorResult } = $props();
   const svgId = "evaluator-result-svg";
 
@@ -10,15 +9,26 @@
     const evaluator_name = result.name;
     const evaluator_output_key = evaluator_name + "_output";
     const documents = result.result.documents;
-    const scores = documents.map((d) => d[evaluator_output_key]);
-    let scores_count = {};
-    scores.forEach((score) => {
-      if (score in scores_count) {
-        scores_count[score] += 1;
-      } else {
-        scores_count[score] = 1;
-      }
-    });
+    // const scores = documents.map((d) => d[evaluator_output_key]);
+    const scores_count = documents.reduce(
+      (acc, doc) => {
+        const score = doc[evaluator_output_key];
+        acc[score] += 1;
+        return acc;
+      },
+      result.possible_scores.reduce((acc, score) => {
+        acc[score] = 0;
+        return acc;
+      }, {})
+    );
+    // let scores_count = {};
+    // scores.forEach((score) => {
+    //   if (score in scores_count) {
+    //     scores_count[score] += 1;
+    //   } else {
+    //     scores_count[score] = 1;
+    //   }
+    // });
     console.log(scores_count);
     return scores_count;
   });
@@ -61,11 +71,11 @@
     bar_label_group.selectAll(".bar-label").remove();
     bar_label_group
       .selectAll(".text")
-      .data(Object.keys(_barChartData))
+      .data(Object.keys(_barChartData).filter((d) => _barChartData[d] > 0))
       .join("text")
       .attr("class", "bar-label")
       .attr("x", (d) => x(d) + x.bandwidth() / 2)
-      .attr("y", (d) => y(_barChartData[d]) - 8)
+      .attr("y", (d, i) => y(_barChartData[d]) - 8)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "middle")
       .text((d) => _barChartData[d]);
@@ -75,14 +85,19 @@
     svg
       .select(".axis-group")
       .select(".x-axis")
-      .attr("transform", "translate(0," + (height - margin.bottom) + ")")
+      .attr("transform", `translate(0,${height - margin.bottom})`)
       .call(d3.axisBottom(x));
 
+    const yTickValues = d3.range(
+      0,
+      d3.max(Object.values(_barChartData)) + 1,
+      1
+    );
     svg
       .select(".axis-group")
       .select(".y-axis")
-      .append("g")
-      .call(d3.axisLeft(y));
+      .attr("transform", `translate(${margin.left},0)`)
+      .call(d3.axisLeft(y).tickValues(yTickValues).tickFormat(d3.format("d")));
   }
 </script>
 
