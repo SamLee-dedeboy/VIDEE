@@ -217,6 +217,7 @@
         ></SemanticTaskPlan>
         <button
           class="absolute left-1 top-1 z-20 hover:bg-orange-300 rounded"
+          title="Hide Panel"
           onclick={() => {
             controllers.show_plan = false;
             rerender_all();
@@ -227,6 +228,7 @@
       <div class="px-2 bg-orange-100 flex h-fit hover:bg-orange-200">
         <button
           class="z-20 flex text-[1.5rem] text-slate-600 font-semibold italic"
+          title="Show Panel"
           onclick={() => {
             controllers.show_plan = true;
             rerender_all();
@@ -244,6 +246,7 @@
         ></PrimitiveTasks>
         <button
           class="absolute left-1 top-1 z-20 hover:bg-blue-200 rounded"
+          title="Hide Panel"
           onclick={() => {
             controllers.show_execution = false;
             rerender_all();
@@ -254,6 +257,7 @@
       <div class="px-2 bg-[#f2f8fd] flex h-fit hover:bg-blue-200">
         <button
           class="z-20 flex text-[1.5rem] text-slate-600 font-semibold italic"
+          title="Show Panel"
           onclick={() => {
             controllers.show_execution = true;
             rerender_all();
@@ -273,6 +277,7 @@
         ></EvaluationNodes>
         <button
           class="absolute left-1 top-1 z-20 hover:bg-emerald-200 rounded"
+          title="Hide Panel"
           onclick={() => {
             controllers.show_evaluation = false;
             rerender_all();
@@ -286,6 +291,7 @@
       >
         <button
           class="z-20 flex text-[1.5rem] text-slate-600 font-semibold italic"
+          title="Show Panel"
           onclick={() => {
             controllers.show_evaluation = true;
             rerender_all();

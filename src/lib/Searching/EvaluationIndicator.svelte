@@ -38,6 +38,7 @@
   <div class="indicator-button relative">
     <button
       class="p-1 relative rounded-full outline-gray-500 hover:outline-2 hover:scale-110 transition-all duration-100"
+      title={label}
       class:disabled={streaming}
       style="background-color: {value
         ? evaluation_colors.good

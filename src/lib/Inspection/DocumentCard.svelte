@@ -24,6 +24,7 @@
             </div>
             <button
               class="doc-content-close absolute right-0 bottom-[100%] p-0.5 rounded-full z-10"
+              title="close"
               onclick={() => (show_full_content = false)}
             >
               <img
@@ -38,6 +39,7 @@
             <button
               tabindex="0"
               class="doc-content doc-content-short truncate absolute left-0 right-0 top-0 bottom-0"
+              title="expand"
               onclick={() => (show_full_content = true)}
               onkeyup={() => {}}
             >

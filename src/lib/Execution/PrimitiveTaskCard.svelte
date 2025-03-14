@@ -51,6 +51,7 @@
       <span class="card-label mr-2 capitalize">{task.label}</span>
       <button
         class="shrink-0 ml-auto cursor-pointer hover:bg-blue-300 p-0.5 rounded"
+        title="Expand/Hide"
         onclick={() => handleToggleExpand(task.id)}
         ><img
           src="panel_top_open_blue.svg"

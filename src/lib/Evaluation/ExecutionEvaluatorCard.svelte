@@ -32,6 +32,7 @@
       <span class="card-label mr-2 capitalize">{evaluator.name}</span>
       <button
         class="shrink-0 ml-auto cursor-pointer hover:bg-emerald-200 p-0.5 rounded"
+        title="Expand/Hide"
         onclick={() => handleToggleExpand(evaluator.name)}
         ><img
           src="panel_top_open_emerald.svg"

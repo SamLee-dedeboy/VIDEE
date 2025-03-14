@@ -205,6 +205,7 @@
         {#if !isEnd}
           <button
             class="shrink-0 ml-auto cursor-pointer hover:bg-orange-300 p-0.5 rounded"
+            title="Expand/Hide"
             style={`visibility: ${streaming ? "hidden" : "visible"}`}
             onclick={() => handleToggleExpand(task[id_key])}
             ><img src="panel_top_open.svg" alt="more" class="w-6 h-6" /></button
