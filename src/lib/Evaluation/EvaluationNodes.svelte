@@ -9,9 +9,11 @@
   import { evaluatorState } from "../ExecutionStates.svelte";
   let {
     tasks,
+    generating_recommendations,
     handleInspectEvaluatorNode = () => {},
   }: {
     tasks: tPrimitiveTask[];
+    generating_recommendations: boolean;
     handleInspectEvaluatorNode: Function;
   } = $props();
   const evaluators = $derived(evaluatorState.evaluators);
@@ -80,6 +82,8 @@
   function handleAddEvaluator() {
     adding_evaluator = true;
   }
+
+  function handleGenerateRecommendations() {}
 
   function handleGenerateEvaluator(description: string, task_id: string) {
     adding_evaluator = false;
@@ -171,6 +175,14 @@
     </div>
 
     <div class="relative flex flex-col gap-y-1 grow">
+      <button
+        class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10 mx-2"
+        tabindex="0"
+        onclick={() => handleGenerateRecommendations()}
+        onkeyup={() => {}}
+      >
+        Recommendations
+      </button>
       {#if loading}
         <div
           class="absolute top-0 left-0 right-0 flex items-center justify-center"
@@ -184,6 +196,20 @@
             <span class="animate-pulse"
               >Generating for "{generating_for_description}"
             </span>
+          </div>
+        </div>
+      {/if}
+      {#if generating_recommendations}
+        <div
+          class="absolute top-0 left-0 right-0 flex items-center justify-center"
+        >
+          <div class="flex gap-x-2">
+            <img
+              src="loader_circle.svg"
+              class="w-6 h-6 animate-spin opacity-50"
+              alt="loading"
+            />
+            <span class="animate-pulse">Generating Recommendations..." </span>
           </div>
         </div>
       {/if}

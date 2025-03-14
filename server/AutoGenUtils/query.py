@@ -23,8 +23,17 @@ async def call_agent(agent, user_message):
     return response
 
 
-async def parallel_call_agents(n, agent, user_message):
+async def parallel_call_agents_repeat(n, agent, user_message):
+    """Repeatedly call the agent n times."""
     tasks = [call_agent(agent, user_message) for _ in range(n)]
+
+    results = await asyncio.gather(*tasks)
+    return results
+
+
+async def parallel_call_agents(agent, user_messages):
+    """Call the agent for each user message in parallel."""
+    tasks = [call_agent(agent, user_message) for user_message in user_messages]
 
     results = await asyncio.gather(*tasks)
     return results
@@ -350,7 +359,7 @@ async def run_decomposition_self_evaluation_agent(
         )
         return extract_json_content(response.chat_message.content)["evaluation_score"]
     else:
-        responses = await parallel_call_agents(
+        responses = await parallel_call_agents_repeat(
             n, decomposition_self_evaluation_agent, user_message
         )
         responses = [
@@ -744,7 +753,66 @@ async def run_result_evaluator_generation_agent(
         [TextMessage(content=user_message, source="user")],
         cancellation_token=CancellationToken(),
     )
-    print(response.chat_message.content)
     return extract_json_content(response.chat_message.content)[
         "evaluator_specification"
     ]
+
+
+async def run_evaluator_generation_agent(
+    goal: str,
+    tasks,
+    model: str,
+    api_key: str,
+):
+    model_client = OpenAIChatCompletionClient(
+        model=model,
+        api_key=api_key,
+        temperature=1.0,
+        model_capabilities={
+            "vision": False,
+            "function_calling": False,
+            "json_output": True,
+        },
+    )
+    evaluator_generation_agent = AssistantAgent(
+        name="evaluator_generation_agent",
+        model_client=model_client,
+        system_message="""
+        ** Context **
+        You are an expert in generating evaluation criteria for text analysis tasks.
+        ** Task **
+        The user will describe one text analysis task that he/she has done on a list of documents along with the overarching goal.
+        Your task is to recommend up to three criteria that can be used to evaluate the task result of each document.
+        ** Requirements **
+        Reply with the following JSON format:
+            {{
+                "evaluator_descriptions": [{{
+                    "name": str,
+                    "description": str,
+                }}]
+            }}
+        """,
+    )
+
+    def user_message_generator(task):
+        user_message = "This is my overarching goal: " + goal + "\n"
+        user_message += "Here's what I am currently doing and want to evaluate: "
+        user_message += f"""
+            <task_name> {task['label']} </task_name>
+            <description> {task['description']} </description>
+        """
+        return user_message
+
+    user_messages = [user_message_generator(task) for task in tasks]
+    responses = await parallel_call_agents(evaluator_generation_agent, user_messages)
+    for index, response in enumerate(responses):
+        print(response.chat_message.content)
+        print("=====================================")
+        responses[index] = extract_json_content(response.chat_message.content)[
+            "evaluator_descriptions"
+        ]
+    # responses = [
+    #     extract_json_content(response.chat_message.content)["evaluator_descriptions"]
+    #     for response in responses
+    # ]
+    return responses

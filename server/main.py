@@ -512,6 +512,28 @@ async def fetch_primitive_task_result(request: Request):
     }
 
 
+@app.post("/primitive_task/evaluators/recommend/")
+async def recommend_evaluators(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+
+    tasks = request["tasks"]
+    goal = request["goal"]
+    evaluator_task_description_pairs = await executor.generate_evaluator_descriptions(
+        goal, tasks, model=default_model, api_key=api_key
+    )
+    evaluator_specs = await executor.create_evaluator_specs(
+        evaluator_task_description_pairs, model=default_model, api_key=api_key
+    )
+    for evaluator_spec, (task, description) in zip(
+        evaluator_specs, evaluator_task_description_pairs
+    ):
+        evaluator_spec["task"] = task["id"]
+    return {"result": evaluator_specs}
+
+
 @app.post("/primitive_task/evaluators/add/")
 async def add_evaluators(request: Request):
     request = await request.body()

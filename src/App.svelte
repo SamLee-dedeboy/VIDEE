@@ -52,7 +52,9 @@
   let inspected_evaluator_node: tExecutionEvaluator | undefined =
     $state(undefined);
 
+  let execution_panel: any = $state();
   let execution_inspection_panel: any = $state();
+
   /**
    * Stores the state of the dag
    * @value mcts | execution
@@ -327,7 +329,9 @@
             (t) => t.id === original_id
           );
         }
-        console.log({ data });
+        execution_panel.generate_evaluator_recommendations(
+          data.primitive_tasks
+        );
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -446,6 +450,8 @@
               ></SemanticTasksTree>
             {:else if show_dag == "execution"}
               <Execution
+                bind:this={execution_panel}
+                {user_goal}
                 {decomposing_goal}
                 {handleConvert}
                 converting={controllers.converting}

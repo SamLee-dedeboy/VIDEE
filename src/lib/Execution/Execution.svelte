@@ -6,6 +6,7 @@
   } from "types";
   import * as d3 from "d3";
   import { getContext, setContext, tick } from "svelte";
+  import { server_address } from "constants";
   import PrimitiveTasks from "./PrimitiveTasks.svelte";
   import SemanticTaskPlan from "../Plan/SemanticTaskPlan.svelte";
   import EvaluationNodes from "../Evaluation/EvaluationNodes.svelte";
@@ -15,6 +16,7 @@
     semanticTaskPlanState,
   } from "../ExecutionStates.svelte";
   let {
+    user_goal,
     // plans
     decomposing_goal,
     handleConvert,
@@ -28,6 +30,7 @@
     // evaluators = $bindable([]),
     handleInspectEvaluatorNode = () => {},
   }: {
+    user_goal: string;
     decomposing_goal: boolean;
     handleConvert: Function;
 
@@ -45,6 +48,8 @@
     show_evaluation: false,
   });
 
+  const session_id = (getContext("session_id") as Function)();
+  let generating_recommendations = $state(false);
   const semantic_tasks = $derived(semanticTaskPlanState.semantic_tasks);
   const evaluators = $derived(evaluatorState.evaluators);
   const primitive_tasks = $derived(primitiveTaskState.primitiveTasks);
@@ -52,6 +57,7 @@
   let plan_component: any = $state();
   let execution_component: any = $state();
   let evaluation_component: any = $state();
+
   async function rerender_all() {
     await tick();
     console.log("Rerendering all");
@@ -163,6 +169,34 @@
       height: elementRect.height,
     };
   }
+
+  export function generate_evaluator_recommendations(
+    primitive_tasks: tPrimitiveTask[]
+  ) {
+    console.log("Generating recommendations");
+    generating_recommendations = true;
+    fetch(`${server_address}/primitive_task/evaluators/recommend/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        tasks: primitive_tasks,
+        session_id,
+        goal: user_goal,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Recommendations:", data);
+        evaluatorState.evaluators = [...evaluators, ...data["result"]];
+        generating_recommendations = false;
+        evaluation_component.rerender_evaluation();
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
 </script>
 
 <div class="flex grow bg-gray-50">
@@ -229,6 +263,7 @@
     {#if controllers.show_evaluation}
       <div class="plane flex-1 flex relative">
         <EvaluationNodes
+          {generating_recommendations}
           bind:this={evaluation_component}
           tasks={primitive_tasks}
           {handleInspectEvaluatorNode}

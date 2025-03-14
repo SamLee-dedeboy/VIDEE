@@ -84,8 +84,19 @@ export const evaluatorState = {
     get evaluators() {
         return evaluators
     },
-    set evaluators(value) {
-        evaluators = value
+    set evaluators(value: tExecutionEvaluator[]) {
+        // check and de-duplicate names
+        let names: Record<string, number> = {}
+        evaluators = value.map(e => {
+            if(names[e.name]) {
+                names[e.name] += 1
+                e.name = e.name + "-" + names[e.name]
+            } else {
+                names[e.name] = 1
+            }
+            return e
+        })
+
     },
     updateEvaluator(name: string, evaluator: tExecutionEvaluator) {
         const index = evaluators.map(e => e.name).indexOf(name)

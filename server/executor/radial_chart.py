@@ -157,19 +157,19 @@ async def cluster_topic_assignments(clusters, texts, model, api_key):
     for cluster, texts in cluster_texts.items():
         enc = tiktoken.encoding_for_model(model)
         token_length = len(enc.encode("\n".join(texts)))
-        print(cluster, "token length: ", token_length)
+        # print(cluster, "token length: ", token_length)
         # while token_length > 70000:  # 128000 is the max token limit for GPT-4o-mini
         #     texts = random.sample(texts, len(texts) // 2)
         #     token_length = len(enc.encode("\n".join(texts)))
         texts = random.sample(texts, min(len(texts), 25))
         token_length = len(enc.encode("\n".join(texts)))
-        print(cluster, "token length: ", token_length)
+        # print(cluster, "token length: ", token_length)
         user_messages.append("\n".join(texts))
         cluster_list.append(cluster)
     responses = await parallel_call_agents(topic_assignment_agent, user_messages)
-    for response in responses:
-        print(response.chat_message.content)
-        print("============================")
+    # for response in responses:
+    # print(response.chat_message.content)
+    # print("============================")
     responses = [response.chat_message.content for response in responses]
     # responses = [
     #     extract_json_content(response.chat_message.content)["topic"]
