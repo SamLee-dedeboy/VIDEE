@@ -78,13 +78,13 @@ async def run_goal_decomposition_agent(goal: str, model: str, api_key: str):
 
 
 async def run_goal_decomposition_agent_stepped(
-    goal: str,
-    previous_steps: list,
-    model: str,
-    api_key: str,
-    temperature=0.0,
-    n=1,
-    remain_steps=10,
+        goal: str,
+        previous_steps: list,
+        model: str,
+        api_key: str,
+        temperature=0.0,
+        n=1,
+        remain_steps=10,
 ):
     if remain_steps <= 0:
         ids = list(map(lambda step: step["id"], previous_steps))
@@ -299,7 +299,7 @@ async def run_goal_decomposition_agent_stepped(
 
 
 async def run_decomposition_self_evaluation_agent(
-    goal: str, previous_steps: list, next_step: str, model: str, api_key: str, n=1
+        goal: str, previous_steps: list, next_step: str, model: str, api_key: str, n=1
 ):
     model_client = OpenAIChatCompletionClient(
         model=model,
@@ -361,10 +361,10 @@ async def run_decomposition_self_evaluation_agent(
 
 
 async def run_decomposition_to_primitive_task_agent(
-    tree: list[Node],
-    primitive_task_list: list[PrimitiveTaskDescription],
-    model: str,
-    api_key: str,
+        tree: list[Node],
+        primitive_task_list: list[PrimitiveTaskDescription],
+        model: str,
+        api_key: str,
 ) -> None:
     primitive_task_defs_str = ""
     for primitive_task in primitive_task_list:
@@ -372,6 +372,9 @@ async def run_decomposition_to_primitive_task_agent(
         for key, value in primitive_task.items():
             primitive_task_defs_str += f"<{key}>{value}</{key}>\n"
         primitive_task_defs_str += "</primitive_task>\n"
+    supported_labels_str = primitive_task_list[0]['label']
+    for primitive_task in primitive_task_list[1:]:
+        supported_labels_str += f",{primitive_task['label']}"
     model_client = OpenAIChatCompletionClient(
         model=model,
         api_key=api_key,
@@ -399,13 +402,15 @@ async def run_decomposition_to_primitive_task_agent(
         The ids of each formulated NLP task must be unique, even if the labels are the same. This will help users correctly identify the dependent steps.
         If the same label appears multiple times, use the ids to differentiate them.
         For example, use 'Information Extraction-1' and 'Information Extraction-2' as ids.
-        The label must be one of the primitive NLP tasks provided above.
-        The labels of the primitive task must match exactly as those provided above. 
+
+        CRITICAL: The "label" field in your output MUST ONLY use one of these exact labels from the primitive task list, i.e.: {supported_labels}
+        DO NOT create custom labels like "Graph Construction" or "Information Extraction" that aren't in the list above.  
+
         Reply with the following JSON format: 
         {{ "primitive_tasks": [ 
                 {{ 
                     "solves": (string) id of the user-provided task that this primitive task solves
-                    "label": (string) (one of the NLP task labels above)
+                    "label": (string) (MUST be one of {supported_labels})
                     "id": (str) (a unique id for the task),
                     "description": (string, describe implementation procedure)
                     "explanation": (string, explain why this task is needed)
@@ -413,17 +418,19 @@ async def run_decomposition_to_primitive_task_agent(
                 }}, 
                 {{ 
                     "solves": (string) which user-provided task this primitive task solves
-                    "label": (string) (one of the NLP task labels above)
+                    "label": (string) (MUST be one of {supported_labels})
                     "id": (str) (a unique id for the task),
                     "description": (string, describe implementation procedure)
                     "explanation": (string, explain why this task is needed)
                     "depend_on": (str[], ids of the task that this step depends on)
                 }}, 
                 ... 
-            ] 
+            ],
+            "validation_check": "I confirm all labels used above are strictly from the provided primitive task list: {supported_labels}"
         }}
         """.format(
-            primitive_task_defs=primitive_task_defs_str
+            primitive_task_defs=primitive_task_defs_str,
+            supported_labels=supported_labels_str
         ),
     )
     task_to_string = (
@@ -498,11 +505,11 @@ async def run_task_decomposition_agent(task: Node, model: str, api_key: str):
 
 
 async def _run_decomposition_to_primitive_task_agent(
-    task: Node,
-    done_tasks: list[Node],
-    primitive_task_list: list[PrimitiveTaskDescription],
-    model: str,
-    api_key: str,
+        task: Node,
+        done_tasks: list[Node],
+        primitive_task_list: list[PrimitiveTaskDescription],
+        model: str,
+        api_key: str,
 ) -> None:
     primitive_task_defs_str = ""
     for primitive_task in primitive_task_list:
@@ -584,10 +591,10 @@ async def _run_decomposition_to_primitive_task_agent(
     )
     return extract_json_content(response.chat_message.content)["primitive_tasks"]
 
-
 async def run_prompt_generation_agent(
-    task: Node, existing_keys: str, model: str, api_key: str
+        task: Node, existing_keys: list, model: str, api_key: str
 ):
+    existing_keys_str = get_existing_keys_and_schema(existing_keys)
     model_client = OpenAIChatCompletionClient(
         model=model,
         api_key=api_key,
@@ -610,13 +617,49 @@ async def run_prompt_generation_agent(
         First, decide what data in each document is needed to complete the task.
         Here are the data already exist on each document, with type and schema: {existing_keys}
         Then, generate a prompt that instructs an LLM to analyze the text using the data in each document for the user's task.
-        Organize the prompt into these three sections:
-        1. Input Keys: List the keys that are required from the document to complete the task.
-        2. Context: Give instructions on what the user is trying to do.
-        3. Task: Give instructions on how to analyze the text.
-        4. Requirements: Provide any specific requirements or constraints for the prompt.
-        In addition, give a key name suitable to store the result of the prompt, and define a valid JSON format for the output.
-        The output JSON format should be a dictionary with only one key, and the value can be any structure.
+        The prompt should be a JSON object with these three sections:
+        1. Context: Give instructions on what the user is trying to do.
+        2. Task: Give instructions on how to analyze the text.
+        3. Requirements: Provide any specific requirements or constraints for the prompt.
+        4. JSON_format: A JSON object with one key, the key name should be suitable to store the result of the prompt, and value should be a valid JSON format for representing the output.
+        An example of the JSON_format section is: "{{\"themes": [{{\"theme": \"str\", \"definition\": \"str\"}}]}}"
+
+
+        Next, generate a "output_schema" key, The "output_schema" key should provide a very detailed, nested description of the output structure defined for the key in JSON_format. Instead of using simple Python-type annotations, provide a complete JSON Schema-like structure that explicitly defines all properties, nested objects, and their types. For complex structures like lists of objects, specify the properties of each object within the list.
+
+        CRITICAL: DO NOT include the key itself in the output_schema. The output_schema should only define the shape of the output value.
+        for example, if the JSON_format is defined as "{{\"themes": [{{\"theme": \"str\", \"definition\": \"str\"}}]}}"
+        the output_schema should be: {{"items": {{"theme": "str", "definition": "str"}}}}
+
+        Examples for output_schema:
+        For primitive types, the output_schema can be the same as the type:
+        - "output_schema": "str" for a string
+        - "output_schema": "int" for an integer
+        - "output_schema": "float" for a floating point number
+        - "output_schema": "bool" for a boolean
+
+        For complex types, the output_schema should define the structure:
+        - For a list of strings: "output_schema": "list[str]"
+        - For a list of objects: "output_schema": {{"items": {{"field1": "str", "field2": "int"}}}}
+        - For a dictionary: "output_schema": {{"properties": {{"key1": "str", "key2": "int"}}}}
+
+        Examples of output_schema definitions:
+        1. Simple text content:
+           "output_schema": "str"
+
+        2. A list of tags:
+           "output_schema": "list[str]"
+
+        3. A person record:
+           "output_schema": {{"properties": {{"name": "str", "age": "int", "email": "str"}}}}
+
+        4. A collection of documents:
+           "output_schema": {{"items": {{"content": "str", "timestamp": "str", "author": "str"}}}}
+
+        5. Analytics results:
+           "output_schema": {{"properties": {{"total_count": "int", "average_score": "float", "categories": "list[str]"}}}}
+
+        Combine the prompt and output_schema into one JSON output, The output JSON format should be a dictionary with only two keys, "prompt" and "output_schema", and the value can be any structure.
         Reply with this JSON format:
             {{
                "prompt": {{
@@ -624,10 +667,13 @@ async def run_prompt_generation_agent(
                     "Task": str,
                     "Requirements": str
                     "JSON_format": str
+                }},
+                "output_schema": {{
+                    // Schema of the output data
                 }}
             }}
         """.format(
-            existing_keys=existing_keys
+            existing_keys=existing_keys_str
         ),
     )
     task_message = f"""
@@ -643,11 +689,11 @@ async def run_prompt_generation_agent(
     #     extract_json_content(response.chat_message.content),
     #     f"generated_prompt_{task['label']}.json",
     # )
-    return extract_json_content(response.chat_message.content)["prompt"]
+    return extract_json_content(response.chat_message.content)
 
 
 async def run_input_key_generation_agent(
-    task: Node, existing_keys: str, model: str, api_key: str
+        task: Node, existing_keys: list, model: str, api_key: str
 ):
     model_client = OpenAIChatCompletionClient(
         model=model,
@@ -679,7 +725,7 @@ async def run_input_key_generation_agent(
                ]
             }
         
-        For each key, provide a detailed schema definition that describes the exact structure
+        For each key, provide a detailed schema definition that describes the exact structure.
         
         For primitive types, the schema can be the same as the type:
         - "schema": "str" for a string
@@ -711,17 +757,7 @@ async def run_input_key_generation_agent(
     )
 
     # Format the existing keys to include detailed schema information
-    formatted_keys = []
-    for key in existing_keys:
-        if isinstance(key, dict):
-            if "key" in key and "schema" in key:
-                formatted_keys.append(f"{key['key']} (schema: {key['schema']})")
-            elif "key" in key:
-                formatted_keys.append(f"{key['key']} (schema: str)") # default to use str for prompt tools
-        elif isinstance(key, str):
-            formatted_keys.append(f"{key} (schema: str)")
-
-    existing_keys_str = ", ".join(formatted_keys) if formatted_keys else str(existing_keys)
+    existing_keys_str = get_existing_keys_and_schema(existing_keys)
 
     task_message = f"""
         <task_name> {task['label']} </task_name>
@@ -740,10 +776,10 @@ async def run_input_key_generation_agent(
 
 
 async def run_result_evaluator_generation_agent(
-    task,
-    user_description: str,
-    model: str,
-    api_key: str,
+        task,
+        user_description: str,
+        model: str,
+        api_key: str,
 ):
     model_client = OpenAIChatCompletionClient(
         model=model,
@@ -803,7 +839,7 @@ async def run_result_evaluator_generation_agent(
 
 
 async def run_data_transform_plan_agent(
-    task: Node, existing_keys: str, model: str, api_key: str
+        task: Node, existing_keys: list, model: str, api_key: str
 ):
     """
     Generate a data transformation plan for a task using an agent.
@@ -837,125 +873,97 @@ async def run_data_transform_plan_agent(
         
         ** Task **
         The user will describe a data transformation task. You need to create a transformation plan
-        that includes the operation type, the required parameters for that operation, and the output schema.
+        that includes the operation type (usually it is "transform"), the required parameters for that operation, and the output schema.
+        The "output schema" should provide a detailed, nested description of the output structure. Instead of using simple Python-type annotations, provide a complete JSON Schema-like structure that explicitly defines all properties, nested objects, and their types. For complex structures like lists of objects, specify the properties of each object within the list.
+        You also need to determine which feature_key to use for each operation, based on available keys from available input keys and their schema
 
         ** Note **
-        The input data may have complex schemas with nested structures. You must create transformations 
+        The input data is a dictionary with user given input keys, the value of each key can have complex schemas with nested structures. You must create transformations 
         that account for the detailed schema of the input data and define a precise output schema.
+        
+        When you generate the parameters (i.e. transform_code), make sure the variables used in the code or template match the chosen input keys with its detailed schemas.
 
         ** IMPORTANT: Available Operations **
-        You MUST choose ONE of these operations - no other operations are supported:
-        
-        1. map - Transforms each document by applying a template
+        You MUST choose "transform" as the operation - no other operations are supported.
+        definition of "transform" operation - Transform the given data to another schema
            - Required parameters: 
-              - "template": A jinja2 compatible template string
-              - "output_schema": Detailed schema of the output structure
-           - You should handle complex schema structures appropriately in the template.
-           - Example: To map input data with a person schema to a new format:
-            ```
-            // Input schema: {"properties": {"first_name": "str", "last_name": "str", "dob": "str", "salary": "int", "skills": "list[str]"}}
-            
-            "template": {
-                "name": "{{first_name}} {{last_name}}",
-                "birth_year": {{dob.split('-')[0]}},
-                "tax": {{round(salary * 0.3, 2)}},
-                "is_senior": {{ True if age >= 65 else False }},
-                "skills_summary": "{{', '.join(skills)}}" if skills is defined and skills|length > 0 else "None",
-                "contact_info": {
-                    "email": "{{email | default('unknown')}}",
-                    "phones": {{phone_numbers if phone_numbers is defined else []}}
-                }
-            },
-            "output_schema": {
-                "properties": {
-                    "name": "str", 
-                    "birth_year": "int", 
-                    "tax": "float", 
-                    "is_senior": "bool",
-                    "skills_summary": "str",
-                    "contact_info": {
-                        "properties": {
-                            "email": "str",
-                            "phones": "list[str]"
-                        }
-                    }
-                }
-            }
-            ```
-
-        2. filter - Selects documents that meet specific criteria
-           - Required parameters: 
-              - "filter_code": Python code that defines a filter_data function
-              - "output_schema": Schema of the output (same as input typically)
-           - The function must:
-             - Be named "filter_data"
-             - Take a "data" parameter (list of documents)
-             - Return filtered data
-           - Your code should handle complex schema structures when filtering.
-           - Example: to filter documents with complex criteria:
-```
-// Input schema: {"items": {"name": "str", "department": "str", "salary": "int", "skills": "list[str]", "experience": {"properties": {"years": "int", "level": "str"}}}}
-
-"filter_code": "def filter_data(data):\n    filtered = []\n    for item in data:\n        salary_in_range = item.get('salary', 0) >= 80000\n        if salary_in_range:\n            filtered.append(item)\n    return filtered",
-
-"output_schema": {"items": {"name": "str", "department": "str", "salary": "int", "skills": "list[str]", "experience": {"properties": {"years": "int", "level": "str"}}}}
-```
-        
-        3. reduce - Combines multiple documents into a single result
-           - Required parameters: 
-              - "reduce_code": Python code that defines a reduce_data function
+              - "transform_code": Python code that defines a transform function
               - "output_schema": Detailed schema of the output structure
            - The function must:
-             - Be named "reduce_data"
-             - Take a "data" parameter (list of documents)
-             - Return the reduced result as a dictionary
-           - Example: to reduce documents to a complex aggregated result:
+             - Be named "transform"
+             - Take a "data" parameter (list of documents, each document is a dictionary with all the given input keys)
+             - Return transformed "data", based on user's requirements
+           - Example: to transform documents to a complex aggregated result:
 ```
-// Input schema: {"items": {"name": "str", "department": "str", "salary": "int", "skills": "list[str]"}}
-
-"reduce_code": "def reduce_data(data):\n    total_salary = sum(item.get('salary', 0) for item in data)\n    avg_salary = total_salary / len(data) if data else 0\n    return {\n        \"summary\": {\n            \"total_employees\": len(data),\n            \"total_salary\": total_salary,\n            \"average_salary\": avg_salary\n        }\n    }"
-
+Input keys and schema:
+"teacher": {"items": {"name": "str", "department": "str", "salary": "int", "skills": "list[str]"}}
+"department": {"properties": {"name": "str", "total_students": "int"}}
+This means the input is a dictionary with "teacher" and "department" key.
+data["teacher"] is an array of objects, each object has schema {"name": "str", "department": "str", "salary": "int", "skills": "list[str]"}.
+data["department"] is an object with schema {"name": "str", "total_students": "int"}
+The output should be:
+"transform_code": "def transform(data): return {\n    "summary": {\n        "total_salary": sum(t["salary"] for item in data for t in item["teacher"]),\n        "total_students": sum(item["department"]["total_students"] for item in data)\n    }\n}"
 "output_schema": {
     "summary": {
         "properties": {
-            "total_employees": "int",
             "total_salary": "int",
-            "average_salary": "float"
+            "total_students": "int"
         }
     }
 }
 ```
-        4. chain - Applies multiple transformations in sequence
-           - Parameters:
-             - "map_config": Configuration for map operation (can be null)
-             - "filter_config": Configuration for filter operation (can be null)
-             - "reduce_config": Configuration for reduce operation (can be null)
-             - "output_schema": Final output schema after all transformations
-        
         ** Response Format **
         You MUST respond with a JSON object in this exact format:
         {
-            "operation": "map" | "filter" | "reduce" | "chain",
+            "operation": "transform",
             "parameters": {
-                // Parameters specific to the chosen operation as described above,
-                // MUST include output_schema defining the exact structure of the output
+                "transform_code": str,
+                "output_schema": str
             }
         }
         """,
     )
 
+    # data = [
+    #     {
+    #         "teacher": [
+    #             {
+    #             "name": "t1",
+    #             "department": "d1",
+    #             "salary": 100
+    #             },
+    #             {
+    #                 "name": "t2",
+    #                 "department": "d1",
+    #                 "salary": 200
+    #             },
+    #         ],
+    #         "department": {
+    #             "name": "d1",
+    #             "total_students": 1000
+    #         }
+    #     },
+    # {
+    #         "teacher": [
+    #             {
+    #             "name": "t3",
+    #             "department": "d2",
+    #             "salary": 100
+    #             },
+    #             {
+    #                 "name": "t4",
+    #                 "department": "d1",
+    #                 "salary": 200
+    #             },
+    #         ],
+    #         "department": {
+    #             "name": "d2",
+    #             "total_students": 10000
+    #         }
+    #     }
+    # ]
     # Format input keys with their detailed schema information
-    input_keys_info = []
-    for key in existing_keys:
-        if isinstance(key, dict):
-            if "key" in key and "schema" in key:
-                input_keys_info.append(f"{key['key']} (schema: {key['schema']})")
-            elif "key" in key and "type" in key:
-                input_keys_info.append(f"{key['key']} (type: {key['type']})")
-        elif isinstance(key, str):
-            input_keys_info.append(f"{key} (type: any)")
-
-    input_keys_str = ", ".join(input_keys_info) if input_keys_info else "None"
+    input_keys_str = get_existing_keys_and_schema(existing_keys)
 
     user_message_content = f"""
     I need to create a data transformation for the following task:
@@ -967,10 +975,9 @@ async def run_data_transform_plan_agent(
     
     Please generate a data transformation plan that best addresses this task. 
     Remember to:
-    1. Choose only one of the available operations (map, filter, reduce, or chain)
-    2. Include all required parameters including a detailed output_schema
-    3. Consider the detailed schemas of input keys when creating transformations
-    4. Define precise schemas for all output data structures
+    1. Include all required parameters including a detailed output_schema
+    2. Consider the detailed schemas of input keys when creating transformations
+    3. Define precise schemas for all output data structures
     """
 
     response = await data_transform_agent.on_messages(
@@ -982,7 +989,7 @@ async def run_data_transform_plan_agent(
 
 
 async def run_clustering_plan_agent(
-    task: Node, existing_keys: str, model: str, api_key: str
+        task: Node, existing_keys: list, model: str, api_key: str
 ):
     """
     Generate a clustering plan for a task using an agent.
@@ -1018,7 +1025,8 @@ async def run_clustering_plan_agent(
         The user will describe a clustering task. You need to create a clustering configuration
         that includes the algorithm to use and the parameters for that algorithm.
         You also need to determine which feature_key to use for clustering, based on available keys from available input keys and their schema
-        
+        Also, you also need to determine the "output_schema". The "output_schema" key should provide a detailed, nested description of the output structure. Instead of using simple Python-type annotations, provide a complete JSON Schema-like structure that explicitly defines all properties, nested objects, and their types. For complex structures like lists of objects, specify the properties of each object within the list.
+
         ** Note **
         The input data needs to contain embeddings (vector representations) for effective clustering.
         You need to specify which feature to use for clustering (typically "embedding").
@@ -1089,17 +1097,7 @@ async def run_clustering_plan_agent(
     )
 
     # Format input keys with their detailed schema information
-    input_keys_info = []
-    for key in existing_keys:
-        if isinstance(key, dict):
-            if "key" in key and "schema" in key:
-                input_keys_info.append(f"{key['key']} (schema: {key['schema']})")
-            elif "key" in key and "type" in key:
-                input_keys_info.append(f"{key['key']} (type: {key['type']})")
-        elif isinstance(key, str):
-            input_keys_info.append(f"{key} (type: any)")
-
-    input_keys_str = ", ".join(input_keys_info) if input_keys_info else "None"
+    input_keys_str = get_existing_keys_and_schema(existing_keys)
 
     user_message_content = f"""
     I need to create a clustering plan for the following task:
@@ -1107,6 +1105,7 @@ async def run_clustering_plan_agent(
     Task: {task['label']}
     Description: {task['description']}
     
+    The input will be a dictionary with the below input keys.
     Available input keys with their detailed schemas: {input_keys_str}
     
     Please generate a clustering configuration that best addresses this task. 
@@ -1127,7 +1126,7 @@ async def run_clustering_plan_agent(
 
 
 async def run_dim_reduction_plan_agent(
-    task: Node, existing_keys: str, model: str, api_key: str
+        task: Node, existing_keys: list, model: str, api_key: str
 ):
     """
     Generate a dimensionality reduction plan for a task using an agent.
@@ -1163,6 +1162,7 @@ async def run_dim_reduction_plan_agent(
         The user will describe a dimensionality reduction task. You need to create a configuration
         that includes the algorithm to use and the parameters for that algorithm.
         You also need to determine which feature_key to use for dimensionality reduction, based on available keys from available input keys and their schema
+        Also, you also need to determine the "output_schema". The "output_schema" key should provide a detailed, nested description of the output structure. Instead of using simple Python-type annotations, provide a complete JSON Schema-like structure that explicitly defines all properties, nested objects, and their types. For complex structures like lists of objects, specify the properties of each object within the list.
 
         ** Note **
         The input data needs to contain high-dimensional embeddings that need to be reduced to lower dimensions.
@@ -1217,17 +1217,7 @@ async def run_dim_reduction_plan_agent(
     )
 
     # Format input keys with their detailed schema information
-    input_keys_info = []
-    for key in existing_keys:
-        if isinstance(key, dict):
-            if "key" in key and "schema" in key:
-                input_keys_info.append(f"{key['key']} (schema: {key['schema']})")
-            elif "key" in key and "type" in key:
-                input_keys_info.append(f"{key['key']} (type: {key['type']})")
-        elif isinstance(key, str):
-            input_keys_info.append(f"{key} (type: any)")
-
-    input_keys_str = ", ".join(input_keys_info) if input_keys_info else "None"
+    input_keys_str = get_existing_keys_and_schema(existing_keys)
 
     user_message_content = f"""
     I need to create a dimensionality reduction plan for the following task:
@@ -1255,7 +1245,7 @@ async def run_dim_reduction_plan_agent(
 
 
 async def run_embedding_plan_agent(
-    task: Node, existing_keys: str, model: str, api_key: str
+        task: Node, existing_keys: list, model: str, api_key: str
 ):
     """
     Generate an embedding plan for a task using an agent.
@@ -1291,6 +1281,7 @@ async def run_embedding_plan_agent(
         The user will describe an embedding task. You need to create a configuration
         that includes the embedding model to use and the parameters for that model.
         You also need to determine which feature_key to use for embedding, based on available keys from available input keys and their schema
+        Also, you also need to determine the "output_schema". The "output_schema" key should provide a detailed, nested description of the output structure. Instead of using simple Python-type annotations, provide a complete JSON Schema-like structure that explicitly defines all properties, nested objects, and their types. For complex structures like lists of objects, specify the properties of each object within the list.
 
         ** Note **
         Embeddings convert text into dense vector representations that capture semantic meaning.
@@ -1334,17 +1325,7 @@ async def run_embedding_plan_agent(
     )
 
     # Format input keys with their detailed schema information
-    input_keys_info = []
-    for key in existing_keys:
-        if isinstance(key, dict):
-            if "key" in key and "schema" in key:
-                input_keys_info.append(f"{key['key']} (schema: {key['schema']})")
-            elif "key" in key and "type" in key:
-                input_keys_info.append(f"{key['key']} (type: {key['type']})")
-        elif isinstance(key, str):
-            input_keys_info.append(f"{key} (type: any)")
-
-    input_keys_str = ", ".join(input_keys_info) if input_keys_info else "None"
+    input_keys_str = get_existing_keys_and_schema(existing_keys)
 
     user_message_content = f"""
     I need to create an embedding plan for the following task:
@@ -1372,7 +1353,7 @@ async def run_embedding_plan_agent(
 
 
 async def run_segmentation_plan_agent(
-    task: Node, existing_keys: str, model: str, api_key: str
+        task: Node, existing_keys: list, model: str, api_key: str
 ):
     """
     Generate a segmentation plan for a task using an agent.
@@ -1409,7 +1390,8 @@ async def run_segmentation_plan_agent(
         The user will describe a segmentation task. You need to create a configuration
         that includes the segmentation strategy and the parameters for that strategy.
         You have to output one and only one feature_key, You MUST only select feature_key from the available input keys list. No additional keys outside this list can be used.
-
+        Also, you also need to determine the "output_schema". The "output_schema" key should provide a detailed, nested description of the output structure. Instead of using simple Python-type annotations, provide a complete JSON Schema-like structure that explicitly defines all properties, nested objects, and their types. For complex structures like lists of objects, specify the properties of each object within the list.
+        
         ** Note **
         Text segmentation divides long documents into smaller, manageable chunks.
         You need to specify which text field to segment and how to divide it.
@@ -1470,17 +1452,7 @@ async def run_segmentation_plan_agent(
     )
 
     # Format input keys with their detailed schema information
-    input_keys_info = []
-    for key in existing_keys:
-        if isinstance(key, dict):
-            if "key" in key and "schema" in key:
-                input_keys_info.append(f"{key['key']} (schema: {key['schema']})")
-            elif "key" in key and "type" in key:
-                input_keys_info.append(f"{key['key']} (type: {key['type']})")
-        elif isinstance(key, str):
-            input_keys_info.append(f"{key} (type: any)")
-
-    input_keys_str = ", ".join(input_keys_info) if input_keys_info else "None"
+    input_keys_str = get_existing_keys_and_schema(existing_keys)
 
     user_message_content = f"""
     I need to create a segmentation plan for the following task:
@@ -1505,3 +1477,18 @@ async def run_segmentation_plan_agent(
     )
 
     return extract_json_content(response.chat_message.content)
+
+
+def get_existing_keys_and_schema(existing_keys):
+    # Format the existing keys to include detailed schema information
+    formatted_keys = []
+    for key in existing_keys:
+        if isinstance(key, dict):
+            if "key" in key and "schema" in key:
+                formatted_keys.append(f"{key['key']} (schema: {key['schema']})")
+            elif "key" in key:
+                formatted_keys.append(f"{key['key']} (schema: str)")  # default to use str for prompt tools
+        elif isinstance(key, str):
+            formatted_keys.append(f"{key} (schema: str)")
+
+    return ", ".join(formatted_keys) if formatted_keys else str(existing_keys)

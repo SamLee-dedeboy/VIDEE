@@ -82,5 +82,11 @@
     "definition": "Splits text into meaningful parts like sentences, paragraphs, or topics.",
     "input": "Document/Corpus",
     "output": "Segments"
+  },
+  {
+    "label": "Insights Summarization",
+    "definition": "Synthesizes key insights and findings from previous analysis results.",
+    "input": "Document/Analysis Results",
+    "output": "Insights Summary"
   }
 ]

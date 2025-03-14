@@ -8,6 +8,7 @@ from server.executor.tools.data_transform_tool import data_transform_tool
 from server.executor.tools.dim_reduction_tool import dim_reduction_tool
 from server.executor.tools.segmentation_tool import segmentation_tool
 from server.AutoGenUtils import query as autogen_utils
+from server.utils import extract_json_content
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -120,7 +121,7 @@ async def execution_plan(
                 )
                 transform_plan = create_data_transform_plan(
                     primitive_task,
-                    transform_config.get("operation", "map"),
+                    transform_config.get("operation", "transform"),
                     transform_config.get("parameters", {}),
                     input_keys,  # Pass input keys with detailed schemas
                     current_state_key
@@ -208,7 +209,9 @@ async def execution_plan(
                     primitive_task,
                     embedding_config.get("provider", "openai"),
                     embedding_config.get("parameters", {}),
-                    input_keys
+                    input_keys,
+                    current_state_key,
+                    api_key
                 )
                 plan.append(embedding_plan)
 
@@ -251,9 +254,11 @@ async def execution_plan(
                 print(f"Error using segmentation agent: {e}. Using default prompting plan.")
 
         # Default to using prompt_generation_agent for other tasks
-        prompt_structured = await autogen_utils.run_prompt_generation_agent(
-            primitive_task, input_key_names, model=model, api_key=api_key
+        prompt_config = await autogen_utils.run_prompt_generation_agent(
+            primitive_task, input_keys, model=model, api_key=api_key
         )
+        prompt_structured = prompt_config.get("prompt")
+        output_schema = prompt_config.get("output_schema")
         # extract output key from JSON format
         try:
             pattern = r'\{\s*"(\w+)"\s*:\s*'
@@ -277,12 +282,14 @@ async def execution_plan(
         except ValueError as e:
             print(e)
             output_key = primitive_task["label"] + "_output"
-        # existing_keys.append(output_key)
-        existing_keys.append({"key": output_key, "schema": "Any"})
+            output_schema = "str"
+
+        existing_keys.append({"key": output_key, "schema": output_schema})
         # replace {} in the JSON format with {{}}
         prompt_structured["JSON_format"] = (
             prompt_structured["JSON_format"].replace("{", "{{").replace("}", "}}")
         )
+        input_key_schemas = get_input_key_schemas(input_keys)
         prompt_template = [
             {
                 "role": "system",
@@ -313,6 +320,8 @@ async def execution_plan(
                 "state_input_key": current_state_key,
                 "doc_input_keys": input_key_names,
                 "state_output_key": output_key,
+                # "input_key_schemas": input_key_schemas,
+                # "output_schema": output_schema,
                 "execution": {
                     "tool": "prompt_tool",
                     "parameters": {
@@ -321,6 +330,8 @@ async def execution_plan(
                         "api_key": api_key,
                         "format": "json",
                         "prompt_template": prompt_template,
+                        "input_key_schemas": input_key_schemas,
+                        "output_schema": output_schema,
                     },
                 },
             }
@@ -472,7 +483,7 @@ def create_node(step, custom_get_input_func=None, custom_reduce_func=None):
         get_input = custom_get_input_func
     # how to produce output
     if custom_reduce_func is None:
-        if step["execution"]["tool"] in ["clustering_tool", "embedding_tool", "data_transform_tool"]:
+        if step["execution"]["tool"] in ["clustering_tool", "embedding_tool", "dim_reduction_tool", "segmentation_tool", "data_transform_tool"]:
             reduce = lambda combined: tools_reduce_func(
                 combined, state_input_key, state_output_key, state_output_key
             )
@@ -483,12 +494,9 @@ def create_node(step, custom_get_input_func=None, custom_reduce_func=None):
     else:
         reduce = custom_reduce_func
     # create the map-reduce chain
-    # for clustering and data transformation with "reduce" operation, the input is all documents
+    # for clustering, dim reduction, data transformation the input is all documents
     # We cannot do batch process document by document
-    if step["execution"]["tool"] in ["clustering_tool"] or (
-        step["execution"]["tool"] == "data_transform_tool" and
-        step["execution"]["parameters"].get("operation") == "reduce"
-    ):
+    if step["execution"]["tool"] in ["clustering_tool", "data_transform_tool", "dim_reduction_tool"]:
         map = RunnableAssign(
             {
                 state_output_key: get_input
@@ -755,56 +763,17 @@ def convert_spec_to_chain(spec):
         )
     elif spec["tool"] == "data_transform_tool":
         # Extract parameters for data_transform_tool
-        operation = spec["parameters"].get("operation", "map")
-        template = spec["parameters"].get("template", None)
-        filter_code = spec["parameters"].get("filter_code", None)
-        reduce_code = spec["parameters"].get("reduce_code", None)
+        operation = spec["parameters"].get("operation", "transform")
+        transform_code = spec["parameters"].get("transform_code", None)
         wrap_result = spec["parameters"].get("wrap_result", False)
-
-        # Create appropriate lambda based on operation
-        if operation == "map":
-            return RunnableLambda(
-                lambda inputs: data_transform_tool(
-                    inputs,
-                    operation=operation,
-                    template=template
-                )
+        return RunnableLambda(
+            lambda inputs: data_transform_tool(
+                inputs,
+                operation=operation,
+                transform_code=transform_code,
+                wrap_result=wrap_result
             )
-        elif operation == "filter":
-            return RunnableLambda(
-                lambda inputs: data_transform_tool(
-                    inputs,
-                    operation=operation,
-                    filter_code=filter_code
-                )
-            )
-        elif operation == "reduce":
-            return RunnableLambda(
-                lambda inputs: data_transform_tool(
-                    inputs,
-                    operation=operation,
-                    reduce_code=reduce_code,
-                    wrap_result=wrap_result
-                )
-            )
-        elif operation == "chain":
-            map_config = spec["parameters"].get("map_config", None)
-            filter_config = spec["parameters"].get("filter_config", None)
-            reduce_config = spec["parameters"].get("reduce_config", None)
-            return RunnableLambda(
-                lambda inputs: data_transform_tool(
-                    inputs,
-                    operation=operation,
-                    map_config=map_config,
-                    filter_config=filter_config,
-                    reduce_config=reduce_config
-                )
-            )
-        else:
-            # Default to map operation
-            return RunnableLambda(
-                lambda inputs: data_transform_tool(inputs, operation="map")
-            )
+        )
     else:
         raise ValueError(f"Unknown execution type: {spec}")
 
@@ -836,14 +805,7 @@ def create_data_transform_plan(
     # Extract just the key names for backward compatibility
     input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
 
-    input_key_schemas = {}
-    for key in input_keys:
-        if isinstance(key, dict):
-            key_name = key["key"] if "key" in key else str(key)
-            if "schema" in key:
-                input_key_schemas[key_name] = key["schema"]
-        elif isinstance(key, str):
-            input_key_schemas[key] = "any"
+    input_key_schemas = get_input_key_schemas(input_keys)
 
     # Determine default output schema based on operation
     default_output_schema = None
@@ -864,7 +826,7 @@ def create_data_transform_plan(
     parameters = {
         "name": primitive_task["label"],
         "operation": operation,
-        # "input_key_schemas": input_key_schemas,
+        "input_key_schemas": input_key_schemas,
         "output_schema": default_output_schema
     }
 
@@ -876,7 +838,7 @@ def create_data_transform_plan(
         **primitive_task,
         "state_input_key": current_state_key,
         "doc_input_keys": input_key_names,
-        "input_key_schemas": input_key_schemas,  # Add detailed schema information to the plan
+        # "input_key_schemas": input_key_schemas,  # Add detailed schema information to the plan
         "state_output_key": output_key,
         "execution": {
             "tool": "data_transform_tool",
@@ -911,14 +873,7 @@ def create_clustering_plan(
     input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
 
     # Get detailed schema information
-    input_key_schemas = {}
-    for key in input_keys:
-        if isinstance(key, dict):
-            key_name = key["key"] if "key" in key else str(key)
-            if "schema" in key:
-                input_key_schemas[key_name] = key["schema"]
-        elif isinstance(key, str):
-            input_key_schemas[key] = "any"
+    input_key_schemas = get_input_key_schemas(input_keys)
 
     default_output_schema = {
         "labels": "list[int]"
@@ -950,8 +905,8 @@ def create_clustering_plan(
         **primitive_task,
         "state_input_key": current_state_key,
         "doc_input_keys": input_key_names,
-        "input_key_schemas": input_key_schemas,
-        "output_schema": output_schema,
+        # "input_key_schemas": input_key_schemas,
+        # "output_schema": output_schema,
         "state_output_key": output_key,
         "execution": {
             "tool": "clustering_tool",
@@ -984,14 +939,7 @@ def create_dim_reduction_plan(
     input_keys = input_keys or default_input_keys
     input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
 
-    input_key_schemas = {}
-    for key in input_keys:
-        if isinstance(key, dict):
-            key_name = key["key"] if "key" in key else str(key)
-            if "schema" in key:
-                input_key_schemas[key_name] = key["schema"]
-        elif isinstance(key, str):
-            input_key_schemas[key] = "any"
+    input_key_schemas = get_input_key_schemas(input_keys)
 
     # Default output schema
     default_output_schema = {
@@ -1028,8 +976,8 @@ def create_dim_reduction_plan(
         **primitive_task,
         "state_input_key": current_state_key,
         "doc_input_keys": input_key_names,
-        "input_key_schemas": input_key_schemas,
-        "output_schema": output_schema,
+        # "input_key_schemas": input_key_schemas,
+        # "output_schema": output_schema,
         "state_output_key": output_key,
         "execution": {
             "tool": "dim_reduction_tool",
@@ -1042,7 +990,8 @@ def create_embedding_plan(
     provider=None,
     config_params=None,
     input_keys=None,
-    current_state_key="documents"
+    current_state_key="documents",
+    api_key=""
 ):
     """
     Creates an execution plan for embedding tasks based on provider type.
@@ -1053,6 +1002,7 @@ def create_embedding_plan(
         config_params: Optional configuration parameters
         input_keys: Optional list of input keys with their detailed schemas
         current_state_key: The current state key to use as input (default: "documents")
+        api_key: api key
 
     Returns:
         An embedding execution plan
@@ -1062,15 +1012,7 @@ def create_embedding_plan(
     input_keys = input_keys or default_input_keys
 
     input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
-
-    input_key_schemas = {}
-    for key in input_keys:
-        if isinstance(key, dict):
-            key_name = key["key"] if "key" in key else str(key)
-            if "schema" in key:
-                input_key_schemas[key_name] = key["schema"]
-        elif isinstance(key, str):
-            input_key_schemas[key] = "any"
+    input_key_schemas = get_input_key_schemas(input_keys)
 
     # Default output schema
     default_output_schema = {
@@ -1088,7 +1030,8 @@ def create_embedding_plan(
         "model": default_model,
         "feature_key": config_params.get("feature_key", "content"),
         "input_key_schemas": input_key_schemas,
-        "output_schema": default_output_schema
+        "output_schema": default_output_schema,
+        "api_key": api_key,
     }
 
     # If config_params is provided, use them
@@ -1109,8 +1052,8 @@ def create_embedding_plan(
         **primitive_task,
         "state_input_key": current_state_key,
         "doc_input_keys": input_key_names,
-        "input_key_schemas": input_key_schemas,
-        "output_schema": output_schema,
+        # "input_key_schemas": input_key_schemas,
+        # "output_schema": output_schema,
         "state_output_key": output_key,
         "execution": {
             "tool": tool_name,
@@ -1142,18 +1085,9 @@ def create_segmentation_plan(
     default_input_keys = [{"key": "content", "schema": "str"}]
     input_keys = input_keys or default_input_keys
 
-    # Extract just the key names for backward compatibility
     input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
-
     # Get detailed schema information
-    input_key_schemas = {}
-    for key in input_keys:
-        if isinstance(key, dict):
-            key_name = key["key"] if "key" in key else str(key)
-            if "schema" in key:
-                input_key_schemas[key_name] = key["schema"]
-        elif isinstance(key, str):
-            input_key_schemas[key] = "any"
+    input_key_schemas = get_input_key_schemas(input_keys)
 
     # Default output schema
     default_output_schema = {
@@ -1189,11 +1123,22 @@ def create_segmentation_plan(
         **primitive_task,
         "state_input_key": current_state_key,
         "doc_input_keys": input_key_names,
-        "input_key_schemas": input_key_schemas,
-        "output_schema": output_schema,
+        # "input_key_schemas": input_key_schemas,
+        # "output_schema": output_schema,
         "state_output_key": output_key,
         "execution": {
             "tool": "segmentation_tool",
             "parameters": parameters,
         },
     }
+
+def get_input_key_schemas(input_keys: list):
+    input_key_schemas = {}
+    for key in input_keys:
+        if isinstance(key, dict):
+            key_name = key["key"] if "key" in key else str(key)
+            if "schema" in key:
+                input_key_schemas[key_name] = key["schema"]
+        elif isinstance(key, str):
+            input_key_schemas[key] = "str"
+    return input_key_schemas

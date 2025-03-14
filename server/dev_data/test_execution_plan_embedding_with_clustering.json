@@ -1,0 +1,115 @@
+[
+    {
+        "solves": "Embeddings Creation",
+        "label": "Embedding Generation",
+        "id": "Embedding Generation-1",
+        "description": "Generate numerical representations (embeddings) for the UIST paper abstracts using techniques like word embeddings or sentence embeddings.",
+        "explanation": "This task is needed to convert the text data into a format suitable for further analysis, such as clustering.",
+        "parentIds": [],
+        "children": [
+            "Dimensionality Reduction-1"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content"
+        ],
+        "state_output_key": "embedding",
+        "execution": {
+            "tool": "embedding_tool",
+            "parameters": {
+                "name": "Embedding Generation",
+                "provider": "openai",
+                "model": "text-embedding-ada-002",
+                "feature_key": "content",
+                "input_key_schemas": {
+                    "content": "str"
+                },
+                "output_schema": {
+                    "embedding": "list[float]"
+                },
+                "api_key": ""
+            }
+        }
+    },
+    {
+        "solves": "Dimensionality Reduction",
+        "label": "Dimensionality Reduction",
+        "id": "Dimensionality Reduction-1",
+        "description": "Apply dimensionality reduction techniques (e.g., PCA, t-SNE) to the generated embeddings to reduce their dimensionality while preserving important patterns.",
+        "explanation": "This task is necessary to simplify the data and make it more manageable for clustering algorithms.",
+        "parentIds": [
+            "Embedding Generation-1"
+        ],
+        "children": [
+            "Clustering Analysis-1"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content",
+            "embedding"
+        ],
+        "state_output_key": "reduced_dimensions",
+        "execution": {
+            "tool": "dim_reduction_tool",
+            "parameters": {
+                "name": "Dimensionality Reduction",
+                "algorithm": "umap",
+                "feature_key": "embedding",
+                "n_components": 2,
+                "input_key_schemas": {
+                    "content": "str",
+                    "embedding": "list[float]"
+                },
+                "output_schema": {
+                    "properties": {
+                        "reduced_dimensions": "list[list[float]]"
+                    }
+                },
+                "n_neighbors": 2,
+                "min_dist": 0.1,
+                "metric": "euclidean"
+            }
+        }
+    },
+    {
+        "solves": "Clustering",
+        "label": "Clustering Analysis",
+        "id": "Clustering Analysis-1",
+        "description": "Apply clustering algorithms (e.g., K-means, hierarchical clustering) to the reduced embeddings to group similar abstracts together.",
+        "explanation": "This task is essential for identifying patterns and groupings within the data, which can provide insights into the relationships between different abstracts.",
+        "parentIds": [
+            "Dimensionality Reduction-1"
+        ],
+        "children": [],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content",
+            "embedding",
+            "reduced_dimensions"
+        ],
+        "state_output_key": "cluster_labels",
+        "execution": {
+            "tool": "clustering_tool",
+            "parameters": {
+                "name": "Clustering Analysis",
+                "algorithm": "kmeans",
+                "feature_key": "embedding",
+                "n_clusters": 5,
+                "input_key_schemas": {
+                    "content": "str",
+                    "embedding": "list[float]",
+                    "reduced_dimensions": "list[float]"
+                },
+                "output_schema": {
+                    "labels": "list[int]"
+                },
+                "init": "k-means++",
+                "n_init": 10,
+                "max_iter": 300
+            }
+        }
+    }
+]
