@@ -103,6 +103,17 @@ export const evaluatorState = {
             return e
         }).sort((a, b) => primitive_task_id_index[a.task] - primitive_task_id_index[b.task])
 
+        let primitive_tasks_w_root: string[] = []
+        evaluators.forEach(e => {
+            const target_primitive_task = e.task
+            if(primitive_tasks_w_root.includes(target_primitive_task)) {
+                e.isRoot = false
+                return
+            }
+            e.isRoot = true
+            primitive_tasks_w_root.push(target_primitive_task)
+        })
+
     },
     updateEvaluator(name: string, evaluator: tExecutionEvaluator) {
         const index = evaluators.map(e => e.name).indexOf(name)

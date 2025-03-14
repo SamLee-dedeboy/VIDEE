@@ -203,7 +203,7 @@
         </div>
       </div>
     {/if}
-    <svg id={svgId} class="w-full h-full absolute"></svg>
+    <svg id={svgId} class="w-full h-full absolute overflow-visible"></svg>
     <div class="semantic-tasks relative w-full flex flex-col-reverse">
       {#each semantic_tasks_flattened as task, index}
         <div

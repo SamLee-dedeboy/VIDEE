@@ -117,6 +117,7 @@
     if (controllers.show_execution && controllers.show_evaluation) {
       let execution_evaluation_links: any[] = [];
       _evaluator_nodes.forEach((evaluator_node) => {
+        if (!evaluator_node.isRoot) return;
         const target_task = evaluator_node.task;
         if (!primitive_tasks.find((task) => task.id === target_task)) return;
         const source = document.querySelector(`[data-id="${target_task}"]`);

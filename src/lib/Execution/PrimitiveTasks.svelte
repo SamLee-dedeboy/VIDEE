@@ -232,7 +232,7 @@
         </div>
       </div>
     {/if}
-    <svg id={svgId} class="w-full h-full absolute"></svg>
+    <svg id={svgId} class="w-full h-full absolute overflow-visible"></svg>
     <div class="primitive-tasks relative w-full flex flex-col-reverse">
       {#each primitive_tasks as task, index}
         <div

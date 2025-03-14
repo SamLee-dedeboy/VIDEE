@@ -52,7 +52,7 @@ export class DAG {
         console.log("init done")
     }
 
-    update(data: tNode[], max_value_path_ids: string[] = [], controllers?: tControllers, mcts=true, rect_visible=true) {
+    update(data: tNode[], max_value_path_ids: string[] = [], controllers?: tControllers, mcts=true, use_simplex=false) {
         const self = this
         console.log("dag update", data)
         const svg = d3.select(`#${this.svgId}`);
@@ -66,7 +66,14 @@ export class DAG {
 
         // const tweaks = vertical? [d3_dag.tweakFlip("diagonal")] : []
         const rect_size: [number, number] = this.nodeRadius
-        const layout = d3_dag.sugiyama()
+        const layout = use_simplex ? 
+        d3_dag.grid()
+            .nodeSize((node: any) => {
+                return [(node.data.bbox?.width / 2.5 || rect_size[0]), (node.data.bbox?.height / 1.5 || rect_size[1])]
+            })
+            .tweaks([d3_dag.tweakFlip("diagonal")])
+            .gap([0, 50])
+        : d3_dag.sugiyama()
             .coord(d3_dag.coordQuad())
             .nodeSize((node: any) => {
                 return [(node.data.bbox?.width || rect_size[0])  , (node.data.bbox?.height || rect_size[1])]
@@ -116,7 +123,6 @@ export class DAG {
                         //     .filter((div_data) => div_data.dataset.id === d)[0].style.visibility = "visible"
                         // })
                         // .transition().duration(300)
-                        .attr("opacity", rect_visible? 1 : 0)
                         .attr("width", (d) => self.bbox_dict[d].width)
                         .attr("height", (d) => self.bbox_dict[d].height)
                         .each(function(d) {

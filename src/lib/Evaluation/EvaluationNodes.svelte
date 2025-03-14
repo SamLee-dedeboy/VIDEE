@@ -57,16 +57,16 @@
       (div, index) => {
         const id = (div as HTMLElement).dataset.id;
         // const parentIds =
-        //   index % 3 === 0
+        //   index === 0
         //     ? []
         //     : [evaluator_card_divs[index - 1].dataset.id as string];
-        const parentIds =
-          index === 0
-            ? []
-            : [evaluator_card_divs[index - 1].dataset.id as string];
         const node_data: tExecutionEvaluator = _evaluator_nodes.find(
           (evaluator) => evaluator.name === id
         )!;
+
+        const parentIds = node_data.isRoot
+          ? []
+          : [evaluator_card_divs[index - 1].dataset.id as string]; // this works because the evaluators are sorted
         const transform_scale =
           div.style.transform === ""
             ? 1
@@ -85,7 +85,7 @@
       }
     );
     // call renderer
-    dag_renderer.update(dag_data, [], undefined, false, false);
+    dag_renderer.update(dag_data, [], undefined, false, true);
   }
 
   function handleAddEvaluator() {
@@ -263,7 +263,7 @@
           </div>
         </div>
       {/if}
-      <svg id={svgId} class="w-full h-full absolute"></svg>
+      <svg id={svgId} class="w-full h-full absolute overflow-visible"></svg>
       <div class="evaluattor-nodes relative w-full flex flex-col-reverse">
         {#each evaluators as evaluator, index}
           <div
