@@ -87,7 +87,13 @@ export const evaluatorState = {
     set evaluators(value: tExecutionEvaluator[]) {
         // check and de-duplicate names
         let names: Record<string, number> = {}
-        evaluators = value.map(e => {
+        const primitive_task_ids = primitiveTasks.map(t => t.id)
+        const primitive_task_id_index = primitive_task_ids.reduce((acc, id, index) => {
+            acc[id] = index
+            return acc
+        }, {})
+
+        evaluators = value.map((e, index) => {
             if(names[e.name]) {
                 names[e.name] += 1
                 e.name = e.name + "-" + names[e.name]
@@ -95,7 +101,7 @@ export const evaluatorState = {
                 names[e.name] = 1
             }
             return e
-        })
+        }).sort((a, b) => primitive_task_id_index[a.task] - primitive_task_id_index[b.task])
 
     },
     updateEvaluator(name: string, evaluator: tExecutionEvaluator) {
