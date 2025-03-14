@@ -2,6 +2,7 @@
   import type { tSemanticTask } from "types";
   import { slide, scale } from "svelte/transition";
   import EvaluationIndicator from "../Searching/EvaluationIndicator.svelte";
+  import { custom_confirm } from "lib/customConfirm";
   let {
     task,
     task_options,
@@ -65,8 +66,11 @@
       </div>
       <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
         <EvaluationIndicator
+          {task}
           show_transition={false}
           value={task.user_evaluation.complexity}
+          llm_value={task.llm_evaluation.complexity}
+          llm_reasoning={task.llm_evaluation.complexity_reason}
           label="Complexity"
           icon={complexity_icon}
         />
@@ -77,7 +81,10 @@
       </div>
       <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
         <EvaluationIndicator
+          {task}
           value={task.user_evaluation.coherence}
+          llm_value={task.llm_evaluation.coherence}
+          llm_reasoning={task.llm_evaluation.coherence_reason}
           show_transition={false}
           label="Coherence"
           icon={coherence_icon}
@@ -89,8 +96,11 @@
       </div>
       <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
         <EvaluationIndicator
+          {task}
           show_transition={false}
           value={task.user_evaluation.importance}
+          llm_value={task.llm_evaluation.importance}
+          llm_reasoning={task.llm_evaluation.importance_reason}
           label="Importance"
           icon={importance_icon}
         />
@@ -100,22 +110,10 @@
         </div>
       </div>
       <div class="flex gap-x-2 mt-1">
-        <div class="flex justify-between flex-wrap">
-          <!-- <button
-            class="action-button outline-gray-200 bg-gray-100 hover:bg-green-100"
-            class:disabled={task.sub_tasks === undefined ||
-              task.sub_tasks.length === 0}
-            class:active={show_subtasks}
-            onclick={() => showSubTasks()}>SubTasks</button
-          > -->
-        </div>
+        <div class="flex justify-between flex-wrap"></div>
         <div class="flex gap-x-2 relative grow">
           <div class="more-actions">
             <div class="flex gap-x-2">
-              <!-- <button
-                class="action-button outline-orange-200 bg-orange-100 hover:bg-orange-200"
-                onclick={() => handleDecompose(task)}>Decompose</button
-              > -->
               <div class="relative add-parent-container">
                 <button
                   class="action-button outline-gray-200 bg-orange-100 hover:bg-orange-200 relative"
@@ -143,7 +141,12 @@
               </div>
               <button
                 class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
-                onclick={() => handleDeleteTask(task)}
+                onclick={async () => {
+                  const result = await custom_confirm(
+                    `Are you sure you want to delete ${task.label}?`
+                  );
+                  if (result) handleDeleteTask(task);
+                }}
               >
                 <!-- <img src="close.svg" alt="x" /> -->
                 Delete
@@ -216,9 +219,13 @@
           </div>
           <button
             class="action-button outline-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
-            onclick={() => handleDeleteTask(task)}
+            onclick={async () => {
+              const result = await custom_confirm(
+                `Are you sure you want to delete ${task.label}?`
+              );
+              if (result) handleDeleteTask(task);
+            }}
           >
-            <!-- <img src="close.svg" alt="x" /> -->
             Delete
           </button>
           <!-- <button
@@ -244,24 +251,10 @@
   .action-button {
     @apply outline-2 px-1 py-0.5 text-sm font-mono;
   }
-  .showing-actions {
-    @apply bg-green-300 outline-gray-500;
-  }
-  .disabled {
-    @apply cursor-not-allowed pointer-events-none bg-gray-300 outline-gray-200 opacity-50;
-  }
-  .active {
-    @apply outline-gray-600 bg-green-200;
-  }
   .task-card {
     transition:
       width 0.3s ease,
       height 0.3s ease;
-  }
-  .task-card:hover {
-    & .close-button {
-      @apply block;
-    }
   }
   .add-parent-container:hover .options {
     @apply block;

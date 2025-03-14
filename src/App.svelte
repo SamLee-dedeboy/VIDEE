@@ -1,13 +1,11 @@
 <script lang="ts">
   import { server_address } from "constants";
-  import { onMount, setContext } from "svelte";
+  import { onMount, setContext, tick } from "svelte";
   import type {
     tExecutionEvaluator,
-    tPrimitiveTask,
     tPrimitiveTaskDescription,
     tPrimitiveTaskExecution,
     tSemanticTask,
-    tExecutionState,
   } from "types";
   import {
     primitiveTaskState,
@@ -46,19 +44,20 @@
 
   let user_goal: string = $state("");
 
-  // let primitive_tasks: tPrimitiveTask[] = $state([]);
   let primitive_tasks = $derived(primitiveTaskState.primitiveTasks);
   let inspected_primitive_task:
     | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
     | undefined = $state(undefined);
 
-  // let evaluators: tExecutionEvaluator[] = $state([]);
   let inspected_evaluator_node: tExecutionEvaluator | undefined =
     $state(undefined);
 
+  let execution_panel: any = $state();
+  let execution_inspection_panel: any = $state();
+
   /**
    * Stores the state of the dag
-   * @value semantic| mcts
+   * @value mcts | execution
    */
   let show_dag = $state("mcts");
 
@@ -87,7 +86,7 @@
               ),
               user_evaluation: task.user_evaluation[evaluation],
               llm_evaluation: task.llm_evaluation[evaluation],
-              explanation: undefined,
+              user_reasoning: undefined,
             });
           }
         }
@@ -102,12 +101,12 @@
   function setFewShotExampleExplanation(
     task: tSemanticTask,
     evaluation: string,
-    explanation: string
+    user_reasoning: string
   ) {
     console.log({
       task,
       evaluation,
-      explanation,
+      user_reasoning,
       few_shot_examples_semantic_tasks: $state.snapshot(
         few_shot_examples_semantic_tasks
       ),
@@ -117,8 +116,9 @@
       .indexOf(task.MCT_id);
     console.log({ example_index });
     if (example_index !== -1) {
-      few_shot_examples_semantic_tasks[evaluation][example_index].explanation =
-        explanation;
+      few_shot_examples_semantic_tasks[evaluation][
+        example_index
+      ].user_reasoning = user_reasoning;
     }
   }
   setContext("setFewShotExampleExplanation", setFewShotExampleExplanation);
@@ -173,8 +173,8 @@
   }
 
   async function handleDecomposeGoalStepped_MCTS(goal: string) {
-    // dev_handleDecomposeGoalStepped_MCTS(goal);
-    // return;
+    dev_handleDecomposeGoalStepped_MCTS(goal);
+    return;
     user_goal = goal;
     streaming_states.started = true;
     streaming_states.paused = false;
@@ -288,17 +288,16 @@
 
   function handleConvert() {
     controllers.converting = true;
-    // fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
-    fetch(
-      `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
-      }
-    )
+    fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
+      // fetch(
+      //   `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`,
+      //   {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
+    })
       .then((response) => response.json())
       .then((data) => {
         console.log("decomposition to primitive tasks: ", { data });
@@ -330,12 +329,15 @@
             (t) => t.id === original_id
           );
         }
-        console.log({ data });
+        execution_panel.generate_evaluator_recommendations(
+          data.primitive_tasks
+        );
       })
       .catch((error) => {
         console.error("Error:", error);
       });
   }
+  setContext("handleCompile", handleCompile);
 
   function handleUserFeedback(
     task_id: string,
@@ -395,6 +397,7 @@
       <div class="bg-white flex gap-x-2">
         <GoalInput
           handleDecomposeGoal={handleDecomposeGoalStepped_MCTS}
+          disable_decompose={show_dag === "execution"}
           bind:user_goal
           bind:mode
           {streaming_states}
@@ -422,8 +425,8 @@
             class="min-w-[6rem] px-2 py-1 font-mono rounded-r outline-1 outline-gray-400 text-slate-700 hover:outline-blue-300 hover:outline-2 hover:z-10 hover:!text-slate-700"
             class:disabled={streaming_states.started &&
               !streaming_states.paused}
-            style={`${show_dag === "semantic" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa;  color: rgba(0, 0, 0, 0.2)"}`}
-            onclick={() => (show_dag = "semantic")}>Execution</button
+            style={`${show_dag === "execution" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa;  color: rgba(0, 0, 0, 0.2)"}`}
+            onclick={() => (show_dag = "execution")}>Execution</button
           >
         </div>
       </div>
@@ -445,21 +448,33 @@
                 bind:next_expansion
                 bind:selected_semantic_task_path
               ></SemanticTasksTree>
-            {:else if show_dag == "semantic"}
+            {:else if show_dag == "execution"}
               <Execution
+                bind:this={execution_panel}
+                {user_goal}
                 {decomposing_goal}
                 {handleConvert}
                 converting={controllers.converting}
                 compiling={controllers.compiling}
-                handleInspectPrimitiveTask={(task) => {
+                handleInspectPrimitiveTask={async (
+                  task,
+                  show_result = false
+                ) => {
                   console.log("inspecting task", task);
                   inspected_primitive_task = task;
                   inspected_evaluator_node = undefined;
+                  if (show_result) {
+                    execution_inspection_panel.navigate_to_primitive_task_results();
+                  } else {
+                    execution_inspection_panel.scrollIntoInspectionPanel();
+                  }
                 }}
-                handleInspectEvaluatorNode={(node) => {
+                handleInspectEvaluatorNode={async (node) => {
                   console.log("inspecting evaluator", node);
                   inspected_evaluator_node = node;
                   inspected_primitive_task = undefined;
+                  await tick();
+                  execution_inspection_panel.scrollIntoInspectionPanel();
                 }}
               ></Execution>
             {/if}
@@ -472,8 +487,9 @@
         <SemanticTaskTreeInspection
           few_shot_examples={few_shot_examples_semantic_tasks}
         ></SemanticTaskTreeInspection>
-      {:else if show_dag === "semantic"}
+      {:else if show_dag === "execution"}
         <ExecutionInspection
+          bind:this={execution_inspection_panel}
           primitive_task={inspected_primitive_task}
           evaluator_node={inspected_evaluator_node}
         ></ExecutionInspection>

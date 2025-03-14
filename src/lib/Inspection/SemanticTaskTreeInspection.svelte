@@ -1,12 +1,7 @@
 <script lang="ts">
   import { server_address } from "constants";
-  import { slide } from "svelte/transition";
   import { onMount, setContext } from "svelte";
-  import type {
-    tDocument,
-    tPrimitiveTaskDescription,
-    tPrimitiveTaskExecution,
-  } from "types";
+
   import { getContext } from "svelte";
   import Evaluator from "../Searching/SemanticTaskEvaluator.svelte";
   import DatasetInspection from "./DatasetInspection.svelte";
@@ -113,8 +108,4 @@
 </div>
 
 <style lang="postcss">
-  @reference "tailwindcss";
-  .header-2 {
-    @apply text-lg font-bold font-mono text-slate-600 px-1 cursor-pointer hover:bg-gray-100 flex items-center border-b-2 border-slate-200 hover:border-2;
-  }
 </style>

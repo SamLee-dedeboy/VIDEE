@@ -1,19 +1,10 @@
 <script lang="ts">
   import { server_address } from "constants";
   import { onMount, setContext, tick } from "svelte";
-  import type {
-    tPrimitiveTaskDescription,
-    tPrimitiveTaskExecution,
-    tExecutionState,
-    tNode,
-    tTask,
-    tPrimitiveTask,
-  } from "types";
+  import type { tPrimitiveTaskDescription, tNode, tPrimitiveTask } from "types";
   import * as d3 from "d3";
   import { DAG } from "renderer/dag";
   import PrimitiveTaskCard from "./PrimitiveTaskCard.svelte";
-  import { fly, fade, blur } from "svelte/transition";
-  import { draggable } from "../draggable";
   import { getContext } from "svelte";
   import {
     primitiveTaskState,
@@ -30,6 +21,8 @@
   } = $props();
 
   let executing_task_id: string | undefined = $state(undefined);
+  let ask_to_check_results = $state(false);
+  let executed_task_id: string | undefined = $state(undefined);
   const primitive_tasks = $derived(
     primitiveTaskState.primitiveTasks
   ) as tPrimitiveTaskDescription[];
@@ -96,6 +89,7 @@
   }
 
   // handlers with server-side updates
+  const handleCompile: Function = getContext("handleCompile");
   // function handleCompile() {
   //   console.log("Compiling...", { primitive_tasks, session_id });
   //   compiling = true;
@@ -121,6 +115,7 @@
   function handleExecute(execute_node: tPrimitiveTask) {
     console.log("Executing...", { execute_node, session_id });
     executing_task_id = execute_node.id;
+
     fetch(`${server_address}/primitive_task/execute/`, {
       method: "POST",
       headers: {
@@ -132,11 +127,19 @@
       .then((data) => {
         primitiveTaskExecutionStates.execution_states = data.execution_state;
         console.log("execution: ", data);
+        executed_task_id = executing_task_id;
         executing_task_id = undefined;
+        ask_to_check_results = true;
       })
       .catch((error) => {
         console.error("Error:", error);
       });
+  }
+
+  function navigate_to_results(node_id: string) {
+    console.log("navigating to results: ", node_id);
+    const task = primitive_tasks.find((task) => task.id === node_id);
+    handleInspectPrimitiveTask(task, true);
   }
 
   function handleAddTask() {
@@ -208,6 +211,32 @@
       </button>
     </div>
   </div>
+  {#if ask_to_check_results}
+    <div class="absolute top-1/3 left-0 right-0 flex justify-center z-10">
+      <div
+        class="w-[18rem] bg-white outline-2 outline-gray-200 px-2 py-1 flex flex-col font-mono gap-y-4"
+      >
+        <span class="text-slate-600 text-sm">
+          Execution Done! Check Results?
+        </span>
+        <div class="flex justify-between text-sm">
+          <button
+            class="bg-green-100 outline-2 outline-gray-200 hover:bg-green-200 px-2 py-1 rounded text-slate-600"
+            onclick={() => {
+              ask_to_check_results = false;
+              navigate_to_results(executed_task_id!);
+            }}>Yes</button
+          >
+          <button
+            class="bg-red-100 outline-2 outline-gray-200 hover:bg-red-200 px-2 py-1 rounded text-slate-600"
+            onclick={() => {
+              ask_to_check_results = false;
+            }}>No</button
+          >
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <!-- style:height={Math.max(
       primitive_tasks.length * 2 * node_size[1] * 1.5,
@@ -260,15 +289,17 @@
         </div>
       {/each}
     </div>
-    <!-- <button
-      class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10 mx-2"
-      class:disabled={primitive_tasks === undefined}
-      tabindex="0"
-      onclick={() => handleCompile()}
-      onkeyup={() => {}}
-    >
-      Compile Graph
-    </button> -->
+    {#if primitive_tasks.length > 0}
+      <button
+        class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10 mx-2"
+        class:disabled={primitive_tasks === undefined}
+        tabindex="0"
+        onclick={() => handleCompile()}
+        onkeyup={() => {}}
+      >
+        Compile
+      </button>
+    {/if}
   </div>
 </div>
 

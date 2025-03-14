@@ -80,4 +80,13 @@ importance_reasoner: |
   When thinking about importance, ask yourself: Does this subtask play a key role in reaching the final goal? 
   Is it something that must be done, or is it more of an optional step? Some subtasks are crucial because they provide necessary information, resources, or foundations, while others might be useful but not strictly necessary.
 
-  Instead of following a rigid structure, explain your reasoning in a way that feels natural—almost like you’re answering someone who asked, “Do you think this step really matters?” Keep it conversational, clear, and insightful.
+  Instead of following a rigid structure, explain your reasoning in a way that feels natural—almost like you're answering someone who asked, "Do you think this step really matters?" Keep it conversational, clear, and insightful.
+
+reason_summarizer: |
+  You are a reasoning summarizer. You will be given multiple reasoning explanations about the same evaluation.
+  Your task is to synthesize these explanations into a single, coherent summary that captures the key points and rationale.
+  
+  Keep the summary concise but ensure it maintains the core reasoning and important details from the input explanations.
+  If there are conflicting viewpoints, include both perspectives in your summary.
+  
+  Output only the summarized reasoning, with no additional formatting or meta-commentary.

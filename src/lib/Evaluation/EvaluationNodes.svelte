@@ -1,10 +1,6 @@
 <script lang="ts">
   import { getContext, onMount, setContext, tick } from "svelte";
-  import type {
-    tExecutionEvaluator,
-    tPrimitiveTaskDescription,
-    tNode,
-  } from "types";
+  import type { tExecutionEvaluator, tPrimitiveTask, tNode } from "types";
   import ExecutionEvaluatorCard from "./ExecutionEvaluatorCard.svelte";
   import AddExecutionEvaluator from "../Execution/AddExecutionEvaluator.svelte";
   import { server_address } from "constants";
@@ -12,22 +8,20 @@
   import { DAG } from "renderer/dag";
   import { evaluatorState } from "../ExecutionStates.svelte";
   let {
-    // evaluators = $bindable([]),
     tasks,
+    generating_recommendations,
     handleInspectEvaluatorNode = () => {},
   }: {
-    // evaluators: tExecutionEvaluator[];
-    tasks: tPrimitiveTaskDescription[];
+    tasks: tPrimitiveTask[];
+    generating_recommendations: boolean;
     handleInspectEvaluatorNode: Function;
   } = $props();
-  // const evaluators: tExecutionEvaluator[] = getContext("evaluators");
   const evaluators = $derived(evaluatorState.evaluators);
   let evaluator_node_expanded: string[] = $state([]);
   let loading = $state(false);
   let adding_evaluator = $state(false);
   let generating_for_description = $state("");
   const session_id = (getContext("session_id") as Function)();
-  //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
 
   let executing_evaluator_name: string | undefined = $state(undefined);
   const svgId = "evaluation-dag-svg";
@@ -87,16 +81,10 @@
 
   function handleAddEvaluator() {
     adding_evaluator = true;
-    // evaluators = [
-    //   ...evaluators,
-    //   {
-    //     adding: true,
-    //     name: "",
-    //     definition: "",
-    //     task: "some id",
-    //   },
-    // ];
   }
+
+  function handleGenerateRecommendations() {}
+
   function handleGenerateEvaluator(description: string, task_id: string) {
     adding_evaluator = false;
     loading = true;
@@ -121,8 +109,6 @@
       .then((response) => response.json())
       .then((data) => {
         console.log(data);
-        // evaluators = [...evaluators, data["result"]];
-        // setContext("evaluators", data["result"]);
         evaluatorState.evaluators = [...evaluators, data["result"]];
         update_dag(evaluators);
         updateGlobalLinks();
@@ -188,11 +174,15 @@
       </div>
     </div>
 
-    <!-- style:height={Math.max(
-        primitive_tasks.length * 2 * node_size[1] * 1.5,
-        800
-      ) + "px"} -->
     <div class="relative flex flex-col gap-y-1 grow">
+      <button
+        class="self-end py-1 px-2 bg-gray-100 min-w-[10rem] w-min flex justify-center rounded outline outline-gray-200 z-10 mx-2"
+        tabindex="0"
+        onclick={() => handleGenerateRecommendations()}
+        onkeyup={() => {}}
+      >
+        Recommendations
+      </button>
       {#if loading}
         <div
           class="absolute top-0 left-0 right-0 flex items-center justify-center"
@@ -209,6 +199,20 @@
           </div>
         </div>
       {/if}
+      {#if generating_recommendations}
+        <div
+          class="absolute top-0 left-0 right-0 flex items-center justify-center"
+        >
+          <div class="flex gap-x-2">
+            <img
+              src="loader_circle.svg"
+              class="w-6 h-6 animate-spin opacity-50"
+              alt="loading"
+            />
+            <span class="animate-pulse">Generating Recommendations..." </span>
+          </div>
+        </div>
+      {/if}
       {#if adding_evaluator}
         <div
           class="absolute top-0 bottom-0 left-0 right-0 bg-emerald-50 z-50 flex justify-center"
@@ -219,9 +223,30 @@
             <AddExecutionEvaluator
               tasks={tasks
                 .filter((t) => t.label !== "Root")
+                .filter((t) => t.execution)
                 .map((t) => [t.id as string, t.label as string])}
               {handleGenerateEvaluator}
             ></AddExecutionEvaluator>
+            <button
+              aria-label="close"
+              class="absolute right-1 top-0.5"
+              onclick={() => (adding_evaluator = false)}
+            >
+              <svg
+                class="w-5 h-5 hover:bg-red-200 rounded-full hover:stroke-black"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="gray"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path
+                  d="m9 9 6 6"
+                /></svg
+              >
+            </button>
           </div>
         </div>
       {/if}
@@ -237,9 +262,6 @@
             <ExecutionEvaluatorCard
               bind:evaluator={evaluators[index]}
               expand={evaluator_node_expanded.includes(evaluator.name)}
-              tasks={tasks
-                .filter((t) => t.label !== "Root")
-                .map((t) => [t.id as string, t.label as string])}
               handleDeleteEvaluator={() => {
                 evaluatorState.evaluators = evaluators.filter(
                   (e) => e !== evaluator

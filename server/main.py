@@ -35,6 +35,8 @@ relative_path = lambda filename: os.path.join(dirname, filename)
 api_key = open(relative_path("api_key")).read()
 default_model = "gpt-4o-mini"
 user_sessions = {}
+dataset_path = relative_path("executor/docs.json")
+# dataset_path = relative_path("data/papers.json")
 
 dev = True
 
@@ -86,7 +88,7 @@ async def get_documents(request: Request):
     session_id = request["session_id"]
     assert session_id in user_sessions
     # return json.load(open(relative_path("data/papers.json")))
-    return json.load(open(relative_path("executor/docs.json")))
+    return json.load(open(dataset_path))
 
 
 @app.post("/documents/dr/")
@@ -471,7 +473,7 @@ async def execute_primitive_tasks(request: Request):
         request["parent_version"] if "parent_version" in request else None
     )  # the parent version that the node is executed from
     thread_config = {"configurable": {"thread_id": 42}}
-    initial_state = {"documents": json.load(open(relative_path("executor/docs.json")))}
+    initial_state = {"documents": json.load(open(dataset_path))}
     state = executor.execute_node(
         execution_graph,
         thread_config,
@@ -508,6 +510,28 @@ async def fetch_primitive_task_result(request: Request):
     return {
         "result": result,
     }
+
+
+@app.post("/primitive_task/evaluators/recommend/")
+async def recommend_evaluators(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+
+    tasks = request["tasks"]
+    goal = request["goal"]
+    evaluator_task_description_pairs = await executor.generate_evaluator_descriptions(
+        goal, tasks, model=default_model, api_key=api_key
+    )
+    evaluator_specs = await executor.create_evaluator_specs(
+        evaluator_task_description_pairs, model=default_model, api_key=api_key
+    )
+    for evaluator_spec, (task, description) in zip(
+        evaluator_specs, evaluator_task_description_pairs
+    ):
+        evaluator_spec["task"] = task["id"]
+    return {"result": evaluator_specs}
 
 
 @app.post("/primitive_task/evaluators/add/")

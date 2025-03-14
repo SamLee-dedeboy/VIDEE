@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { tSemanticTask } from "types";
+  import { custom_confirm } from "lib/customConfirm";
 
   let {
     task,
@@ -48,7 +49,12 @@
   </button>
   <button
     class="action-button border-y-2 border-x-1 border-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
-    onclick={() => handleDeleteTask(task)}
+    onclick={async () => {
+      const result = await custom_confirm(
+        `Are you sure you want to delete ${task.label}?`
+      );
+      if (result) handleDeleteTask(task);
+    }}
   >
     Delete
   </button>

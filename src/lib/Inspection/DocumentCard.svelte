@@ -6,6 +6,7 @@
 
 <div
   class="doc-container flex flex-col outline-1 outline-gray-200 rounded px-1 divide-y"
+  data-attribute-id={document.id}
 >
   {#each Object.keys(document) as doc_input_key}
     {#if doc_input_key === "content"}
@@ -51,7 +52,7 @@
           {doc_input_key}
         </div>
         <div class="max-h-[15rem] overflow-hidden text-sm">
-          {JSON.stringify(document[doc_input_key])}
+          {JSON.stringify(document[doc_input_key]).replace(/['"]+/g, "")}
         </div>
       </div>
     {/if}
@@ -74,5 +75,8 @@
   }
   .doc-content-close:hover {
     background: var(--bg-hover-color);
+  }
+  :global(.highlighted) {
+    @apply !bg-yellow-100 font-bold transition-all;
   }
 </style>

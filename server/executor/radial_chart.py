@@ -157,23 +157,24 @@ async def cluster_topic_assignments(clusters, texts, model, api_key):
     for cluster, texts in cluster_texts.items():
         enc = tiktoken.encoding_for_model(model)
         token_length = len(enc.encode("\n".join(texts)))
-        print(cluster, "token length: ", token_length)
+        # print(cluster, "token length: ", token_length)
         # while token_length > 70000:  # 128000 is the max token limit for GPT-4o-mini
         #     texts = random.sample(texts, len(texts) // 2)
         #     token_length = len(enc.encode("\n".join(texts)))
         texts = random.sample(texts, min(len(texts), 25))
         token_length = len(enc.encode("\n".join(texts)))
-        print(cluster, "token length: ", token_length)
+        # print(cluster, "token length: ", token_length)
         user_messages.append("\n".join(texts))
         cluster_list.append(cluster)
     responses = await parallel_call_agents(topic_assignment_agent, user_messages)
-    for response in responses:
-        print(response.chat_message.content)
-        print("============================")
-    responses = [
-        extract_json_content(response.chat_message.content)["topic"]
-        for response in responses
-    ]
+    # for response in responses:
+    # print(response.chat_message.content)
+    # print("============================")
+    responses = [response.chat_message.content for response in responses]
+    # responses = [
+    #     extract_json_content(response.chat_message.content)["topic"]
+    #     for response in responses
+    # ]
     # responses = [
     #     json.loads(response.chat_message.content)["topic"] for response in responses
     # ]
@@ -191,7 +192,7 @@ def generate_topic_assignment_agent(model: str, api_key: str):
         model_capabilities={
             "vision": False,
             "function_calling": False,
-            "json_output": True,
+            "json_output": False,
         },
     )
     agent = AssistantAgent(
@@ -199,10 +200,8 @@ def generate_topic_assignment_agent(model: str, api_key: str):
         model_client=model_client,
         system_message="""You are a topic assignment system. The user will provide you with a bunch of texts. You need to assign one topic to summarize all of them. 
             The topic should be a simple noun-phrase. Only one topic should be generated.
-            Reply with the following JSON format:
-            {{
-                topic: string 
-            }}""",
+            Reply with a single noun-phrase as the topic.
+            """,
     )
     return agent
 

@@ -52,8 +52,7 @@
     coherence_icon: Snippet;
     importance_icon: Snippet;
   } = $props();
-  let show_subtasks = $state(false);
-  let show_actions = $state(false);
+
   let regenerating = $state(false);
 
   // function showSubTasks() {
@@ -106,7 +105,6 @@
     handleTaskHovered(task[id_key], false);
   }}
 >
-  <!-- class="path-value-bar absolute left-[-0.125rem] right-[-0.125rem] bottom-[calc(100%+0.125rem)] h-[1rem] bg-slate-200" -->
   {#if task[id_key] !== "-1" && task["label"] !== "END"}
     <div
       class="path-value-bar h-[1rem] bg-gray-100 outline-2 outline-gray-300"
@@ -151,7 +149,7 @@
         </span>
         {#if !expand && task[id_key] !== "-1"}
           <div
-            class="evaluator-indicators hidden absolute left-0 bottom-[calc(50%+0.5rem)] -translate-x-[calc(100%)] px-[0.5rem] translate-y-1/2 flex-col gap-y-1 z-20"
+            class="evaluator-indicators hidden absolute left-0 bottom-[calc(50%+0.5rem)] -translate-x-[calc(100%)] px-[0.5rem] translate-y-1/2 flex-col gap-y-0 z-20"
           >
             {#if controllers.show_complexity}
               <div transition:scale class="flex">
@@ -161,6 +159,7 @@
                   {task}
                   value={task.user_evaluation.complexity}
                   llm_value={task.llm_evaluation.complexity}
+                  llm_reasoning={task.llm_evaluation.complexity_reason}
                   label="complexity"
                   icon={complexity_icon}
                   handleToggle={(user_value) =>
@@ -176,6 +175,7 @@
                   show_transition={true}
                   value={task.user_evaluation.coherence}
                   llm_value={task.llm_evaluation.coherence}
+                  llm_reasoning={task.llm_evaluation.coherence_reason}
                   label="coherence"
                   icon={coherence_icon}
                   handleToggle={(user_value) =>
@@ -191,6 +191,7 @@
                   show_transition={true}
                   value={task.user_evaluation.importance}
                   llm_value={task.llm_evaluation.importance}
+                  llm_reasoning={task.llm_evaluation.importance_reason}
                   label="importance"
                   icon={importance_icon}
                   handleToggle={(user_value) =>
@@ -223,6 +224,7 @@
               show_transition={false}
               value={task.user_evaluation.complexity}
               llm_value={task.llm_evaluation.complexity}
+              llm_reasoning={task.llm_evaluation.complexity_reason}
               label="complexity"
               icon={complexity_icon}
               handleToggle={(user_value) =>
@@ -239,6 +241,7 @@
               {streaming}
               value={task.user_evaluation.coherence}
               llm_value={task.llm_evaluation.coherence}
+              llm_reasoning={task.llm_evaluation.coherence_reason}
               show_transition={false}
               label="coherence"
               icon={coherence_icon}
@@ -257,6 +260,7 @@
               show_transition={false}
               value={task.user_evaluation.importance}
               llm_value={task.llm_evaluation.importance}
+              llm_reasoning={task.llm_evaluation.importance_reason}
               label="importance"
               icon={importance_icon}
               handleToggle={(user_value) =>

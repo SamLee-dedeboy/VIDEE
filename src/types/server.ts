@@ -8,22 +8,28 @@ export type tNode = {
     data: any;
     bbox?: DOMRect;
 }
+
+// export type tScoreWithReasoning = {
+//   value: boolean;
+//   reasoning: string;
+// }
+
+export type tEvaluators = {
+  complexity: boolean;
+  coherence: boolean;
+  importance: boolean;
+  complexity_reason: string;
+  coherence_reason: string;
+  importance_reason: string;
+}
 export type tMCT_Node = {
     MCT_id: string;
     MCT_parent_id: string;
     MCT_children_ids: string[];
     new_node: boolean;
     level: number;
-    llm_evaluation: {
-        complexity: boolean;
-        coherence: boolean;
-        importance: boolean;
-    }
-    user_evaluation: {
-        complexity: boolean;
-        coherence: boolean;
-        importance: boolean;
-    }
+    llm_evaluation: tEvaluators
+    user_evaluation: tEvaluators
     value: number;
     visits: number;
     path_value: number;
@@ -99,7 +105,7 @@ export type tExecutionEvaluatorParams = {
   export type tExecutionEvaluatorResult = {
     name: string;
     result: {
-      documents: Record<string, any>;
+      documents: tDocument[]
     }
   }
 

@@ -2,10 +2,10 @@
   import type { tExecutionEvaluator } from "types";
   import { slide } from "svelte/transition";
   import { primitiveTaskExecutionStates } from "../ExecutionStates.svelte";
+  import { custom_confirm } from "lib/customConfirm";
   let {
     evaluator = $bindable(),
     expand,
-    tasks,
     handleExecute = () => {},
     handleInspectEvaluator = () => {},
     handleDeleteEvaluator = () => {},
@@ -13,16 +13,11 @@
   }: {
     evaluator: tExecutionEvaluator;
     expand: boolean;
-    tasks: [string, string][];
     handleExecute: (task: tExecutionEvaluator) => void;
     handleInspectEvaluator: Function;
     handleDeleteEvaluator?: Function;
     handleToggleExpand?: Function;
   } = $props();
-
-  function isEmpty(string: string | null | undefined): boolean {
-    return string === undefined || string === null || string === "";
-  }
 </script>
 
 <div
@@ -55,7 +50,12 @@
         {evaluator.definition}
         <button
           class="delete-button hidden absolute top-1/2 -translate-y-1/2 left-0 opacity-60 hover:opacity-100"
-          onclick={() => handleDeleteEvaluator()}
+          onclick={async () => {
+            const result = await custom_confirm(
+              `Are you sure you want to delete ${evaluator.name}?`
+            );
+            if (result) handleDeleteEvaluator(evaluator);
+          }}
         >
           <img src="trash.svg" alt="delete" class="w-4 h-4" />
         </button>
@@ -81,9 +81,13 @@
           >
           <button
             class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
-            onclick={() => handleDeleteEvaluator(evaluator)}
+            onclick={async () => {
+              const result = await custom_confirm(
+                `Are you sure you want to delete ${evaluator.name}?`
+              );
+              if (result) handleDeleteEvaluator(evaluator);
+            }}
           >
-            <!-- <img src="close.svg" alt="x" /> -->
             Delete
           </button>
         </div>

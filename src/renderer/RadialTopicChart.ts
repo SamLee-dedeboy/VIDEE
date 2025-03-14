@@ -47,7 +47,7 @@ export class RadialTopicChart {
         this.padding.top + this.height / 2,
       ],
     };
-    this.dispatch = d3.dispatch("force_end", "snippet_clicked");
+    this.dispatch = d3.dispatch("force_end", "node_clicked", "node_mouseover", "node_mouseout");
 
     this.noiseColorScale = () => "#c3c3c3";
     this.clusterColorScale = d3.scaleOrdinal(d3.schemeSet3);
@@ -117,7 +117,15 @@ export class RadialTopicChart {
             .attr("cursor", "pointer")
             .on("click", function (e, d) {
               console.log("click", d);
-              self.dispatch.call("snippet_clicked", null, d);
+              self.dispatch.call("node_clicked", null, d);
+            })
+            .on("mouseover", function(e, d) {
+                d3.select(this).classed("node-hover", true)
+                // self.dispatch.call("node_mouseover", null, d)
+            })
+            .on("mouseout", function(e, d) {
+                d3.select(this).classed("node-hover", false)
+                // self.dispatch.call("node_mouseout", null, d)
             });
           if (highlight_ids) {
             enter_nodes

@@ -1,28 +1,30 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
-  import { tick } from "svelte";
+  import { setContext, tick } from "svelte";
   import PromptTemplate from "./PromptTemplate.svelte";
-  import { trim } from "lib/trim";
-  import type { tExecutionEvaluator, tExecutionEvaluatorResult } from "types";
-  import DocumentCard from "./DocumentCard.svelte";
+  import type {
+    tExecutionEvaluator,
+    tExecutionEvaluatorResult,
+    tDocument,
+  } from "types";
   import { server_address } from "constants";
   import { getContext } from "svelte";
   import { evaluatorState } from "../ExecutionStates.svelte";
   import EvaluatorResult from "../Evaluation/EvaluatorResult.svelte";
   import EvaluatorResultRadialChart from "../Evaluation/EvaluatorResultRadialChart.svelte";
+  import PagedDocuments from "./PagedDocuments.svelte";
 
   let {
     evaluator = $bindable(),
-    // handleUpdateEvaluator,
   }: {
     evaluator: tExecutionEvaluator;
-    // handleUpdateEvaluator: Function;
   } = $props();
-  let show_parameters = $state(false);
   let show_description = $state(true);
   let show_formats = $state(false);
   let show_execution = $state(false);
   let show_result = $state(false);
+  let show_documents = $state(false);
+  let paged_document_component: any = $state();
 
   let result: tExecutionEvaluatorResult | undefined = $state(undefined);
   const session_id = (getContext("session_id") as Function)();
@@ -30,6 +32,7 @@
     handleFetchEvaluationResult(evaluator);
   });
   function handleFetchEvaluationResult(evaluator: tExecutionEvaluator) {
+    console.log({ evaluator });
     fetch(`${server_address}/primitive_task/evaluators/result/`, {
       method: "POST",
       headers: {
@@ -56,6 +59,13 @@
     console.log("Updated evaluator", $state.snapshot(evaluator));
     evaluatorState.updateEvaluator(evaluator.name, evaluator);
   }
+
+  async function handleDocumentClicked(doc: tDocument) {
+    show_documents = true;
+    await tick();
+    paged_document_component.navigateToDoc(doc);
+  }
+  setContext("navigate_to_doc", handleDocumentClicked);
 </script>
 
 <div class="flex flex-col px-1 gap-y-2">
@@ -221,24 +231,25 @@
           </button>
         </div>
         {#if show_result && result !== undefined}
+          <div class="flex flex-col">
+            <button
+              class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200"
+              onclick={() => {
+                show_documents = !show_documents;
+              }}
+              onkeyup={() => {}}
+            >
+              documents
+            </button>
+            {#if show_documents}
+              <PagedDocuments
+                bind:this={paged_document_component}
+                documents={result.result.documents}
+              ></PagedDocuments>
+            {/if}
+          </div>
           <EvaluatorResult {result}></EvaluatorResult>
           <EvaluatorResultRadialChart {result}></EvaluatorResultRadialChart>
-          <!-- <div in:slide class="flex flex-col">
-            {#each Object.keys(result) as state_input_key}
-              <div class="flex flex-col">
-                <div>{state_input_key}</div>
-                <div class="flex flex-wrap gap-2">
-                  {#each result[state_input_key] as doc}
-                    <DocumentCard
-                      document={doc}
-                      --bg-color="#f6fffb"
-                      --bg-hover-color="#d0fae5"
-                    />
-                  {/each}
-                </div>
-              </div>
-            {/each}
-          </div> -->
         {/if}
       </div>
     {/if}
@@ -270,34 +281,5 @@
   }
   .key-section:hover > .plus-button {
     @apply visible;
-  }
-
-  .user-input-name:empty:before {
-    content: "Name the evaluator...";
-    color: gray;
-    pointer-events: none;
-  }
-  .user-input-description:empty:before {
-    content: "Describe the evaluation criteria...";
-    color: gray;
-    pointer-events: none;
-  }
-  .user-input-name:focus,
-  .user-input-description:focus {
-    @apply justify-start;
-  }
-  .exec-evaluator-container:hover {
-    & .delete-button {
-      @apply flex;
-    }
-  }
-  .disabled {
-    @apply cursor-not-allowed opacity-50 outline-none;
-  }
-  .disabled-button {
-    pointer-events: none;
-  }
-  .selected {
-    @apply bg-slate-200 text-slate-700;
   }
 </style>

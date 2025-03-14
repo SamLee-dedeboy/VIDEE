@@ -6,7 +6,12 @@ from .langgraph_utils import (
     init_user_execution_state,
     update_execution_state,
 )
-from .llm_evaluators import create_evaluator_spec, create_evaluator_exec
+from .llm_evaluators import (
+    create_evaluator_spec,
+    create_evaluator_exec,
+    generate_evaluator_descriptions,
+    create_evaluator_specs,
+)
 from .radial_chart import radial_dr
 
 __all__ = [
@@ -19,4 +24,6 @@ __all__ = [
     "create_evaluator_spec",
     "create_evaluator_exec",
     "radial_dr",
+    "generate_evaluator_descriptions",
+    "create_evaluator_specs",
 ]

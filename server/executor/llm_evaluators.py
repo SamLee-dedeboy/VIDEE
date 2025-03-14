@@ -5,6 +5,27 @@ from server.AutoGenUtils import query
 from langgraph.graph import END, START, StateGraph, MessagesState
 from server.custom_types import BaseStateSchema
 from langgraph.checkpoint.memory import MemorySaver
+from tqdm.asyncio import tqdm_asyncio
+
+
+async def generate_evaluator_descriptions(goal, tasks, model, api_key):
+    nested_evaluators = await query.run_evaluator_generation_agent(
+        goal, tasks, model, api_key
+    )
+    recommendation_pairs = []
+    for task, evaluators in zip(tasks, nested_evaluators):
+        for evaluator in evaluators:
+            recommendation_pairs.append((task, evaluator["description"]))
+    return recommendation_pairs
+
+
+async def create_evaluator_specs(evaluator_description_pairs, model, api_key):
+    tasks = [
+        create_evaluator_spec(task, description, model, api_key)
+        for task, description in evaluator_description_pairs
+    ]
+    results = await tqdm_asyncio.gather(*tasks, desc="generating evaluator specs")
+    return results
 
 
 def evaluator_reduce_func(combined, state_input_key, state_output_key):

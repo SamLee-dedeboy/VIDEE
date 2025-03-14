@@ -18,6 +18,31 @@ export const semanticTaskPlanState = {
             parentIds: [],
             sub_tasks: [],
             children: [],
+            // MCT types
+            MCT_id: semantic_tasks.length.toString(),
+            MCT_children_ids: [],
+            MCT_parent_id: "",
+            new_node: false,
+            level: semantic_tasks.length,
+            value: 0,
+            visits: 0,
+            path_value: 0,
+            llm_evaluation: {
+                complexity: true,
+                coherence: true,
+                importance: true,
+                complexity_reason: "",
+                coherence_reason: "",
+                importance_reason: "",
+              },
+              user_evaluation: {
+                complexity: true,
+                coherence: true,
+                importance: true,
+                complexity_reason: "",
+                coherence_reason: "",
+                importance_reason: "",
+              },
         });
     },
 
@@ -59,8 +84,19 @@ export const evaluatorState = {
     get evaluators() {
         return evaluators
     },
-    set evaluators(value) {
-        evaluators = value
+    set evaluators(value: tExecutionEvaluator[]) {
+        // check and de-duplicate names
+        let names: Record<string, number> = {}
+        evaluators = value.map(e => {
+            if(names[e.name]) {
+                names[e.name] += 1
+                e.name = e.name + "-" + names[e.name]
+            } else {
+                names[e.name] = 1
+            }
+            return e
+        })
+
     },
     updateEvaluator(name: string, evaluator: tExecutionEvaluator) {
         const index = evaluators.map(e => e.name).indexOf(name)

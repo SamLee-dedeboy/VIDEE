@@ -1,51 +1,34 @@
 <script lang="ts">
-  import type {
-    tPrimitiveTaskDescription,
-    tPrimitiveTaskExecution,
-  } from "types";
-  import DocumentCard from "./DocumentCard.svelte";
+  import type { tPrimitiveTask } from "types";
   import { slide } from "svelte/transition";
-  import { onMount } from "svelte";
-  import { server_address } from "constants";
-  import { getContext } from "svelte";
+  import { onMount, tick } from "svelte";
   import PromptTemplate from "./PromptTemplate.svelte";
-  import { primitiveTaskState } from "../ExecutionStates.svelte";
+  import {
+    primitiveTaskState,
+    primitiveTaskExecutionStates,
+  } from "../ExecutionStates.svelte";
+  import ExecutionResultInspection from "./ExecutionResultInspection.svelte";
   let {
     task,
-    // handleUpdatePrimitiveTask,
   }: {
-    task: tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>;
-    // handleUpdatePrimitiveTask: Function;
+    task: tPrimitiveTask;
   } = $props();
   let show_description = $state(true);
   let show_formats = $state(false);
   let show_execution = $state(false);
-  let show_result = $state(false);
-  let result = $state(undefined);
-  const session_id = (getContext("session_id") as Function)();
+  let execution_result_inspection_panel: any = $state();
 
-  function handleFetchTaskResult() {
-    fetch(`${server_address}/primitive_task/result/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ task_id: task.id, session_id }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Inspection fetched result:", data);
-        result = data.result;
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
   function handleUpdatePrompt(messages) {
     task.execution!.parameters.prompt_template = messages;
     console.log("Updated primitive task", $state.snapshot(task));
     primitiveTaskState.updatePrimitiveTask(task.id, task);
   }
+
+  export async function navigate_to_results() {
+    await tick();
+    execution_result_inspection_panel.navigate_to_results();
+  }
+
   onMount(() => {
     console.log({ task });
   });
@@ -77,9 +60,6 @@
         {#if show_description}
           <div in:slide class="flex flex-col divide-y">
             <div class="flex">
-              <!-- <div class="flex shrink-0 px-2 mt-1">
-              <img src="info.svg" alt="info" class="w-7 h-7" />
-            </div> -->
               <div class="px-1">
                 <span class="text-sm text-gray-500">Description - </span>
                 {task.description}
@@ -99,8 +79,12 @@
           <button
             class="header-2"
             tabindex="0"
-            onclick={() => {
+            onclick={async () => {
               show_formats = !show_formats;
+              await tick();
+              document
+                .querySelector(".format-container")
+                ?.scrollIntoView({ behavior: "smooth", block: "center" });
             }}
           >
             Input/Output Formats
@@ -112,7 +96,10 @@
           </button>
           {#if task.doc_input_keys}
             {#if show_formats}
-              <div in:slide class="flex justify-around divide-x">
+              <div
+                in:slide
+                class="format-container flex justify-around divide-x"
+              >
                 <div class="key-section">
                   <div class="option-label">State Input Key</div>
                   <div class="option-value">
@@ -156,9 +143,15 @@
         <button
           tabindex="0"
           class="header-2"
-          onclick={() => (show_execution = !show_execution)}
+          onclick={async () => {
+            show_execution = !show_execution;
+            await tick();
+            document
+              .querySelector(".execution-container")
+              ?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}
         >
-          Execution
+          Execution Parameters
           <img
             src="chevron_down.svg"
             alt="expand"
@@ -169,7 +162,7 @@
           {#if show_execution}
             <div
               in:slide
-              class="flex flex-col divide-y divide-gray-400 divide-dashed pb-2 px-1"
+              class="execution-container flex flex-col divide-y divide-gray-400 divide-dashed pb-2 px-1"
             >
               <div class="flex gap-x-2 items-center py-1">
                 <div class="text-gray-700">Execution Method -</div>
@@ -201,49 +194,21 @@
           <div>Needs Compilation...</div>
         {/if}
       </div>
-      {#if true}
-        <div class="flex flex-col">
-          <div class="flex flex-col">
-            <button
-              tabindex="0"
-              class="header-2"
-              onclick={() => {
-                show_result = !show_result;
-                handleFetchTaskResult();
-              }}
-            >
-              Result
-              <img
-                src="chevron_down.svg"
-                alt="expand"
-                class="hidden ml-auto w-5 h-5"
-              />
-            </button>
-          </div>
-          {#if show_result && result !== undefined}
-            <div in:slide class="flex flex-col">
-              {#each Object.keys(result) as state_input_key}
-                <div class="flex flex-col">
-                  <div>{state_input_key}</div>
-                  <div class="flex flex-wrap gap-2">
-                    {#each result[state_input_key] as doc}
-                      <DocumentCard
-                        document={doc}
-                        --bg-color="oklch(0.97 0.014 254.604)"
-                        --bg-hover-color="oklch(0.882 0.059 254.128)"
-                      />
-                    {/each}
-                  </div>
-                </div>
-              {/each}
-            </div>
-          {/if}
+      {#if primitiveTaskExecutionStates.executed(task.id)}
+        <ExecutionResultInspection
+          bind:this={execution_result_inspection_panel}
+          task_id={task.id}
+        />
+      {:else}
+        <div class="flex flex-col gap-y-1">
+          <div class="header-2 pointer-events-none opacity-70">Result</div>
+          <span class="text-xs text-gray-500 itliac px-1">
+            (Not Executed)
+          </span>
         </div>
       {/if}
     </div>
   {/if}
-  <!-- <ExecutionEvaluators --bg-color={"#f2f8fd"} tasks={primitive_tasks}
-  ></ExecutionEvaluators> -->
 </div>
 
 <style lang="postcss">
