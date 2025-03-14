@@ -301,6 +301,15 @@
         Compile
       </button>
     {/if}
+    <button
+      class="absolute left-2 top-2 bg-blue-50 font-mono hover:bg-blue-100 p-1 flex justify-center items-center rounded outline-2 outline-blue-200 z-10"
+      title="Reset Positions"
+      tabindex="0"
+      onclick={() => dag_renderer.resetTranslate()}
+      onkeyup={() => {}}
+    >
+      <img src="center.svg" class="w-5 h-5" alt="center" />
+    </button>
   </div>
 </div>
 

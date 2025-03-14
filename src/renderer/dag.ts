@@ -248,7 +248,18 @@ export class DAG {
                 .attr("y1", e.transform.apply([next_expansion_node.x, next_expansion_node.y])[1])
         }
         if(self.updateGlobalLinks) self.updateGlobalLinks()
-      }
+    }
+    resetTranslate() {
+        const svg = d3.select(`#${this.svgId}`);
+        const new_nodes_bboxes = this.new_nodes.map(d => this.bbox_dict[d])
+        const new_nodes_center = [
+            d3.mean(new_nodes_bboxes.map(d => d.x)),
+            d3.mean(new_nodes_bboxes.map(d => d.y))
+        ]
+        // move the current zoom to the center of the new nodes
+        svg.transition().duration(500).delay(0).call(this.zoom.translateTo, new_nodes_center[0], new_nodes_center[1])
+        // svg.transition().duration(500).call(this.zoom.transform, d3.zoomIdentity);
+    }
 }
 
 function getGroup(node: tNode) {

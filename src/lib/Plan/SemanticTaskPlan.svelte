@@ -241,6 +241,15 @@
         Convert
       </button>
     {/if}
+    <button
+      class="absolute left-2 top-2 bg-orange-50 font-mono hover:bg-orange-100 p-1 flex justify-center items-center rounded outline-2 outline-orange-200 z-10"
+      title="Reset Positions"
+      tabindex="0"
+      onclick={() => dag_renderer.resetTranslate()}
+      onkeyup={() => {}}
+    >
+      <img src="center.svg" class="w-5 h-5" alt="center" />
+    </button>
   </div>
 </div>
 

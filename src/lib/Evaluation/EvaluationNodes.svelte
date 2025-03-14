@@ -186,7 +186,17 @@
 
     <div class="relative flex flex-col gap-y-1 grow">
       <button
+        class="absolute left-2 top-2 bg-emerald-50 font-mono hover:bg-emerald-100 p-1 flex justify-center items-center rounded outline-2 outline-emerald-200 z-10"
+        title="Reset Positions"
+        tabindex="0"
+        onclick={() => dag_renderer.resetTranslate()}
+        onkeyup={() => {}}
+      >
+        <img src="center.svg" class="w-5 h-5" alt="center" />
+      </button>
+      <button
         class="self-end font-mono text-sm bg-emerald-50 text-slate-700 hover:bg-emerald-100 px-4 py-1 mx-2 w-min flex justify-center rounded outline-2 outline-emerald-200 z-10"
+        title="Generate Recommendations"
         tabindex="0"
         onclick={() => handleGenerateRecommendations()}
         onkeyup={() => {}}
