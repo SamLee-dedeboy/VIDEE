@@ -140,3 +140,5 @@ request_log.txt
 *.pyc
 __pychache__
 *.xlsx
+
+server/executor/tools/tokenizers
