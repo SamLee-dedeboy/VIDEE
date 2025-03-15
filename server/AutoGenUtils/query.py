@@ -818,6 +818,7 @@ async def run_result_evaluator_generation_agent(
             Then, for each document, output a categorical score using the user-specified criteria.
         ** Requirements **
         In the LLM judge's prompt template, specify that the LLM judge must generate only **ONE** score for each document.
+        Each score in "Possible Scores" should be a single word or at most a short noun-phrase.
         Reply the evaluator specification with this JSON format. Do not wrap the json codes in JSON markers. Do not include any comments.
             {{
                 "evaluator_specification": {{

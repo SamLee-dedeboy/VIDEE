@@ -129,6 +129,7 @@ async def evaluator_for_task(task, user_description: str, model: str, api_key: s
             "format": "json",
             "prompt_template": prompt_template,
         },
+        "possible_scores": evaluator["prompt_template"]["Possible Scores"],
     }
     return full_evaluator_specification
 

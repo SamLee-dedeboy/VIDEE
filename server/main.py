@@ -567,7 +567,11 @@ async def run_evaluators(request: Request):
         execution_result, config={"configurable": {"thread_id": session_id}}
     )
     user_sessions[session_id]["execution_evaluations"][task_id].append(
-        {"name": evaluator_spec["name"], "result": evaluation_result}
+        {
+            "name": evaluator_spec["name"],
+            "result": evaluation_result,
+            "possible_scores": evaluator_spec["possible_scores"],
+        }
     )
     return {"results": user_sessions[session_id]["execution_evaluations"][task_id]}
 
