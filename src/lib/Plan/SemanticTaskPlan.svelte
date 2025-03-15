@@ -166,7 +166,7 @@
   });
 </script>
 
-<div class="flex flex-col gap-y-1 grow">
+<div class="semantic-task-plan flex flex-col gap-y-1 grow">
   <div class="relative bg-orange-100 w-full flex justify-center z-10">
     <span
       class="canvas-header text-[1.5rem] text-slate-600 font-semibold italic"

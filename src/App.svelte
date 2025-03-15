@@ -393,6 +393,98 @@
   }
   setContext("handleUserFeedback", handleUserFeedback);
 
+  async function playTransitionToExecution() {
+    const canvas = document.querySelector(".tree-canvas");
+    const overlay = document.createElement("div");
+    overlay.style.position = "absolute";
+    overlay.style.top = "0";
+    overlay.style.left = "0";
+    overlay.style.right = "0";
+    overlay.style.bottom = "0";
+    overlay.style.transition = "all 0.5s";
+    overlay.style.zIndex = "100";
+    overlay.style.backgroundColor = "#f3f3f3";
+
+    const whole_tree = document.createElement("div");
+    whole_tree.style.position = "absolute";
+    whole_tree.style.top = "36px";
+    whole_tree.style.left = "0";
+    whole_tree.style.right = "0";
+    whole_tree.style.bottom = "0";
+    whole_tree.style.transition = "all 0.5s";
+    whole_tree.style.zIndex = "100";
+
+    const plan_path = document.createElement("div");
+    plan_path.style.position = "absolute";
+    plan_path.style.top = "36px";
+    plan_path.style.left = "0";
+    plan_path.style.right = "0";
+    plan_path.style.bottom = "0";
+    plan_path.style.zIndex = "100";
+
+    const semantic_tasks_container = document.querySelector(".semantic-tasks");
+    semantic_tasks_container?.childNodes.forEach((child) => {
+      // check if the child is an element node
+      if (child.nodeType !== Node.ELEMENT_NODE) return;
+      const node = child as HTMLElement; // Type assertion
+
+      // check if the node is a task card container
+      if (!node.classList.contains("semantic-task-card-container")) return;
+
+      node.classList.remove("semantic-task-card-container");
+      node.classList.add("semantic-task-card-container-transition");
+      whole_tree.appendChild(child.cloneNode(true));
+
+      // check if the task card container is on the max value path
+      const task_card_container: any = node.querySelector(
+        ".task-card-container"
+      );
+      if (!task_card_container.classList.contains("on-max-value-path")) return;
+
+      // remove root
+      if (task_card_container.querySelector(".card-label").innerText === "Root")
+        return;
+
+      plan_path.appendChild(node.cloneNode(true));
+    });
+    overlay?.appendChild(plan_path);
+    overlay?.appendChild(whole_tree);
+    canvas?.appendChild(overlay);
+    setTimeout(() => {
+      whole_tree.style.opacity = "0";
+      setTimeout(() => {
+        // overlay.style.opacity = "0";
+        overlay.style.backgroundColor = "transparent";
+        const semantic_task_plane_nodes = document
+          .querySelector(".semantic-task-plan")
+          ?.querySelectorAll(".semantic-task-card-container");
+        const nodes = overlay.querySelectorAll(
+          ".semantic-task-card-container-transition"
+        );
+        nodes.forEach((node: any) => {
+          const target_node = Array.from(semantic_task_plane_nodes!).filter(
+            (n: any) =>
+              n.querySelector(".card-label").innerText ===
+              node.querySelector(".card-label").innerText
+          )[0];
+          if (target_node) {
+            const target_bbox = target_node.getBoundingClientRect();
+            // const target_transform = (target_node as HTMLElement).style
+            //   .transform;
+            // (node as HTMLElement).style.transform = target_transform;
+            (node as HTMLElement).style.transform = "translate(-15px,-150px)";
+            (node as HTMLElement).style.transition = "all linear 0.5s ease-out";
+            (node as HTMLElement).style.left = `${target_bbox.x}px`;
+            (node as HTMLElement).style.top = `${target_bbox.y}px`;
+            (node as HTMLElement).style.opacity = "0";
+          }
+        });
+        setTimeout(() => {
+          overlay.remove();
+        }, 1000);
+      }, 800);
+    }, 500);
+  }
   onMount(() => {
     init();
   });
@@ -435,13 +527,16 @@
             class:disabled={streaming_states.started &&
               !streaming_states.paused}
             style={`${show_dag === "execution" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa;  color: rgba(0, 0, 0, 0.2)"}`}
-            onclick={() => (show_dag = "execution")}>Execution</button
+            onclick={() => {
+              show_dag = "execution";
+              playTransitionToExecution();
+            }}>Execution</button
           >
         </div>
       </div>
       <div class="flex flex-[2_2_0%] gap-x-2">
         <div
-          class="relative grow px-2 py-1"
+          class="tree-canvas relative grow px-2 py-1"
           class:loading-canvas={streaming_states.started &&
             !streaming_states.paused}
         >
