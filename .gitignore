@@ -129,7 +129,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-experiments/**/*.json
 api_key
 server/models/google_api_key
 server/models/openai_api_key
@@ -142,3 +141,10 @@ __pychache__
 *.xlsx
 
 server/executor/tools/tokenizers
+server/data/**/*.json
+server/data/**/*.jsonl
+server/case_study_data_processing/**/*.json
+server/case_study_data_processing/**/*.csv
+evaluation_experiments/data/**/*.json
+evaluation_experiments/data/**/*.jsonl
+ideation_experiments/**/*.json
