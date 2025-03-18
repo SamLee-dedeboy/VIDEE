@@ -426,7 +426,7 @@ async def run_decomposition_to_primitive_task_agent(
                     "depend_on": (str[], ids of the task that this step depends on)
                 }}, 
                 {{ 
-                    "solves": (string) which user-provided task this primitive task solves
+                    "solves": (string) id of the user-provided task that this primitive task solves
                     "label": (string) (MUST be one of {supported_labels})
                     "id": (str) (a unique id for the task),
                     "description": (string, describe implementation procedure)
@@ -969,7 +969,7 @@ async def run_evaluator_generation_agent(
 
 
 async def run_data_transform_plan_agent(
-        task: Node, existing_keys: list, model: str, api_key: str
+    task: Node, existing_keys: list, model: str, api_key: str
 ):
     """
     Generate a data transformation plan for a task using an agent.
@@ -1115,7 +1115,7 @@ The output should be:
 
 
 async def run_clustering_plan_agent(
-        task: Node, existing_keys: list, model: str, api_key: str
+    task: Node, existing_keys: list, model: str, api_key: str
 ):
     """
     Generate a clustering plan for a task using an agent.
@@ -1247,7 +1247,7 @@ async def run_clustering_plan_agent(
 
 
 async def run_dim_reduction_plan_agent(
-        task: Node, existing_keys: list, model: str, api_key: str
+    task: Node, existing_keys: list, model: str, api_key: str
 ):
     """
     Generate a dimensionality reduction plan for a task using an agent.
@@ -1361,7 +1361,7 @@ async def run_dim_reduction_plan_agent(
 
 
 async def run_embedding_plan_agent(
-        task: Node, existing_keys: list, model: str, api_key: str
+    task: Node, existing_keys: list, model: str, api_key: str
 ):
     """
     Generate an embedding plan for a task using an agent.
@@ -1464,7 +1464,7 @@ async def run_embedding_plan_agent(
 
 
 async def run_segmentation_plan_agent(
-        task: Node, existing_keys: list, model: str, api_key: str
+    task: Node, existing_keys: list, model: str, api_key: str
 ):
     """
     Generate a segmentation plan for a task using an agent.
@@ -1594,7 +1594,9 @@ def get_existing_keys_and_schema(existing_keys):
             if "key" in key and "schema" in key:
                 formatted_keys.append(f"{key['key']} (schema: {key['schema']})")
             elif "key" in key:
-                formatted_keys.append(f"{key['key']} (schema: str)")  # default to use str for prompt tools
+                formatted_keys.append(
+                    f"{key['key']} (schema: str)"
+                )  # default to use str for prompt tools
         elif isinstance(key, str):
             formatted_keys.append(f"{key} (schema: str)")
 
