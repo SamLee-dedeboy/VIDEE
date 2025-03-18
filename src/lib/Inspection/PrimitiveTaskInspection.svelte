@@ -180,7 +180,7 @@
                       --bg-color="oklch(0.97 0.014 254.604)"
                       --border-color="#bedbff"
                     ></PromptTemplate>
-                  {:else}
+                  {:else if ["model", "format", "name"].includes(key)}
                     <div class="flex items-center gap-x-2">
                       <div class="italic text-gray-600 w-[3rem]">{key}</div>
                       <div class="option-value">{value}</div>
