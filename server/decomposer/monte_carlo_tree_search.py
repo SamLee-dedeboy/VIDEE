@@ -58,15 +58,15 @@ async def stream_MCTS(
                 model=model,
                 api_key=api_key,
             )
+            if all_END(root, node_dict):
+                yield root, node_dict, None, None
             next_selection = select(root, node_dict)
             max_value_path = get_max_value_path(root, node_dict)
             yield root, node_dict, next_selection, max_value_path
-            if all_END(root, node_dict):
-                yield root, None, None, None
     except Exception as e:
         traceback.print_exc()
         print(f"Error in stream_MCTS: {e}")
-        yield root, None, None, None
+        yield root, node_dict, None, None
     pass
 
 
@@ -177,10 +177,12 @@ async def MCTS_regenerate(
 
 def UCT(node: MCT_Node, parent_node: MCT_Node | None, exploration_weight=1.41) -> float:
     """Upper Confidence Bound for Trees (UCT) selection"""
+    if node.label == "END":
+        return float("-inf")  # Avoid END nodes
+    if node.value == 0:
+        return float("-inf")  # Avoid 0 value nodes
     if node.visits == 0:
         return float("inf")  # Prioritize unvisited nodes
-    if node.label == "END":
-        return float("-inf")
     if parent_node is None:
         parent_visits = 1
     else:
@@ -192,19 +194,29 @@ def UCT(node: MCT_Node, parent_node: MCT_Node | None, exploration_weight=1.41) -
 
 def select(node: MCT_Node, node_dict: dict) -> MCT_Node:
     while node.MCT_children_ids:
-        parent_node = node_dict[node.MCT_parent_id] if node.MCT_parent_id else None
         candidate_children_ids = list(
             filter(
                 lambda id: not node_dict[id].children_all_ends, node.MCT_children_ids
             )
         )
-        if not candidate_children_ids:
-            print("No candidate children")
-            break  # this means the MCTS simulation is finished
-        node = max(
-            list(map(lambda node_id: node_dict[node_id], candidate_children_ids)),
-            key=lambda node: UCT(node, parent_node),
+
+        parent_node = node_dict[node.MCT_parent_id] if node.MCT_parent_id else None
+        node_value_pairs = list(
+            map(
+                lambda node_id: (
+                    node_dict[node_id],
+                    UCT(node_dict[node_id], parent_node),
+                ),
+                candidate_children_ids,
+            )
         )
+        if all(value == float("-inf") for node, value in node_value_pairs):
+            return None  # all children are END nodes
+        node = max(node_value_pairs, key=lambda x: x[1])[0]
+        # node = max(
+        #     list(map(lambda node_id: node_dict[node_id], candidate_children_ids)),
+        #     key=lambda node: UCT(node, parent_node),
+        # )
     return node
 
 
@@ -304,11 +316,13 @@ async def reward(
 
             node.value = reward_value
             node.path_value = node_dict[node.MCT_parent_id].path_value * reward_value
+            node.path_value_normalized = math.pow(node.path_value, 1 / node.level)
             reward_value_list.append(reward_value)
         return reward_value_list
     except Exception as e:
-        raise e
+        traceback.print_exc()
         print(f"Error in reward: {e}")
+        raise e
 
 
 def backpropagate(node: MCT_Node, reward: float, node_dict: dict) -> None:
@@ -329,17 +343,17 @@ def get_max_value_path(root: MCT_Node, node_dict: dict):
     paths = []
     stack = [(root, 1)]
     while stack:
-        node, accumulated_value = stack.pop()
+        node, path_value = stack.pop()
         if not node.MCT_children_ids:
             path_ids = list(
                 map(
                     lambda parent: parent["MCT_id"], get_previous_steps(node, node_dict)
                 )
             )
-            paths.append((path_ids + ["-1"], accumulated_value))
+            paths.append((path_ids + ["-1"], path_value))
         for child_id in node.MCT_children_ids:
             stack.append(
-                (node_dict[child_id], accumulated_value * node_dict[child_id].value)
+                (node_dict[child_id], node_dict[child_id].path_value_normalized)
             )
     max_value_path = max(paths, key=lambda x: x[1])
     return max_value_path

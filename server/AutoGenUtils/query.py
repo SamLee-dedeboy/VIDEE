@@ -99,7 +99,7 @@ async def run_goal_decomposition_agent_stepped(
         ids = list(map(lambda step: step["id"], previous_steps))
         return [
             {
-                "id": "END_PATH_" + str(ids),
+                # "id": "END_PATH_" + str(ids),
                 "label": "END",
                 "description": "END",
                 "explanation": "END",
@@ -111,7 +111,7 @@ async def run_goal_decomposition_agent_stepped(
         ids = list(map(lambda step: step["id"], previous_steps))
         return [
             {
-                "id": "END_PATH_" + str(ids),
+                # "id": "END_PATH_" + str(ids),
                 "label": "END",
                 "description": "END",
                 "explanation": "END",
