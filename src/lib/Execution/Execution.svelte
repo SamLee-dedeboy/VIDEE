@@ -72,17 +72,26 @@
     _primitive_tasks: tPrimitiveTask[],
     _evaluator_nodes: tExecutionEvaluator[]
   ) {
+    // console.log(
+    //   "Updating links",
+    //   _semantic_tasks,
+    //   _primitive_tasks,
+    //   _evaluator_nodes
+    // );
     await tick();
     const svg = d3.select(`#${svgId}`);
     // links between plan and execution
     if (controllers.show_plan && controllers.show_execution) {
       let plan_execution_links: any[] = [];
       _primitive_tasks.forEach((primitive_task) => {
+        if (primitive_task.id === "-1") return;
         const solves = primitive_task.solves;
         if (!semantic_tasks.find((task) => task.id === solves)) return;
-        const source = document.querySelector(`[data-id="${solves}"]`);
+        const source = document.querySelector(
+          `.semantic-task-card-container[data-id="${solves}"]`
+        );
         const target = document.querySelector(
-          `[data-id="${primitive_task.id}"]`
+          `.primitive-task-card-container[data-id="${primitive_task.id}"]`
         );
         const source_bbox = getBboxRelativeToCanvas(source);
         const target_bbox = getBboxRelativeToCanvas(target);
@@ -120,9 +129,11 @@
         if (!evaluator_node.isRoot) return;
         const target_task = evaluator_node.task;
         if (!primitive_tasks.find((task) => task.id === target_task)) return;
-        const source = document.querySelector(`[data-id="${target_task}"]`);
+        const source = document.querySelector(
+          `.primitive-task-card-container[data-id="${target_task}"]`
+        );
         const target = document.querySelector(
-          `[data-id="${evaluator_node.name}"]`
+          `.evaluator-card-container[data-id="${evaluator_node.name}"]`
         );
         const source_bbox = getBboxRelativeToCanvas(source);
         const target_bbox = getBboxRelativeToCanvas(target);
@@ -182,7 +193,7 @@
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        tasks: primitive_tasks,
+        tasks: primitive_tasks.filter((task) => task.id !== "-1"),
         session_id,
         goal: user_goal,
       }),
@@ -190,7 +201,13 @@
       .then((response) => response.json())
       .then((data) => {
         console.log("Recommendations:", data);
-        evaluatorState.evaluators = [...evaluators, ...data["result"]];
+        const user_defined_evaluators = evaluators.filter(
+          (evaluator) => evaluator.recommendation === false
+        );
+        evaluatorState.evaluators = [
+          ...user_defined_evaluators,
+          ...data["result"],
+        ];
         generating_recommendations = false;
         evaluation_component.rerender_evaluation();
       })

@@ -82,6 +82,7 @@ export type tExecutionEvaluator = {
     name: string;
     definition: string;
     task: string;
+    recommendation: boolean;
     isRoot? : boolean;
   } & Partial<tExecutionEvaluatorParams>;
 

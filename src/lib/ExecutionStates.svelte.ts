@@ -10,6 +10,42 @@ export const semanticTaskPlanState = {
     },
 
     addTask() {
+        if(semantic_tasks.length === 0) {
+        semantic_tasks.push({
+            id: "-1",
+            label:  "Root",
+            description: "Root",
+            explanation: "N/A",
+            parentIds: [],
+            sub_tasks: [],
+            children: [],
+            // MCT types
+            MCT_id: semantic_tasks.length.toString(),
+            MCT_children_ids: [],
+            MCT_parent_id: "",
+            new_node: false,
+            level: semantic_tasks.length,
+            value: 0,
+            visits: 0,
+            path_value: 0,
+            llm_evaluation: {
+                complexity: true,
+                coherence: true,
+                importance: true,
+                complexity_reason: "",
+                coherence_reason: "",
+                importance_reason: "",
+              },
+              user_evaluation: {
+                complexity: true,
+                coherence: true,
+                importance: true,
+                complexity_reason: "",
+                coherence_reason: "",
+                importance_reason: "",
+              },
+        });
+        }
         semantic_tasks.push({
             id: Math.random().toString(),
             label: "New Task",
@@ -44,6 +80,7 @@ export const semanticTaskPlanState = {
                 importance_reason: "",
               },
         });
+        semantic_tasks = [...semantic_tasks]
     },
 
     deleteTask(task: tSemanticTask) {
@@ -73,6 +110,7 @@ export const semanticTaskPlanState = {
         this.updateSemanticTask(task.id, task)
     },
     updateSemanticTask(task_id: string, semanticTask: tSemanticTask) {
+        console.log("update task", task_id, semanticTask)
         const index = semantic_tasks.map(t => t.id).indexOf(task_id)
         if(index !== -1) {
             semantic_tasks[index] = semanticTask
@@ -131,19 +169,30 @@ export const primitiveTaskState = {
     set primitiveTasks(value) {
         primitiveTasks = value
     },
-    add() {
-        primitiveTasks = [
-        ...primitiveTasks,
-        {
-            solves: "",
-            id: Math.random().toString(),
-            label: "New Task",
-            description: "New Task Description",
-            explanation: "N/A",
-            parentIds: [],
-            children: [],
-        },
-        ];
+    addTask() {
+        if(primitiveTasks.length === 0) {
+            primitiveTasks.push(
+            {
+                solves: "",
+                id: "-1",
+                label: "Root",
+                description: "Root",
+                explanation: "N/A",
+                parentIds: [],
+                children: [],
+            })
+        }
+        primitiveTasks.push(
+            {
+                solves: "",
+                id: Math.random().toString(),
+                label: "New Task",
+                description: "New Task Description",
+                explanation: "N/A",
+                parentIds: [],
+                children: [],
+            })
+        primitiveTasks = [...primitiveTasks]
     },
     delete(task_id) {
         primitiveTasks = primitiveTasks.filter((_task) => _task.id !== task_id);
@@ -151,11 +200,19 @@ export const primitiveTaskState = {
     addParent(task: tPrimitiveTask, parent_id: string) {
         task.parentIds = [...task.parentIds, parent_id]
         this.updatePrimitiveTask(task.id, task)
+
+        const parent_task = primitiveTasks.find(t => t.id === parent_id)
+        if(parent_task) {
+            parent_task.children = [...parent_task.children, task.id]
+            this.updatePrimitiveTask(parent_task.id, parent_task)
+        }
     },
     updatePrimitiveTask(task_id: string, primitiveTask: tPrimitiveTask) {
         const index = primitiveTasks.map(t => t.id).indexOf(task_id)
+        console.log("update task", task_id, index, primitiveTask)
         if(index !== -1) {
             primitiveTasks[index] = primitiveTask
+            primitiveTasks = [...primitiveTasks]
         }
     }
 }

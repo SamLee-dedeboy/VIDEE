@@ -62,6 +62,7 @@ async def one_shot_decomposition_to_primitive_task(
         )
     )
     decomposed_primitive_tasks = add_parents_and_children(decomposed_primitive_tasks)
+    decomposed_primitive_tasks = add_root(decomposed_primitive_tasks)
     # decomposed_primitive_tasks = add_uids(decomposed_primitive_tasks)
     return decomposed_primitive_tasks
 
@@ -210,6 +211,20 @@ def add_parents_and_children(decomposed_steps):
     for i, step in enumerate(decomposed_steps):
         step["children"] = children_dict[step["id"]]
         decomposed_steps[i] = step
+    return decomposed_steps
+
+
+def add_root(decomposed_steps):
+    root_step = {
+        "id": "-1",
+        "label": "Root",
+        "description": "Root",
+        "explanation": "N/A",
+        "parentIds": [],
+        "children": [],
+        "sub_tasks": [],
+    }
+    decomposed_steps.append(root_step)
     return decomposed_steps
 
 

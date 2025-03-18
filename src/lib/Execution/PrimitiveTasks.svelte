@@ -65,9 +65,15 @@
         div.style.transform === ""
           ? 1
           : d3.zoomTransform(d3.select(`#${svgId}`).node()).k;
-      console.log(id, div.getBoundingClientRect());
+      const parentIds =
+        node_data.id === "-1"
+          ? []
+          : node_data.parentIds.length === 0
+            ? ["-1"]
+            : node_data.parentIds;
       return {
         ...node_data,
+        parentIds: parentIds,
         data: node_data,
         bbox: {
           width: div.getBoundingClientRect().width / transform_scale,
@@ -144,8 +150,8 @@
   }
 
   function handleAddTask() {
-    primitiveTaskState.add();
-    update_with_server();
+    primitiveTaskState.addTask();
+    // update_with_server();
   }
 
   function handleDeleteTask(task: tPrimitiveTaskDescription) {
@@ -168,25 +174,25 @@
         parent_task_id
       ].children.filter((id) => id !== task.id);
     });
-    update_with_server();
+    // update_with_server();
   }
 
-  function update_with_server() {
-    fetch(`${server_address}/primitive_tasks/update/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ primitive_tasks, session_id }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
+  // function update_with_server() {
+  //   fetch(`${server_address}/primitive_tasks/update/`, {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({ primitive_tasks, session_id }),
+  //   })
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       console.log(data);
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error:", error);
+  //     });
+  // }
 
   const updateGlobalLinks: Function = getContext("updateGlobalLinks");
   onMount(() => {
@@ -277,7 +283,7 @@
                   !task.parentIds.includes(t.id) &&
                   !task.children.includes(t.id)
               )
-              .map((task) => [task.id, task.label])}
+              .map((t) => [t.id, t.label])}
             {task}
             expand={task_card_expanded.includes(task.id)}
             {compiling}

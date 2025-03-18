@@ -30,7 +30,7 @@
 >
   <div class="flex flex-col grow px-2 gap-y-2">
     <div
-      class="border-b border-gray-300 text-[1.2rem] italic flex items-center"
+      class="font-mono text-emerald-800 border-b border-gray-300 text-[1.2rem] italic flex items-center"
       style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
     >
       <span
@@ -38,8 +38,9 @@
         use:trim
         contenteditable
         onblur={(e) => {
-          evaluator.name = (e.target as HTMLElement).innerText.trim();
-          evaluatorState.updateEvaluator(evaluator.name, evaluator);
+          const new_evaluator = JSON.parse(JSON.stringify(evaluator));
+          new_evaluator.name = (e.target as HTMLElement).innerText.trim();
+          evaluatorState.updateEvaluator(evaluator.name, new_evaluator);
         }}>{evaluator.name}</span
       >
       <button
@@ -64,8 +65,11 @@
           use:trim
           contenteditable
           onblur={(e) => {
-            evaluator.definition = (e.target as HTMLElement).innerText.trim();
-            evaluatorState.updateEvaluator(evaluator.name, evaluator);
+            const new_evaluator = JSON.parse(JSON.stringify(evaluator));
+            new_evaluator.definition = (
+              e.target as HTMLElement
+            ).innerText.trim();
+            evaluatorState.updateEvaluator(evaluator.name, new_evaluator);
           }}
         >
           {evaluator.definition}

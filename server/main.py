@@ -531,6 +531,7 @@ async def recommend_evaluators(request: Request):
         evaluator_specs, evaluator_task_description_pairs
     ):
         evaluator_spec["task"] = task["id"]
+        evaluator_spec["recommendation"] = True
     return {"result": evaluator_specs}
 
 

@@ -62,7 +62,7 @@
     while (queue.length) {
       let task = queue.shift()!;
       if (task.label === "END") continue;
-      if (task.label === "Root") continue;
+      // if (task.label === "Root") continue;
       flattened.push(task);
       if (task?.sub_tasks && _semantic_tasks_show_sub_tasks.includes(task.id)) {
         queue.push(...task.sub_tasks);
@@ -92,9 +92,15 @@
         div.style.transform === ""
           ? 1
           : d3.zoomTransform(d3.select(`#${svgId}`).node()).k;
+      const parentIds =
+        node_data.id === "-1"
+          ? []
+          : node_data.parentIds.length === 0
+            ? ["-1"]
+            : node_data.parentIds;
       return {
         id: node_data.id,
-        parentIds: node_data.parentIds,
+        parentIds: parentIds,
         data: node_data,
         bbox: {
           ...div.getBoundingClientRect(),

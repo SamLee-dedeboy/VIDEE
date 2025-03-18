@@ -116,6 +116,7 @@
       .then((response) => response.json())
       .then((data) => {
         console.log(data);
+        data["result"]["recommendation"] = false;
         evaluatorState.evaluators = [...evaluators, data["result"]];
         update_dag(evaluators);
         updateGlobalLinks();
