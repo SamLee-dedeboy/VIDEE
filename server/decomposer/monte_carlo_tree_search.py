@@ -13,7 +13,7 @@ MAX_STEPS = 10
 
 def init_MCTS():
     root = MCT_Node(
-        id="0",
+        id="-1",
         label="Root",
         MCT_id="-1",
         print_label="Root",
