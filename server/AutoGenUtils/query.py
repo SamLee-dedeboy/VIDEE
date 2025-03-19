@@ -7,7 +7,7 @@ from autogen_agentchat.messages import TextMessage
 from tqdm import tqdm
 import asyncio
 
-from server.utils import extract_json_content
+from server.utils import extract_json_content, retry_llm_json_extraction
 
 
 def save_json(data, filename):
@@ -79,11 +79,21 @@ async def run_goal_decomposition_agent(goal: str, model: str, api_key: str):
                 ]
             }  """,
     )
-    response = await goal_decomposition_agent.on_messages(
-        [TextMessage(content=goal, source="user")],
-        cancellation_token=CancellationToken(),
+
+    # Use retry_llm_json_extraction instead of extract_json_content
+    result = await retry_llm_json_extraction(
+        llm_call_func=goal_decomposition_agent.on_messages,
+        llm_call_args=([TextMessage(content=goal, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        expected_key="steps",
+        max_retries=3
     )
-    return extract_json_content(response.chat_message.content)["steps"]
+
+    # If we couldn't get a valid result after all retries, return an empty list
+    if result is None:
+        return []
+
+    return result
 
 
 async def run_goal_decomposition_agent_stepped(
@@ -196,115 +206,31 @@ async def run_goal_decomposition_agent_stepped(
             )
         )
 
-    response = await goal_decomposition_agent.on_messages(
-        [TextMessage(content=user_message, source="user")],
-        cancellation_token=CancellationToken(),
+    # Use the new retry_llm_json_extraction function to handle both the LLM call and JSON extraction
+    result = await retry_llm_json_extraction(
+        llm_call_func=goal_decomposition_agent.on_messages,
+        llm_call_args=([TextMessage(content=user_message, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        expected_key="next_steps",
+        max_retries=5,
+        retry_delay=1.0,
+        backoff_factor=2.0
     )
 
-    retries, max_retries = 0, 5
-    while True:
-        try:
-            response = extract_json_content(response.chat_message.content)["next_steps"]
-            break
-        except json.JSONDecodeError:
-            print(f"Retrying... {retries}/{max_retries}-{retries > max_retries}")
-            print(response.chat_message.content)
-            if retries > max_retries:
-                break
-            response = await goal_decomposition_agent.on_messages(
-                [TextMessage(content=user_message, source="user")],
-                cancellation_token=CancellationToken(),
-            )
-            retries += 1
-    return response
-    # return extract_json_content(response.chat_message.content)["next_steps"]
-    # if n == 1:
-    #     response = await goal_decomposition_agent.on_messages(
-    #         [TextMessage(content=user_message, source="user")],
-    #         cancellation_token=CancellationToken(),
-    #     )
-    #     return extract_json_content(response.chat_message.content)["next_step"]
-    # else:
-    #     responses = await parallel_call_agents(
-    #         n, goal_decomposition_agent, user_message
-    #     )
-    #     for index, response in enumerate(responses):
-    #         retries, max_retries = 0, 5
-    #         while True:
-    #             try:
-    #                 # print("Valid JSON:")
-    #                 # print(response.chat_message.content)
-    #                 response = extract_json_content(response.chat_message.content)["next_step"]
-    #                 break
-    #             except json.JSONDecodeError:
-    #                 print(
-    #                     f"Retrying... {retries}/{max_retries}-{retries > max_retries}"
-    #                 )
-    #                 print(response.chat_message.content)
-    #                 if retries > max_retries:
-    #                     break
-    #                 response = await goal_decomposition_agent.on_messages(
-    #                     [TextMessage(content=user_message, source="user")],
-    #                     cancellation_token=CancellationToken(),
-    #                 )
-    #                 retries += 1
-    #         responses[index] = response
-    #     return responses
+    # If we couldn't get a valid result after all retries, return a default "END" step
+    if result is None:
+        ids = list(map(lambda step: step["id"], previous_steps))
+        return [
+            {
+                "id": "END_PATH_" + str(ids) + "_FALLBACK",
+                "label": "END",
+                "description": "Unable to determine next steps after multiple attempts",
+                "explanation": "The system encountered difficulties determining the next steps",
+                "parentIds": ids,
+            }
+        ]
 
-    response = await goal_decomposition_agent.on_messages(
-        [TextMessage(content=user_message, source="user")],
-        cancellation_token=CancellationToken(),
-    )
-
-    retries, max_retries = 0, 5
-    while True:
-        try:
-            response = json.loads(response.chat_message.content)["next_steps"]
-            break
-        except json.JSONDecodeError:
-            print(f"Retrying... {retries}/{max_retries}-{retries > max_retries}")
-            print(response.chat_message.content)
-            if retries > max_retries:
-                break
-            response = await goal_decomposition_agent.on_messages(
-                [TextMessage(content=user_message, source="user")],
-                cancellation_token=CancellationToken(),
-            )
-            retries += 1
-    return response
-    # return json.loads(response.chat_message.content)["next_steps"]
-    # if n == 1:
-    #     response = await goal_decomposition_agent.on_messages(
-    #         [TextMessage(content=user_message, source="user")],
-    #         cancellation_token=CancellationToken(),
-    #     )
-    #     return json.loads(response.chat_message.content)["next_step"]
-    # else:
-    #     responses = await parallel_call_agents(
-    #         n, goal_decomposition_agent, user_message
-    #     )
-    #     for index, response in enumerate(responses):
-    #         retries, max_retries = 0, 5
-    #         while True:
-    #             try:
-    #                 # print("Valid JSON:")
-    #                 # print(response.chat_message.content)
-    #                 response = json.loads(response.chat_message.content)["next_step"]
-    #                 break
-    #             except json.JSONDecodeError:
-    #                 print(
-    #                     f"Retrying... {retries}/{max_retries}-{retries > max_retries}"
-    #                 )
-    #                 print(response.chat_message.content)
-    #                 if retries > max_retries:
-    #                     break
-    #                 response = await goal_decomposition_agent.on_messages(
-    #                     [TextMessage(content=user_message, source="user")],
-    #                     cancellation_token=CancellationToken(),
-    #                 )
-    #                 retries += 1
-    #         responses[index] = response
-    #     return responses
+    return result
 
 
 async def run_decomposition_self_evaluation_agent(
@@ -353,11 +279,22 @@ async def run_decomposition_self_evaluation_agent(
     )
 
     if n == 1:
-        response = await decomposition_self_evaluation_agent.on_messages(
-            [TextMessage(content=user_message, source="user")],
-            cancellation_token=CancellationToken(),
+        # Use the retry_llm_json_extraction function
+        result = await retry_llm_json_extraction(
+            llm_call_func=decomposition_self_evaluation_agent.on_messages,
+            llm_call_args=([TextMessage(content=user_message, source="user")],),
+            llm_call_kwargs={"cancellation_token": CancellationToken()},
+            expected_key="evaluation_score",
+            max_retries=3,
+            retry_delay=1.0,
+            backoff_factor=2.0
         )
-        return extract_json_content(response.chat_message.content)["evaluation_score"]
+
+        # If we couldn't get a valid result after all retries, return a default score
+        if result is None:
+            return 3  # Return a neutral score as fallback
+
+        return result
     else:
         responses = await parallel_call_agents_repeat(
             n, decomposition_self_evaluation_agent, user_message
@@ -459,11 +396,23 @@ async def run_decomposition_to_primitive_task_agent(
     """.format(
         tree_str=tree_str
     )
-    response = await decomposition_to_primitive_task_agent.on_messages(
-        [TextMessage(content=user_message_content, source="user")],
-        cancellation_token=CancellationToken(),
+    # response = await decomposition_to_primitive_task_agent.on_messages(
+    #     [TextMessage(content=user_message_content, source="user")],
+    #     cancellation_token=CancellationToken(),
+    # )
+    #
+    # return extract_json_content(response.chat_message.content)["primitive_tasks"]
+
+    return await retry_llm_json_extraction(
+        llm_call_func=decomposition_to_primitive_task_agent.on_messages,
+        llm_call_args=([TextMessage(content=user_message_content, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        expected_key="primitive_tasks",
+        max_retries=3,
+        retry_delay=1.0,
+        backoff_factor=2.0
     )
-    return extract_json_content(response.chat_message.content)["primitive_tasks"]
+
 
 
 async def run_task_decomposition_agent(task: Node, model: str, api_key: str):
@@ -506,11 +455,21 @@ async def run_task_decomposition_agent(task: Node, model: str, api_key: str):
         }""",
     )
     user_message_content = task["label"] + ": " + task["description"]
-    response = await goal_decomposition_agent.on_messages(
-        [TextMessage(content=user_message_content, source="user")],
-        cancellation_token=CancellationToken(),
+    # response = await goal_decomposition_agent.on_messages(
+    #     [TextMessage(content=user_message_content, source="user")],
+    #     cancellation_token=CancellationToken(),
+    # )
+    # return extract_json_content(response.chat_message.content)["steps"]
+
+    return await retry_llm_json_extraction(
+        llm_call_func=goal_decomposition_agent.on_messages,
+        llm_call_args=([TextMessage(content=user_message_content, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        expected_key="steps",
+        max_retries=3,
+        retry_delay=1.0,
+        backoff_factor=2.0
     )
-    return extract_json_content(response.chat_message.content)["steps"]
 
 
 async def _run_decomposition_to_primitive_task_agent(
@@ -594,11 +553,21 @@ async def _run_decomposition_to_primitive_task_agent(
         done_tasks="\n".join(map(lambda t: t.label, done_tasks)),
         task=task_to_string(task),
     )
-    response = await decomposition_to_primitive_task_agent.on_messages(
-        [TextMessage(content=user_message_content, source="user")],
-        cancellation_token=CancellationToken(),
+    # response = await decomposition_to_primitive_task_agent.on_messages(
+    #     [TextMessage(content=user_message_content, source="user")],
+    #     cancellation_token=CancellationToken(),
+    # )
+    # return extract_json_content(response.chat_message.content)["primitive_tasks"]
+
+    return await retry_llm_json_extraction(
+        llm_call_func=decomposition_to_primitive_task_agent.on_messages,
+        llm_call_args=([TextMessage(content=user_message_content, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        expected_key="primitive_tasks",
+        max_retries=3,
+        retry_delay=1.0,
+        backoff_factor=2.0
     )
-    return extract_json_content(response.chat_message.content)["primitive_tasks"]
 
 
 async def run_prompt_generation_agent(
@@ -691,15 +660,31 @@ async def run_prompt_generation_agent(
         <description> {task['description']} </description>
         <explanation> {task['explanation']} </explanation>
     """
-    response = await prompt_generation_agent.on_messages(
-        [TextMessage(content=task_message, source="user")],
-        cancellation_token=CancellationToken(),
+
+    # Use the new retry_llm_json_extraction function
+    result = await retry_llm_json_extraction(
+        llm_call_func=prompt_generation_agent.on_messages,
+        llm_call_args=([TextMessage(content=task_message, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        max_retries=3,
+        retry_delay=1.0,
+        backoff_factor=2.0,
+        escape_JSON_format=True  # Enable escaping JSON format which is common in prompts
     )
-    # save_json(
-    #     extract_json_content(response.chat_message.content),
-    #     f"generated_prompt_{task['label']}.json",
-    # )
-    return extract_json_content(response.chat_message.content)
+
+    # If we couldn't get a valid result after all retries, return a simple fallback
+    if result is None:
+        return {
+            "prompt": {
+                "Context": f"Analyze the following {task['label']} task",
+                "Task": task['description'],
+                "Requirements": "Provide a detailed analysis",
+                "JSON_format": '{"result": "str"}'
+            },
+            "output_schema": "str"
+        }
+
+    return result
 
 
 async def run_input_key_generation_agent(
@@ -778,11 +763,20 @@ async def run_input_key_generation_agent(
         Please provide detailed schema definitions for each key, not just basic types. 
         For complex structures, define the exact fields and their types in the schema.
     """
-    response = await prompt_generation_agent.on_messages(
-        [TextMessage(content=task_message, source="user")],
-        cancellation_token=CancellationToken(),
+    # response = await prompt_generation_agent.on_messages(
+    #     [TextMessage(content=task_message, source="user")],
+    #     cancellation_token=CancellationToken(),
+    # )
+    # return extract_json_content(response.chat_message.content)["required_keys"]
+    return await retry_llm_json_extraction(
+        llm_call_func=prompt_generation_agent.on_messages,
+        llm_call_args=([TextMessage(content=task_message, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        expected_key="required_keys",
+        max_retries=3,
+        retry_delay=1.0,
+        backoff_factor=2.0
     )
-    return extract_json_content(response.chat_message.content)["required_keys"]
 
 
 async def run_result_evaluator_generation_agent(
@@ -839,13 +833,22 @@ async def run_result_evaluator_generation_agent(
     """
     user_message = "This is what I have done: " + task_message + "\n"
     user_message += "Here's what I want to evaluate: " + user_description
-    response = await prompt_generation_agent.on_messages(
-        [TextMessage(content=user_message, source="user")],
-        cancellation_token=CancellationToken(),
+    # response = await prompt_generation_agent.on_messages(
+    #     [TextMessage(content=user_message, source="user")],
+    #     cancellation_token=CancellationToken(),
+    # )
+    # return extract_json_content(response.chat_message.content)[
+    #     "evaluator_specification"
+    # ]
+    return await retry_llm_json_extraction(
+        llm_call_func=prompt_generation_agent.on_messages,
+        llm_call_args=([TextMessage(content=user_message, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        expected_key="evaluator_specification",
+        max_retries=3,
+        retry_delay=1.0,
+        backoff_factor=2.0
     )
-    return extract_json_content(response.chat_message.content)[
-        "evaluator_specification"
-    ]
 
 
 async def run_evaluator_generation_agent(
@@ -1106,12 +1109,21 @@ The output should be:
     3. Define precise schemas for all output data structures
     """
 
-    response = await data_transform_agent.on_messages(
-        [TextMessage(content=user_message_content, source="user")],
-        cancellation_token=CancellationToken(),
-    )
+    # response = await data_transform_agent.on_messages(
+    #     [TextMessage(content=user_message_content, source="user")],
+    #     cancellation_token=CancellationToken(),
+    # )
+    #
+    # return extract_json_content(response.chat_message.content)
 
-    return extract_json_content(response.chat_message.content)
+    return await retry_llm_json_extraction(
+        llm_call_func=data_transform_agent.on_messages,
+        llm_call_args=([TextMessage(content=user_message_content, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        max_retries=3,
+        retry_delay=1.0,
+        backoff_factor=2.0
+    )
 
 
 async def run_clustering_plan_agent(
@@ -1238,12 +1250,22 @@ async def run_clustering_plan_agent(
     5. Define the output schema
     """
 
-    response = await clustering_agent.on_messages(
-        [TextMessage(content=user_message_content, source="user")],
-        cancellation_token=CancellationToken(),
+    # response = await clustering_agent.on_messages(
+    #     [TextMessage(content=user_message_content, source="user")],
+    #     cancellation_token=CancellationToken(),
+    # )
+    #
+    # return extract_json_content(response.chat_message.content)
+
+    return await retry_llm_json_extraction(
+        llm_call_func=clustering_agent.on_messages,
+        llm_call_args=([TextMessage(content=user_message_content, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        max_retries=3,
+        retry_delay=1.0,
+        backoff_factor=2.0
     )
 
-    return extract_json_content(response.chat_message.content)
 
 
 async def run_dim_reduction_plan_agent(
@@ -1352,12 +1374,20 @@ async def run_dim_reduction_plan_agent(
     5. Define the output schema
     """
 
-    response = await dim_reduction_agent.on_messages(
-        [TextMessage(content=user_message_content, source="user")],
-        cancellation_token=CancellationToken(),
+    # response = await dim_reduction_agent.on_messages(
+    #     [TextMessage(content=user_message_content, source="user")],
+    #     cancellation_token=CancellationToken(),
+    # )
+    #
+    # return extract_json_content(response.chat_message.content)
+    return await retry_llm_json_extraction(
+        llm_call_func=dim_reduction_agent.on_messages,
+        llm_call_args=([TextMessage(content=user_message_content, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        max_retries=3,
+        retry_delay=1.0,
+        backoff_factor=2.0
     )
-
-    return extract_json_content(response.chat_message.content)
 
 
 async def run_embedding_plan_agent(
@@ -1455,12 +1485,20 @@ async def run_embedding_plan_agent(
     5. Consider whether API access is available or if local processing is needed
     """
 
-    response = await embedding_agent.on_messages(
-        [TextMessage(content=user_message_content, source="user")],
-        cancellation_token=CancellationToken(),
+    # response = await embedding_agent.on_messages(
+    #     [TextMessage(content=user_message_content, source="user")],
+    #     cancellation_token=CancellationToken(),
+    # )
+    #
+    # return extract_json_content(response.chat_message.content)
+    return await retry_llm_json_extraction(
+        llm_call_func=embedding_agent.on_messages,
+        llm_call_args=([TextMessage(content=user_message_content, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        max_retries=3,
+        retry_delay=1.0,
+        backoff_factor=2.0
     )
-
-    return extract_json_content(response.chat_message.content)
 
 
 async def run_segmentation_plan_agent(
@@ -1578,12 +1616,21 @@ async def run_segmentation_plan_agent(
     5. Define the output schema for the segments
     """
 
-    response = await segmentation_agent.on_messages(
-        [TextMessage(content=user_message_content, source="user")],
-        cancellation_token=CancellationToken(),
+    # response = await segmentation_agent.on_messages(
+    #     [TextMessage(content=user_message_content, source="user")],
+    #     cancellation_token=CancellationToken(),
+    # )
+    #
+    # return extract_json_content(response.chat_message.content)
+    return await retry_llm_json_extraction(
+        llm_call_func=segmentation_agent.on_messages,
+        llm_call_args=([TextMessage(content=user_message_content, source="user")],),
+        llm_call_kwargs={"cancellation_token": CancellationToken()},
+        max_retries=3,
+        retry_delay=1.0,
+        backoff_factor=2.0
     )
 
-    return extract_json_content(response.chat_message.content)
 
 
 def get_existing_keys_and_schema(existing_keys):

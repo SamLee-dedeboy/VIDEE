@@ -1,7 +1,86 @@
 import json
 import re
-from typing import Optional, Dict, Any
+import time
+import functools
+import asyncio
+from typing import Optional, Dict, Any, TypeVar, Callable, List, Tuple, Union, Awaitable
 import warnings
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+async def retry_llm_json_extraction(
+    llm_call_func: Callable[..., Awaitable],
+    llm_call_args: Tuple = (),
+    llm_call_kwargs: Dict = None,
+    expected_key: str = None,
+    max_retries: int = 3,
+    retry_delay: float = 1.0,
+    backoff_factor: float = 2.0,
+    escape_JSON_format: bool = False
+) -> Any:
+    """
+    Retry pattern for LLM calls that need to return valid JSON.
+    This function handles both the LLM call and JSON extraction in a single retry loop.
+
+    Args:
+        llm_call_func: Async function to call the LLM (e.g., agent.on_messages)
+        llm_call_args: Arguments to pass to the LLM call function
+        llm_call_kwargs: Keyword arguments to pass to the LLM call function
+        expected_key: Key that must be present in the extracted JSON (optional)
+        max_retries: Maximum number of retry attempts
+        retry_delay: Initial delay between retries in seconds
+        backoff_factor: Multiplicative factor to increase delay between retries
+        escape_JSON_format: Whether to escape curly braces in JSON_format field
+
+    Returns:
+        The parsed JSON from the LLM response, or None if all retries fail
+    """
+    if llm_call_kwargs is None:
+        llm_call_kwargs = {}
+
+    delay = retry_delay
+
+    for attempt in range(max_retries + 1):
+        try:
+            # Call the LLM with correct arguments
+            response = await llm_call_func(*llm_call_args, **llm_call_kwargs)
+
+            # Extract the content from the response
+            content = response.chat_message.content if hasattr(response, 'chat_message') else response
+
+            # Try to extract JSON
+            json_result = extract_json_content(content, escape_JSON_format)
+
+            # Check if we got a valid result
+            if json_result is None:
+                raise ValueError("Failed to extract JSON from LLM response")
+
+            # If an expected key is specified, check that it exists
+            if expected_key and expected_key not in json_result:
+                raise KeyError(f"Expected key '{expected_key}' not found in JSON result")
+
+            # Return either the whole JSON or just the expected key's value
+            return json_result[expected_key] if expected_key else json_result
+
+        except (ValueError, KeyError, json.JSONDecodeError) as e:
+            if attempt < max_retries:
+                logger.warning(
+                    f"Retry attempt {attempt + 1}/{max_retries} - "
+                    f"Error in LLM JSON extraction: {str(e)}"
+                )
+                if hasattr(response, 'chat_message'):
+                    logger.debug(f"Response content: {response.chat_message.content}")
+
+                # Wait before retrying
+                await asyncio.sleep(delay)
+                delay *= backoff_factor
+            else:
+                logger.error(f"All {max_retries} retries failed for LLM JSON extraction")
+                return None
+
+    return None
 
 
 def escape_json_format_curly_braces(json_string: str) -> str:
