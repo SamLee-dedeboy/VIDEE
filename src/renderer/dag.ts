@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 import * as d3_dag from 'd3-dag';
 import type { tControllers, tNode } from 'types';
+import type { SugiNode, SugiSeparation } from 'd3-dag';
 import {
     BSplineShapeGenerator,
     ShapeSimplifier,
@@ -67,19 +68,23 @@ export class DAG {
         // const tweaks = vertical? [d3_dag.tweakFlip("diagonal")] : []
         const rect_size: [number, number] = this.nodeRadius
         const layout = use_simplex ? 
-        d3_dag.grid()
+        d3_dag.sugiyama()
+            // .layering(d3_dag.layeringTopological())
+            // .coord(d3_dag.coordSimplex())
+            .coord(this.customCoord(rect_size))
             .nodeSize((node: any) => {
-                return [(node.data.bbox?.width / 2.5 || rect_size[0]), (node.data.bbox?.height / 1.5 || rect_size[1])]
+                // return [(node.data.bbox?.width / 2.5 || rect_size[0]), (node.data.bbox?.height / 1.5 || rect_size[1])]
+                return [(node.data.bbox?.width || rect_size[0]), (node.data.bbox?.height  || rect_size[1])]
             })
-            .tweaks([d3_dag.tweakFlip("diagonal")])
-            .gap([0, 50])
+            .tweaks([ d3_dag.tweakFlip("diagonal")])
+            .gap([50, 50])
         : d3_dag.sugiyama()
             .coord(d3_dag.coordQuad())
             .nodeSize((node: any) => {
                 return [(node.data.bbox?.width || rect_size[0])  , (node.data.bbox?.height || rect_size[1])]
             })
             .gap([50, 50])
-
+        console.log("layouting...")
         const { width, height } = layout(this.dag);
 
         this.bbox_dict = Array.from(this.dag.nodes()).reduce((acc: any, d: any) => {
@@ -270,6 +275,29 @@ export class DAG {
         svg.transition().duration(500).delay(0).call(this.zoom.translateTo, new_nodes_center[0], new_nodes_center[1])
         // svg.transition().duration(500).call(this.zoom.transform, d3.zoomIdentity);
     }
+    customCoord (rect_size: [number, number]) {
+        return function <N extends { x: number }, L>(layers: SugiNode<N, L>[][], sep: SugiSeparation<N, L>): number {
+            // determine span of xs
+            let min = Infinity;
+            let max = -Infinity;
+            for (const [layer_index, layer] of layers.entries()) {
+                for (const [node_index, node] of layer.entries()) {
+                    const { data } = node;
+                    const x = node.x = layer_index * Math.max(100, rect_size[1]*1.1) + node_index * sep(layer[Math.max(0, node_index-1)], node);
+                    min = Math.min(min, x - sep(undefined, node));
+                    max = Math.max(max, x + sep(node, undefined));
+                    // node.x -= min;
+                }
+            }
+            for (const layer of layers) {
+                for (const node of layer) {
+                    node.x -= min;
+                }
+            }
+            return max - min;
+        }
+    }
+
 }
 
 function getGroup(node: tNode) {
