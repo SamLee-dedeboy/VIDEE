@@ -415,6 +415,14 @@ async def semantic_task_decomposition_to_primitive_task(request: Request):
     pass
 
 
+@app.get("/primitive_task/list/")
+async def get_primitive_list():
+    primitive_task_list = json.load(
+        open(relative_path("decomposer/primitive_task_defs.json"))
+    )
+    return primitive_task_list
+
+
 @app.post("/primitive_task/update/")
 async def update_primitive_tasks(request: Request) -> dict:
     request = await request.body()

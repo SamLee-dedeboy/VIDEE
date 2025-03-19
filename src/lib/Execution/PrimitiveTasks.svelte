@@ -20,6 +20,10 @@
     handleInspectPrimitiveTask: Function;
   } = $props();
 
+  let primitiveTaskOptions: {
+    label: string;
+    definition: string;
+  }[] = $state([]);
   let executing_task_id: string | undefined = $state(undefined);
   let ask_to_check_results = $state(false);
   let executed_task_id: string | undefined = $state(undefined);
@@ -194,8 +198,19 @@
   //     });
   // }
 
+  function fetchPrimitiveTaskOptions() {
+    fetch(`${server_address}/primitive_task/list/`)
+      .then((response) => response.json())
+      .then((data) => {
+        primitiveTaskOptions = data;
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
   const updateGlobalLinks: Function = getContext("updateGlobalLinks");
   onMount(() => {
+    fetchPrimitiveTaskOptions();
     dag_renderer.init(updateGlobalLinks);
     update_dag(primitive_tasks);
   });
@@ -245,6 +260,7 @@
           class="primitive-task-card-container absolute task-wrapper bg-blue-200 flex outline-1 outline-gray-300 rounded-sm shadow transition-all"
           class:executing={executing_task_id === task.id}
           data-id={task.id}
+          style={`z-index: ${(primitive_tasks.length - index) * 10}`}
         >
           {#if ask_to_check_results && executed_task_id === task.id}
             <div
@@ -276,6 +292,7 @@
           {/if}
 
           <PrimitiveTaskCard
+            label_options={primitiveTaskOptions}
             task_options={primitive_tasks
               .filter(
                 (t) =>

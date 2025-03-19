@@ -6,6 +6,7 @@
   import { primitiveTaskState } from "lib/ExecutionStates.svelte";
   let {
     task,
+    label_options,
     task_options,
     expand,
     executable,
@@ -17,6 +18,7 @@
     handleToggleExpand = () => {},
   }: {
     task: tPrimitiveTask;
+    label_options: { label: string; definition: string }[];
     task_options: [string, string][];
     expand: boolean;
     executable: boolean;
@@ -29,6 +31,7 @@
   } = $props();
   let adding_parent = $state(false);
   let isRoot = $derived(task.id === "-1");
+  let show_label_options = $state(false);
 </script>
 
 {#if isRoot}
@@ -59,19 +62,15 @@
     {/if}
     <div class="flex flex-col grow px-2 gap-y-2">
       <div
-        class="font-mono text-sky-900 border-b border-gray-300 text-[1.2rem] italic flex items-center"
+        class="font-mono text-sky-900 border-b border-gray-300 text-[1.2rem] italic flex items-center relative"
         style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
       >
-        <span
-          class="card-label mr-2 mt-1 capitalize"
-          use:trim
-          contenteditable
-          onblur={(e) => {
-            const new_task = JSON.parse(JSON.stringify(task));
-            new_task.label = (e.target as HTMLElement).innerText.trim();
-            primitiveTaskState.updatePrimitiveTask(task.id, new_task);
-          }}>{task.label}</span
-        >
+        <button
+          class="card-label mr-2 mt-1 capitalize relative hover:bg-blue-200 rounded px-2"
+          title="Change Label"
+          onclick={(e) => (show_label_options = !show_label_options)}
+          >{task.label}
+        </button>
         <button
           class="shrink-0 ml-auto cursor-pointer hover:bg-blue-300 p-0.5 rounded"
           title="Expand/Hide"
@@ -82,6 +81,30 @@
             class="w-6 h-6"
           /></button
         >
+        {#if show_label_options}
+          <div
+            in:slide
+            class="label-options flex flex-col absolute top-[calc(100%+0.4rem)] left-[-0.5rem] right-[-0.5rem] outline-2 outline-gray-200 text-xs text-slate-600 z-10 bg-gray-100"
+          >
+            {#each label_options.toSorted( (a, b) => a.label.localeCompare(b.label) ) as label_option}
+              <button
+                class="flex items-center justify-center hover:bg-gray-300"
+                title="Select Label"
+                onclick={() => {
+                  show_label_options = false;
+                  const new_task = JSON.parse(JSON.stringify(task));
+                  // new_task.label = (e.target as HTMLElement).innerText.trim();
+                  new_task.label = label_option.label;
+                  new_task.description = label_option.definition;
+                  new_task.explanation = "N/A";
+                  primitiveTaskState.updatePrimitiveTask(task.id, new_task);
+                }}
+              >
+                {label_option.label}
+              </button>
+            {/each}
+          </div>
+        {/if}
       </div>
       {#if expand}
         <div
@@ -115,27 +138,29 @@
             <div class="relative add-parent-container">
               <button
                 class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300 relative"
-                onclick={() => (adding_parent = true)}
+                onclick={() => (adding_parent = !adding_parent)}
               >
                 Add Parent
               </button>
-              <div
-                class="options absolute hidden top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
-              >
-                <div class="flex flex-col w-max">
-                  {#each task_options as option}
-                    <button
-                      class="text-sm bg-gray-50 outline-2 outline-gray-200 px-1 py-0.5 hover:bg-gray-200"
-                      onclick={() => {
-                        handleAddParent(option[0]);
-                        adding_parent = false;
-                      }}
-                    >
-                      {option[1]}
-                    </button>
-                  {/each}
+              {#if adding_parent}
+                <div
+                  class="options absolute flex top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
+                >
+                  <div class="flex flex-col w-max">
+                    {#each task_options as option}
+                      <button
+                        class="text-sm bg-gray-50 outline-2 outline-gray-200 px-1 py-0.5 hover:bg-gray-200"
+                        onclick={() => {
+                          handleAddParent(option[0]);
+                          adding_parent = false;
+                        }}
+                      >
+                        {option[1]}
+                      </button>
+                    {/each}
+                  </div>
                 </div>
-              </div>
+              {/if}
             </div>
             <button
               class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
@@ -243,7 +268,7 @@
       width 0.3s ease,
       height 0.3s ease;
   }
-  .add-parent-container:hover .options {
+  /* .add-parent-container:hover .options {
     @apply block;
-  }
+  } */
 </style>
