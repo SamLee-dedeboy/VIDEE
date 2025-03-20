@@ -110,6 +110,33 @@ def escape_json_format_curly_braces(json_string: str) -> str:
         return json_string
 
 
+def normalize_json_braces(json_str):
+    def replace_first_matching_double_braces(s):
+        """Replace the first found '{{...}}' pair with '{...}'.
+        Note: This function does not ACTUALLY replace the matching '{{...}}' pair, but rather replaces the first found '{{' with '{' and the first found '}}' with '}' (if both exist).
+        This is still useful since we are recursively calling this function to remove all instances of double curly braces.
+        """
+        start = s.find("{{")
+        if start == -1:
+            return s  # No opening '{{' found
+
+        end = s.find("}}", start + 2)  # Find matching '}}' after the opening
+        if end == -1:
+            return s  # No closing '}}' found
+
+        # Replace the first found '{{...}}' pair with '{...}'
+        s = s[:start] + "{" + s[start + 2 : end] + "}" + s[end + 2 :]
+        return s
+
+    """Recursively remove all instances of double curly braces {{...}} -> {...}."""
+    while "{{" in json_str and "}}" in json_str:
+        original_json_str = json_str
+        json_str = replace_first_matching_double_braces(json_str)
+        if json_str == original_json_str:  # prevent infinite loop
+            break
+    return json_str
+
+
 def extract_json_content(
     raw_response: str, escape_JSON_format=False
 ) -> Optional[Dict[str, Any]]:
@@ -123,6 +150,7 @@ def extract_json_content(
         Parsed JSON dict or None if unrecoverable
     """
     raw_response = raw_response.strip()
+    raw_response = normalize_json_braces(raw_response)
     if escape_JSON_format:
         # replace single quotes with double quotes
         raw_response = re.sub(r"'", '"', raw_response)
