@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { trim } from "lib/trim";
   let { messages, handleUpdatePrompt } = $props();
 </script>
 
@@ -16,12 +17,14 @@
             System Instruction
           </div>
           <div
+            use:trim
             class="bg-white text-slate-600 px-1 whitespace-pre-line max-h-[20rem] overflow-y-auto"
             contenteditable="true"
-            onblur={(event) => {
-              let messages_copy = [...messages];
-              messages_copy[index].content = event.target.textContent;
+            onblur={(event: any) => {
+              let messages_copy = JSON.parse(JSON.stringify(messages));
+              messages_copy[index].content = event.target.innerText;
               handleUpdatePrompt(messages_copy);
+              event.target.innerHTML = messages_copy[index].content;
             }}
           >
             {prompt_template_message.content.trim()}
@@ -32,7 +35,18 @@
           <div class="flex justify-center bg-gray-100 font-mono">
             Input Data
           </div>
-          <div class="bg-white text-slate-600 grow px-1 whitespace-pre-line">
+          <div
+            use:trim
+            contenteditable
+            class="bg-white text-slate-600 grow px-1 whitespace-pre-line"
+            onblur={(event: any) => {
+              console.log(event.target);
+              let messages_copy = JSON.parse(JSON.stringify(messages));
+              messages_copy[index].content = event.target.innerText;
+              handleUpdatePrompt(messages_copy);
+              event.target.innerHTML = messages_copy[index].content;
+            }}
+          >
             {prompt_template_message.content.trim()}
           </div>
         </div>

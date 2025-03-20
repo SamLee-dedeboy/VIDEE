@@ -115,10 +115,11 @@
           <div
             use:trim
             contenteditable
-            onblur={(e) => {
+            onblur={(e: any) => {
               const new_task = JSON.parse(JSON.stringify(task));
               new_task.description = (e.target as HTMLElement).innerText.trim();
               primitiveTaskState.updatePrimitiveTask(task.id, new_task);
+              e.target.innerHTML = new_task.description;
             }}
           >
             {task.description}

@@ -70,10 +70,11 @@
           class="card-label mr-2 capitalize mt-1"
           use:trim
           contenteditable
-          onblur={(e) => {
+          onblur={(e: any) => {
             const new_task = JSON.parse(JSON.stringify(task));
             new_task.label = (e.target as HTMLElement).innerText.trim();
             semanticTaskPlanState.updateSemanticTask(task.id, new_task);
+            e.target.innerHTML = new_task.label;
           }}>{task.label}</span
         >
         <button
@@ -89,10 +90,11 @@
           <div
             use:trim
             contenteditable
-            onblur={(e) => {
+            onblur={(e: any) => {
               const new_task = JSON.parse(JSON.stringify(task));
               new_task.description = (e.target as HTMLElement).innerText.trim();
               semanticTaskPlanState.updateSemanticTask(task.id, new_task);
+              e.target.innerHTML = new_task.description;
             }}
           >
             {task.description}

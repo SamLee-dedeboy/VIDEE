@@ -37,10 +37,11 @@
         class="card-label mr-2 capitalize mt-1"
         use:trim
         contenteditable
-        onblur={(e) => {
+        onblur={(e: any) => {
           const new_evaluator = JSON.parse(JSON.stringify(evaluator));
           new_evaluator.name = (e.target as HTMLElement).innerText.trim();
           evaluatorState.updateEvaluator(evaluator.name, new_evaluator);
+          e.target.innerHTML = new_evaluator.name;
         }}>{evaluator.name}</span
       >
       <button
@@ -64,12 +65,13 @@
         <div
           use:trim
           contenteditable
-          onblur={(e) => {
+          onblur={(e: any) => {
             const new_evaluator = JSON.parse(JSON.stringify(evaluator));
             new_evaluator.definition = (
               e.target as HTMLElement
             ).innerText.trim();
             evaluatorState.updateEvaluator(evaluator.name, new_evaluator);
+            e.target.innerHTML = new_evaluator.definition;
           }}
         >
           {evaluator.definition}
