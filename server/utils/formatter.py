@@ -132,7 +132,11 @@ def extract_json_content(
         raw_response = escape_json_format_curly_braces(raw_response)
     try:
         # try to extract the first JSON object from the raw response.
-        brace_match = re.search(r"^\s*\n*(\{[\s\S]+\})\s*\n*$", raw_response, re.DOTALL)
+        # brace_match = re.search(r"^\s*\n*(\{[\s\S]+\})\s*\n*$", raw_response, re.DOTALL)
+        brace_match = re.search(
+            r"^\s*\n*(\{{1,2}[\s\S]+\}{1,2})\s*\n*$", raw_response, re.DOTALL
+        )  # allow for 1 or 2 braces
+
         if brace_match:
             return json.loads(brace_match.group(1))
     except Exception:
