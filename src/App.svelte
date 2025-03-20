@@ -3,14 +3,14 @@
   import { onMount, setContext, tick } from "svelte";
   import type {
     tExecutionEvaluator,
-    tPrimitiveTaskDescription,
-    tPrimitiveTaskExecution,
+    tPrimitiveTask,
     tSemanticTask,
   } from "types";
   import {
     primitiveTaskState,
     primitiveTaskExecutionStates,
     semanticTaskPlanState,
+    evaluatorState,
   } from "lib/ExecutionStates.svelte";
   import GoalInput from "lib/Searching/GoalInput.svelte";
   import SemanticTaskTreeInspection from "lib/Inspection/SemanticTaskTreeInspection.svelte";
@@ -45,12 +45,13 @@
   let user_goal: string = $state("");
 
   let primitive_tasks = $derived(primitiveTaskState.primitiveTasks);
-  let inspected_primitive_task:
-    | (tPrimitiveTaskDescription & Partial<tPrimitiveTaskExecution>)
-    | undefined = $state(undefined);
-
-  let inspected_evaluator_node: tExecutionEvaluator | undefined =
-    $state(undefined);
+  let inspected_primitive_task = $derived(
+    primitiveTaskState.inspected_primitive_task
+  );
+  let inspected_evaluator_node = $derived(
+    evaluatorState.inspected_evaluator_node
+  );
+  // let inspected_evaluator_node: tExecutionEvaluator | undefined = $state(undefined);
 
   let execution_panel: any = $state();
   let execution_inspection_panel: any = $state();
@@ -331,12 +332,12 @@
         primitiveTaskState.primitiveTasks = data.primitive_tasks;
         primitiveTaskExecutionStates.execution_states = data.execution_state;
         console.log({ data });
-        if (inspected_primitive_task !== undefined) {
-          const original_id = inspected_primitive_task.id;
-          inspected_primitive_task = primitive_tasks.find(
-            (t) => t.id === original_id
-          );
-        }
+        // if (inspected_primitive_task !== undefined) {
+        //   const original_id = inspected_primitive_task.id;
+        //   inspected_primitive_task = primitive_tasks.find(
+        //     (t) => t.id === original_id
+        //   );
+        // }
         execution_panel.generate_evaluator_recommendations(
           data.primitive_tasks
         );
@@ -565,8 +566,10 @@
                   show_result = false
                 ) => {
                   console.log("inspecting task", task);
-                  inspected_primitive_task = task;
-                  inspected_evaluator_node = undefined;
+                  primitiveTaskState.updateInspectedPrimitiveTask(task.id);
+                  evaluatorState.updateInspectedEvaluator(undefined);
+                  // inspected_primitive_task = task;
+                  // inspected_evaluator_node = undefined;
                   if (show_result) {
                     execution_inspection_panel.navigate_to_primitive_task_results();
                   } else {
@@ -578,8 +581,10 @@
                   show_result = false
                 ) => {
                   console.log("inspecting evaluator", node);
-                  inspected_evaluator_node = node;
-                  inspected_primitive_task = undefined;
+                  // inspected_evaluator_node = node;
+                  // inspected_primitive_task = undefined;
+                  primitiveTaskState.updateInspectedPrimitiveTask(undefined);
+                  evaluatorState.updateInspectedEvaluator(node.name);
                   if (show_result) {
                     execution_inspection_panel.navigate_to_evaluator_results();
                   } else {

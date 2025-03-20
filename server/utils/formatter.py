@@ -47,6 +47,8 @@ def extract_json_content(
     if escape_JSON_format:
         # replace single quotes with double quotes
         raw_response = re.sub(r"'", '"', raw_response)
+        # remove "\" from the string: sometimes llm adds "\" to the string to escape quotes, which causes JSON parsing error
+        raw_response = re.sub(r"\\", "", raw_response)
         # reformat JSON_format field so that it is treated as a string
         raw_response = escape_json_format_curly_braces(raw_response)
     try:

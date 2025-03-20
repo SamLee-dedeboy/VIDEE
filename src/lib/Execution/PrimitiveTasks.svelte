@@ -44,7 +44,6 @@
 
   $effect(() => {
     update_dag(primitive_tasks);
-    $state.snapshot(primitive_tasks);
   });
 
   export function rerender_execution() {

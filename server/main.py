@@ -130,15 +130,6 @@ async def get_eval_definitions(request: Request):
     return user_sessions[session_id]["eval_definitions"]
 
 
-@app.post("/eval/definitions/")
-async def get_eval_definitions(request: Request):
-    request = await request.body()
-    request = json.loads(request)
-    session_id = request["session_id"]
-    assert session_id in user_sessions
-    return user_sessions[session_id]["eval_definitions"]
-
-
 @app.post("/eval/definitions/update/")
 async def update_eval_definitions(request: Request):
     request = await request.body()
@@ -157,17 +148,8 @@ async def goal_decomposition_MCTS_stepped(request: Request):
     goal = request["goal"]
     session_id = request["session_id"]
     assert session_id in user_sessions
-    user_sessions[session_id]["goal"] = goal
+    # user_sessions[session_id]["goal"] = goal
     semantic_tasks = request["semantic_tasks"] if "semantic_tasks" in request else None
-    eval_definitions = user_sessions[session_id]["eval_definitions"]
-    eval_few_shot_examples = (
-        request["eval_few_shot_examples"] if "eval_few_shot_examples" in request else []
-    )
-    next_selection = (
-        custom_types.MCT_Node.model_validate(request["next_expansion"])
-        if "next_expansion" in request
-        else None
-    )
     eval_definitions = user_sessions[session_id]["eval_definitions"]
     eval_few_shot_examples = (
         request["eval_few_shot_examples"] if "eval_few_shot_examples" in request else []
@@ -256,7 +238,7 @@ async def goal_decomposition_MCTS_regenerate(request: Request):
     goal = request["goal"]
     session_id = request["session_id"]
     assert session_id in user_sessions
-    user_sessions[session_id]["goal"] = goal
+    # user_sessions[session_id]["goal"] = goal
     semantic_tasks = request["semantic_tasks"] if "semantic_tasks" in request else None
     target_task = (
         custom_types.MCT_Node.model_validate(request["target_task"])

@@ -96,6 +96,10 @@ async def execution_plan(
     existing_keys = [{"key": "content", "schema": "str"}]
     current_state_key = "documents"
     for primitive_task in primitive_tasks:
+        # primitive_task["existing_keys"] = list(map(lambda k: k["key"], existing_keys))
+        if primitive_task["id"] == "-1":
+            plan.append({**primitive_task})
+            continue  # skip the root
         try:
             input_keys = await autogen_utils.run_input_key_generation_agent(
                 primitive_task, existing_keys, model=model, api_key=api_key

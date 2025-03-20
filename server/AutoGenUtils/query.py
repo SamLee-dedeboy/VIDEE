@@ -699,7 +699,7 @@ async def run_prompt_generation_agent(
     #     extract_json_content(response.chat_message.content),
     #     f"generated_prompt_{task['label']}.json",
     # )
-    return extract_json_content(response.chat_message.content)
+    return extract_json_content(response.chat_message.content, escape_JSON_format=True)
 
 
 async def run_input_key_generation_agent(
