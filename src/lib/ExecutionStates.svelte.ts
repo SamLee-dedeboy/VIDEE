@@ -118,6 +118,8 @@ export const semanticTaskPlanState = {
     }
 }
 let evaluators: tExecutionEvaluator[] = $state([])
+let inspected_evaluator_name: string | undefined = $state(undefined)
+let inspected_evaluator_node: tExecutionEvaluator | undefined = $derived(inspected_evaluator_name? evaluators.find(t => t.name === inspected_evaluator_name): undefined)
 export const evaluatorState = {
     get evaluators() {
         return evaluators
@@ -153,21 +155,33 @@ export const evaluatorState = {
         })
 
     },
+    get inspected_evaluator_node() {
+        return inspected_evaluator_node
+    },
     updateEvaluator(name: string, evaluator: tExecutionEvaluator) {
         const index = evaluators.map(e => e.name).indexOf(name)
         if(index === -1) {
             evaluators[index] = evaluator
         }
+    },
+    updateInspectedEvaluator(name: string | undefined) {
+        inspected_evaluator_name = name
     }
 }
 
 let primitiveTasks: tPrimitiveTask[] = $state([])
+let inspected_primitive_task_id: string | undefined = $state(undefined)
+let inspected_primitive_task: tPrimitiveTask | undefined = $derived(inspected_primitive_task_id? primitiveTasks.find(t => t.id === inspected_primitive_task_id): undefined)
 export const primitiveTaskState = {
     get primitiveTasks() {
         return primitiveTasks
     },
     set primitiveTasks(value) {
         primitiveTasks = value
+        primitiveTasks = collectInputKeys(primitiveTasks)
+    },
+    get inspected_primitive_task() {
+        return inspected_primitive_task
     },
     addTask() {
         if(primitiveTasks.length === 0) {
@@ -193,6 +207,7 @@ export const primitiveTaskState = {
                 children: [],
             })
         primitiveTasks = [...primitiveTasks]
+        console.log({primitiveTasks})
     },
     delete(task_id) {
         primitiveTasks = primitiveTasks.filter((_task) => _task.id !== task_id);
@@ -213,8 +228,39 @@ export const primitiveTaskState = {
         if(index !== -1) {
             primitiveTasks[index] = primitiveTask
             primitiveTasks = [...primitiveTasks]
+            primitiveTasks = collectInputKeys(primitiveTasks)
+        }
+    },
+    updateInspectedPrimitiveTask(task_id: string | undefined) {
+        inspected_primitive_task_id = task_id
+    },
+    updateOutputKey(task_id: string, output_key: string) {
+        console.log("update output key", task_id, output_key)
+        const index = primitiveTasks.map(t => t.id).indexOf(task_id)
+        if(index !== -1) {
+            const original_output_key = primitiveTasks[index].state_output_key
+            primitiveTasks[index].state_output_key = output_key
+            for(let primitive_task of primitiveTasks) {
+                if(primitive_task.doc_input_keys?.includes(original_output_key)) {
+                    primitive_task.doc_input_keys = primitive_task.doc_input_keys?.map(key => key === original_output_key? output_key: key)
+                }
+            }
+            primitiveTasks = collectInputKeys(primitiveTasks)
         }
     }
+}
+
+function collectInputKeys(primitive_tasks: tPrimitiveTask[]) {
+    if(primitive_tasks.length === 0) return primitive_tasks
+    if(primitive_tasks.some(t =>t.execution === undefined)) return primitive_tasks
+    let existing_keys: Set<string> = new Set()
+    for(let primitive_task of primitive_tasks) {
+        primitive_task.existing_keys = Array.from(existing_keys)
+        primitive_task.doc_input_keys?.forEach(key => existing_keys.add(key))
+        existing_keys.add(primitive_task.state_output_key)
+    }
+    return primitive_tasks
+
 }
 
 let execution_states: Record<string, tExecutionState> | undefined = $state(undefined);

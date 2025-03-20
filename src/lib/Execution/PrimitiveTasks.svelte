@@ -44,6 +44,7 @@
 
   $effect(() => {
     update_dag(primitive_tasks);
+    $state.snapshot(primitive_tasks);
   });
 
   export function rerender_execution() {
@@ -294,12 +295,12 @@
           <PrimitiveTaskCard
             label_options={primitiveTaskOptions}
             task_options={primitive_tasks
-              // .filter(
-              //   (t) =>
-              //     t.id !== task.id &&
-              //     !task.parentIds.includes(t.id) &&
-              //     !task.children.includes(t.id)
-              // )
+              .filter(
+                (t) =>
+                  t.id !== task.id &&
+                  !task.parentIds.includes(t.id) &&
+                  !task.children.includes(t.id)
+              )
               .map((t) => [t.id, t.label])}
             {task}
             expand={task_card_expanded.includes(task.id)}

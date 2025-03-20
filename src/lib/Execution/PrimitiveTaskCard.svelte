@@ -66,7 +66,7 @@
         style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
       >
         <button
-          class="card-label mr-2 mt-1 capitalize relative hover:bg-blue-200 rounded px-2"
+          class="card-label mr-2 mt-1 capitalize relative hover:bg-blue-200 rounded px-2 text-left"
           title="Change Label"
           onclick={(e) => (show_label_options = !show_label_options)}
           >{task.label}

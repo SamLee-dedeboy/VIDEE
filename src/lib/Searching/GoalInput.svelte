@@ -55,7 +55,7 @@
       class:disabled={running || disable_decompose}
     >
       <button
-        class="w-full h-full"
+        class="w-full h-full flex items-center justify-center"
         class:disabled-button={running || disable_decompose}
         onclick={() => {
           const goal = document.querySelector(".goal-input")?.textContent || "";
