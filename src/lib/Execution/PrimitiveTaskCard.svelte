@@ -212,27 +212,29 @@
           <div class="relative add-parent-container">
             <button
               class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300 relative"
-              onclick={() => (adding_parent = true)}
+              onclick={() => (adding_parent = !adding_parent)}
             >
               Add Parent
             </button>
-            <div
-              class="options absolute hidden top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
-            >
-              <div class="flex flex-col w-max">
-                {#each task_options as option}
-                  <button
-                    class="text-sm bg-gray-50 outline-2 outline-gray-200 px-1 py-0.5 hover:bg-gray-200"
-                    onclick={() => {
-                      handleAddParent(option[0]);
-                      adding_parent = false;
-                    }}
-                  >
-                    {option[1]}
-                  </button>
-                {/each}
+            {#if adding_parent}
+              <div
+                class="options absolute flex top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
+              >
+                <div class="flex flex-col w-max">
+                  {#each task_options as option}
+                    <button
+                      class="text-sm bg-gray-50 outline-2 outline-gray-200 px-1 py-0.5 hover:bg-gray-200"
+                      onclick={() => {
+                        handleAddParent(option[0]);
+                        adding_parent = false;
+                      }}
+                    >
+                      {option[1]}
+                    </button>
+                  {/each}
+                </div>
               </div>
-            </div>
+            {/if}
           </div>
           <button
             class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
