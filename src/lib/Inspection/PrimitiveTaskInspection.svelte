@@ -9,6 +9,8 @@
     primitiveTaskExecutionStates,
   } from "../ExecutionStates.svelte";
   import ExecutionResultInspection from "./ExecutionResultInspection.svelte";
+  import PromptToolInspection from "./PromptToolInspection.svelte";
+  import CodeToolInspection from "./CodeToolInspection.svelte";
   let {
     task,
   }: {
@@ -247,27 +249,11 @@
               in:slide
               class="execution-container flex flex-col divide-y divide-gray-400 divide-dashed pb-2 px-1"
             >
-              <div class="flex gap-x-2 items-center py-1">
-                <div class="text-gray-700">Execution Method -</div>
-                <div class="option-value">{task.execution.tool}</div>
-              </div>
-              <div class="flex flex-col gap-y-2">
-                <div class="text-gray-700">Parameters</div>
-                {#each ["model", "format", "name"] as key}
-                  <div class="flex items-center gap-x-2">
-                    <div class="italic text-gray-600 w-[3rem]">{key}</div>
-                    <div class="option-value">
-                      {task.execution.parameters[key]}
-                    </div>
-                  </div>
-                {/each}
-                <PromptTemplate
-                  messages={task.execution.parameters.prompt_template}
-                  {handleUpdatePrompt}
-                  --bg-color="oklch(0.97 0.014 254.604)"
-                  --border-color="#bedbff"
-                ></PromptTemplate>
-              </div>
+              {#if task.execution.tool === "prompt_tool"}
+                <PromptToolInspection {task} {handleUpdatePrompt} />
+              {:else}
+                <CodeToolInspection {task} />
+              {/if}
             </div>
           {/if}
         {:else}
