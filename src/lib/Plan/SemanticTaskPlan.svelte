@@ -17,7 +17,6 @@
   const semantic_tasks: tSemanticTask[] = $derived(
     semanticTaskPlanState.semantic_tasks
   );
-  const session_id = (getContext("session_id") as Function)();
   /**
    * Stores the id of the expanded tasks
    */

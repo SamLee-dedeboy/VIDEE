@@ -11,14 +11,13 @@
     primitiveTaskExecutionStates,
     semanticTaskPlanState,
     evaluatorState,
+    session_id,
   } from "lib/ExecutionStates.svelte";
   import GoalInput from "lib/Searching/GoalInput.svelte";
   import SemanticTaskTreeInspection from "lib/Inspection/SemanticTaskTreeInspection.svelte";
   import ExecutionInspection from "lib/Inspection/ExecutionInspection.svelte";
   import Execution from "lib/Execution/Execution.svelte";
   import SemanticTasksTree from "lib/Searching/SemanticTasksTree.svelte";
-  let session_id: string | undefined = $state(undefined);
-  setContext("session_id", () => session_id);
   let decomposing_goal = $state(false);
 
   // stream states
@@ -143,17 +142,17 @@
 
   function createSession() {
     // let random_session_id = Math.random().toString(36).substring(2, 15);
-    let random_session_id = "312321321312321";
+    // let random_session_id = "312321321312321";
     fetch(`${server_address}/session/create/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ session_id: random_session_id }),
+      body: JSON.stringify({ session_id: session_id }),
     })
       .then((response) => response.json())
       .then((data) => {
-        session_id = data.session_id;
+        // session_id = data.session_id;
         console.log("Session created:", session_id);
       })
       .catch((error) => {

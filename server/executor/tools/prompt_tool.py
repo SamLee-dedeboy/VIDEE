@@ -12,6 +12,7 @@ def create_retryable_chain(chain, max_retries: int = 5):
     """
     Create a wrapper around a chain that retries the entire chain execution on failure.
     """
+
     def retry_chain_execution(inputs):
         # print(f"Executing chain with retry (max attempts: {max_retries})")
         attempts = 0
@@ -47,9 +48,13 @@ def prompt_tool(
     max_retries: int = 5,
 ):
     template = ChatPromptTemplate(prompt_template)
-    llm = ChatOpenAI(model=model, api_key=api_key)
 
     if format == "json":
+        llm = ChatOpenAI(
+            model=model,
+            api_key=api_key,
+            model_kwargs={"response_format": {"type": "json_object"}},
+        )
         # Build the base chain with JSON parsing
         json_parser = JsonOutputParser()
         base_chain = template | llm | json_parser
@@ -57,6 +62,7 @@ def prompt_tool(
         # Wrap the entire chain with retry logic
         chain = create_retryable_chain(base_chain, max_retries=max_retries)
     else:
+        llm = ChatOpenAI(model=model, api_key=api_key)
         # For non-JSON output, no need for special retry logic
         chain = template | llm | StrOutputParser()
 

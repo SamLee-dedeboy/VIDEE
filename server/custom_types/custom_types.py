@@ -51,7 +51,6 @@ class MCT_Node(Node):
 
 class BaseStateSchema(TypedDict):
     documents: Annotated[list, lambda a, b: b]
-    entities: list
     transformed_data: dict[str, Any]
 
 

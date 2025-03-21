@@ -11,6 +11,7 @@
   import SemanticTaskPlan from "../Plan/SemanticTaskPlan.svelte";
   import EvaluationNodes from "../Evaluation/EvaluationNodes.svelte";
   import {
+    session_id,
     evaluatorState,
     primitiveTaskState,
     semanticTaskPlanState,
@@ -48,7 +49,6 @@
     show_evaluation: false,
   });
 
-  const session_id = (getContext("session_id") as Function)();
   let generating_recommendations = $state(false);
   const semantic_tasks = $derived(semanticTaskPlanState.semantic_tasks);
   const evaluators = $derived(evaluatorState.evaluators);
@@ -209,7 +209,7 @@
           ...data["result"],
         ];
         generating_recommendations = false;
-        evaluation_component.rerender_evaluation();
+        evaluation_component?.rerender_evaluation();
       })
       .catch((error) => {
         console.error("Error:", error);

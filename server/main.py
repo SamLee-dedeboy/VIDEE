@@ -405,15 +405,15 @@ async def get_primitive_list():
     return primitive_task_list
 
 
-@app.post("/primitive_task/update/")
-async def update_primitive_tasks(request: Request) -> dict:
-    request = await request.body()
-    request = json.loads(request)
-    session_id = request["session_id"]
-    assert session_id in user_sessions
-    primitive_tasks = request["primitive_tasks"]
-    user_sessions[session_id]["primitive_tasks"] = primitive_tasks
-    return {"status": "success"}
+# @app.post("/primitive_task/update/")
+# async def update_primitive_tasks(request: Request) -> dict:
+#     request = await request.body()
+#     request = json.loads(request)
+#     session_id = request["session_id"]
+#     assert session_id in user_sessions
+#     primitive_tasks = request["primitive_tasks"]
+#     user_sessions[session_id]["primitive_tasks"] = primitive_tasks
+#     return {"status": "success"}
 
 
 @app.post("/primitive_task/compile/")
@@ -423,6 +423,13 @@ async def compile_primitive_tasks(request: Request) -> dict:
     session_id = request["session_id"]
     assert session_id in user_sessions
     primitive_task_descriptions = request["primitive_tasks"]
+    root_description = next(
+        (x for x in primitive_task_descriptions if x["id"] == "-1"), None
+    )
+
+    primitive_task_descriptions = list(
+        filter(lambda x: x["id"] != "-1", primitive_task_descriptions)
+    )
     if dev:
         primitive_task_execution_plan = json.load(
             open(relative_path("dev_data/test_execution_plan.json"))
@@ -438,16 +445,49 @@ async def compile_primitive_tasks(request: Request) -> dict:
             relative_path("dev_data/test_execution_plan.json"),
         )
 
-    execution_graph = executor.create_graph(primitive_task_execution_plan)
+    execution_graph, checkpointer = executor.create_graph(
+        primitive_task_execution_plan, checkpointer=None
+    )
     user_sessions[session_id]["execution_graph"] = execution_graph
+    user_sessions[session_id]["checkpointer"] = checkpointer
     execution_state = executor.init_user_execution_state(
         execution_graph,
         primitive_task_execution_plan,
     )
     user_sessions[session_id]["execution_state"] = execution_state
+    primitive_task_execution_plan.insert(0, root_description)
     return {
         "primitive_tasks": primitive_task_execution_plan,
         "execution_state": execution_state,
+    }
+
+
+@app.post("/primitive_task/update/")
+async def update_primitive_tasks(request: Request):
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    primitive_task_execution_plan = request["primitive_tasks"]
+    root_task = next(
+        (x for x in primitive_task_execution_plan if x["id"] == "-1"), None
+    )
+    primitive_task_execution_plan = list(
+        filter(lambda x: x["id"] != "-1", primitive_task_execution_plan)
+    )
+    save_json(
+        primitive_task_execution_plan,
+        relative_path("dev_data/test_execution_plan_updated.json"),
+    )
+    checkpointer = user_sessions[session_id]["checkpointer"]
+    execution_graph, _ = executor.create_graph(
+        primitive_task_execution_plan,
+        checkpointer=checkpointer,
+    )
+    user_sessions[session_id]["execution_graph"] = execution_graph
+    primitive_task_execution_plan.insert(0, root_task)
+    return {
+        "primitive_tasks": primitive_task_execution_plan,
     }
 
 
@@ -464,19 +504,22 @@ async def execute_primitive_tasks(request: Request):
     )  # the parent version that the node is executed from
     thread_config = {"configurable": {"thread_id": 42}}
     initial_state = {"documents": json.load(open(dataset_path))}
+
+    last_state = executor.find_last_state(execution_graph, execute_node, thread_config)
+    last_state = last_state if last_state is not None else initial_state
     state = executor.execute_node(
         execution_graph,
         thread_config,
         execute_node,
         parent_version,
-        initial_state=initial_state,
+        state=last_state,
     )
     # update execution state by adding the executed node as "executed" and updating its children "executable" states
     user_sessions[session_id]["execution_state"] = executor.update_execution_state(
         user_sessions[session_id]["execution_state"],
-        execute_node["id"],
+        execute_node,
     )
-    user_sessions[session_id]["execution_results"][execute_node["id"]] = state
+    user_sessions[session_id]["execution_results"][execute_node] = state
     save_json(state, relative_path("dev_data/test_execution_result.json"))
     # save_json(current_steps, "test_decomposed_steps_w_children.json")
     return {

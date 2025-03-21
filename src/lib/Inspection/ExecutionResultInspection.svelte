@@ -3,11 +3,11 @@
   import { slide } from "svelte/transition";
   import { getContext, tick } from "svelte";
   import PagedDocuments from "./PagedDocuments.svelte";
+  import { session_id } from "lib/ExecutionStates.svelte";
   let { task_id }: { task_id: string } = $props();
   let show_result = $state(false);
   let result = $state(undefined);
   let fetching_result = $state(false);
-  const session_id = (getContext("session_id") as Function)();
 
   function handleFetchTaskResult() {
     fetching_result = true;

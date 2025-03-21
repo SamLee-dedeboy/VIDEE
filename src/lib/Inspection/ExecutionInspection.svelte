@@ -3,10 +3,10 @@
   import { slide } from "svelte/transition";
   import { onMount, setContext, tick } from "svelte";
   import type { tExecutionEvaluator, tPrimitiveTask } from "types";
-  import { getContext } from "svelte";
   import PrimitiveTaskInspection from "./PrimitiveTaskInspection.svelte";
   import EvaluatorNodeInspection from "./EvaluatorNodeInspection.svelte";
   import DatasetInspection from "./DatasetInspection.svelte";
+  import { session_id } from "lib/ExecutionStates.svelte";
   let {
     primitive_task,
     evaluator_node,
@@ -14,7 +14,6 @@
     primitive_task: tPrimitiveTask | undefined;
     evaluator_node: tExecutionEvaluator | undefined;
   } = $props();
-  const session_id = (getContext("session_id") as Function)();
   let documents: any[] = $state([]);
 
   let primitive_task_inspection_panel: any = $state();

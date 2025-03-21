@@ -86,6 +86,21 @@ def update_execution_state(user_execution_state, node_id):
     return user_execution_state
 
 
+def find_last_state(graph, execute_node, thread_config):
+    state_history = list(
+        reversed([step for step in graph.get_state_history(thread_config)])
+    )
+    print([step.next[0] for step in state_history])
+    if len(state_history) == 0:
+        return None
+    past_states = [
+        step.values for step in state_history if step.next[0] == execute_node
+    ]
+    if len(past_states) == 0:
+        return None
+    return past_states[-1]
+
+
 async def execution_plan(
     primitive_tasks: list[PrimitiveTaskDescription],
     model: str,
@@ -96,10 +111,6 @@ async def execution_plan(
     existing_keys = [{"key": "content", "schema": "str"}]
     current_state_key = "documents"
     for primitive_task in primitive_tasks:
-        # primitive_task["existing_keys"] = list(map(lambda k: k["key"], existing_keys))
-        if primitive_task["id"] == "-1":
-            plan.append({**primitive_task})
-            continue  # skip the root
         try:
             input_keys = await autogen_utils.run_input_key_generation_agent(
                 primitive_task, existing_keys, model=model, api_key=api_key
@@ -347,7 +358,7 @@ def create_nodes(steps: list[PrimitiveTaskExecution]):
     return [create_node(step) for step in steps]
 
 
-def create_graph(steps: list[PrimitiveTaskExecution]):
+def create_graph(steps: list[PrimitiveTaskExecution], checkpointer=None):
     graph = StateGraph(BaseStateSchema)
     nodes = create_nodes(steps)
     # create an empty node as root to signal the start of the graph
@@ -385,7 +396,9 @@ def create_graph(steps: list[PrimitiveTaskExecution]):
     #         graph.add_edge(f"{parent_id}_evaluation", parent_id)
     #         for child in children:
     #             graph.add_edge(f"{parent_id}_evaluation", child)
-    return graph.compile(checkpointer=MemorySaver())
+    if checkpointer is None:
+        checkpointer = MemorySaver()
+    return graph.compile(checkpointer=checkpointer), checkpointer
 
 
 def human_approval(state):
@@ -416,7 +429,7 @@ def get_node_config(app, thread_config, node_id, execution_version=None):
         reversed([step for step in app.get_state_history(thread_config)])
     )
     node_configs = [
-        step.config for step in state_history if step.next == f"{node_id}_evaluation"
+        step.config for step in state_history if step.next[0] == f"{node_id}_evaluation"
     ]
     if len(node_configs) == 0:
         return None
@@ -426,26 +439,24 @@ def get_node_config(app, thread_config, node_id, execution_version=None):
         return node_configs[execution_version]
 
 
-def execute_node(
-    app, thread_config, node_id, execution_version=None, initial_state=None
-):
+def execute_node(app, thread_config, node_id, execution_version=None, state=None):
     # if this is the first node executed in the graph
     # then we need to invoke with the initial state
     if len(list(app.get_state_history(thread_config))) == 0:
-        state = app.invoke(initial_state, config=thread_config)
-        return state
+        new_state = app.invoke(state, config=thread_config)
+        return new_state
 
     # if this is not the first node executed in the graph
     # check if this node is executed before
     node_config = get_node_config(app, thread_config, node_id, execution_version)
     if node_config is None:  # first time executing this node
-        state = app.invoke(Command(resume=True), config=thread_config)
+        new_state = app.invoke(Command(resume=True), config=thread_config)
     else:  # if this node is executed before
-        state = app.invoke(
-            None,
+        new_state = app.invoke(
+            Command(goto=node_id, update=state),
             config=node_config,
         )
-    return state
+    return new_state
 
 
 def execute_next(app, thread_config):

@@ -2,12 +2,11 @@
   import { server_address } from "constants";
   import { onMount, setContext } from "svelte";
 
-  import { getContext } from "svelte";
   import Evaluator from "../Searching/SemanticTaskEvaluator.svelte";
   import DatasetInspection from "./DatasetInspection.svelte";
+  import { session_id } from "lib/ExecutionStates.svelte";
   let { few_shot_examples }: { few_shot_examples: Record<string, any> } =
     $props();
-  const session_id = (getContext("session_id") as Function)();
   let eval_definitions: Record<string, string> = $state({
     complexity: "The complexity of the task",
     coherence: "The coherence of the task",

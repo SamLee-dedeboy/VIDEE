@@ -4,12 +4,12 @@
   import type { tDocument, tDRResult } from "types";
   import { RadialTopicChart } from "renderer/RadialTopicChart";
   import PagedDocuments from "./PagedDocuments.svelte";
+  import { session_id } from "lib/ExecutionStates.svelte";
   let show_documents = $state(false);
   let show_topics = $state(false);
   let documents: tDocument[] = $state([]);
   let dr_result: tDRResult[] = $state([]);
   let paged_document_component: any = $state();
-  const session_id = (getContext("session_id") as Function)();
   const svgId = "radial-topic-chart-svg";
   let topicChart: RadialTopicChart = new RadialTopicChart(svgId);
 

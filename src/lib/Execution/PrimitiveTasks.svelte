@@ -7,6 +7,7 @@
   import PrimitiveTaskCard from "./PrimitiveTaskCard.svelte";
   import { getContext } from "svelte";
   import {
+    session_id,
     primitiveTaskState,
     primitiveTaskExecutionStates,
   } from "../ExecutionStates.svelte";
@@ -31,7 +32,6 @@
     primitiveTaskState.primitiveTasks
   ) as tPrimitiveTaskDescription[];
   let task_card_expanded: string[] = $state([]);
-  const session_id = (getContext("session_id") as Function)();
   //   let semantic_task_nodes: tNode[] = $derived(flatten(semantic_tasks));
   const svgId = "execution-dag-svg";
   const node_size: [number, number] = [150, 80];
@@ -131,7 +131,7 @@
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ execute_node, session_id }),
+      body: JSON.stringify({ execute_node: execute_node.id, session_id }),
     })
       .then((response) => response.json())
       .then((data) => {
@@ -260,7 +260,6 @@
           class="primitive-task-card-container absolute task-wrapper bg-blue-200 flex outline-1 outline-gray-300 rounded-sm shadow transition-all"
           class:executing={executing_task_id === task.id}
           data-id={task.id}
-          style={`z-index: ${(primitive_tasks.length - index) * 10}`}
         >
           {#if ask_to_check_results && executed_task_id === task.id}
             <div

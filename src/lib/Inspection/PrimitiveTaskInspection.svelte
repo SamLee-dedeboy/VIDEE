@@ -17,6 +17,11 @@
   let show_description = $state(true);
   let show_formats = $state(false);
   let show_execution = $state(false);
+  let execution_states = $derived(
+    primitiveTaskExecutionStates.execution_states
+  );
+  let executed = $derived(execution_states?.[task.id].executed);
+  $inspect(executed);
   let execution_result_inspection_panel: any = $state();
 
   function handleUpdatePrompt(messages) {
@@ -269,7 +274,7 @@
           <div>Needs Compilation...</div>
         {/if}
       </div>
-      {#if primitiveTaskExecutionStates.executed(task.id)}
+      {#if executed}
         <ExecutionResultInspection
           bind:this={execution_result_inspection_panel}
           task_id={task.id}

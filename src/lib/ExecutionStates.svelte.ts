@@ -1,4 +1,9 @@
+import { server_address } from 'constants'
+import { getContext } from 'svelte'
 import type { tSemanticTask, tExecutionEvaluator, tPrimitiveTask, tExecutionState } from 'types/server'
+
+export let session_id: string = $state("312321321312321");
+// let random_session_id = Math.random().toString(36).substring(2, 15);
 let semantic_tasks: tSemanticTask[] = $state([])
 
 export const semanticTaskPlanState = {
@@ -229,6 +234,7 @@ export const primitiveTaskState = {
             primitiveTasks[index] = primitiveTask
             primitiveTasks = [...primitiveTasks]
             primitiveTasks = collectInputKeys(primitiveTasks)
+            update_with_server();
         }
     },
     updateInspectedPrimitiveTask(task_id: string | undefined) {
@@ -250,12 +256,32 @@ export const primitiveTaskState = {
     }
 }
 
+function update_with_server() {
+    fetch(`${server_address}/primitive_task/update/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ primitive_tasks: primitiveTasks, session_id }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Update primitive tasks success:", data);
+        console.log(data);
+        // primitiveTaskState.primitiveTasks = data.primitive_tasks;
+        // primitiveTaskExecutionStates.execution_states = data.execution_state;
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
+
 function collectInputKeys(primitive_tasks: tPrimitiveTask[]) {
     if(primitive_tasks.length === 0) return primitive_tasks
     if(primitive_tasks.some(t =>t.execution === undefined)) return primitive_tasks
     let existing_keys: Set<string> = new Set()
     for(let primitive_task of primitive_tasks) {
-        primitive_task.existing_keys = Array.from(existing_keys)
+        // primitive_task.existing_keys = Array.from(existing_keys)
         primitive_task.doc_input_keys?.forEach(key => existing_keys.add(key))
         existing_keys.add(primitive_task.state_output_key)
     }

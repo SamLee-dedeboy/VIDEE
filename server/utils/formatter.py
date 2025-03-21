@@ -83,9 +83,9 @@ async def retry_llm_json_extraction(
     return None
 
 
-def escape_json_format_curly_braces(json_string: str) -> str:
+def escape_json_format(json_string: str) -> str:
     """
-    Identifies the 'JSON_format' field inside a JSON string and escapes curly brackets within its value.
+    Identifies the 'JSON_format' field inside a JSON string and escapes its value
     """
     # Regular expression to find the "JSON_format" key and its string value
     # pattern = r'"JSON_format"\s*:\s*"([^"]*)"'
@@ -97,9 +97,7 @@ def escape_json_format_curly_braces(json_string: str) -> str:
         escaped_content = (
             content_inside_quotes.replace('"JSON_format":', "")
             .strip()[1:-1]
-            .replace("{", "{{")
-            .replace("}", "}}")
-            .replace('"', "'")
+            .replace('"', '\\"')
         )
         escaped_content = '"JSON_format": "' + escaped_content + '"'
 
@@ -154,10 +152,10 @@ def extract_json_content(
     if escape_JSON_format:
         # replace single quotes with double quotes
         raw_response = re.sub(r"'", '"', raw_response)
-        # remove "\" from the string: sometimes llm adds "\" to the string to escape quotes, which causes JSON parsing error
+        # remove "\" from the string if they are present. We will add it back in the escape_json_format function: it's easier to add back assuming none already exist
         raw_response = re.sub(r"\\", "", raw_response)
         # reformat JSON_format field so that it is treated as a string
-        raw_response = escape_json_format_curly_braces(raw_response)
+        raw_response = escape_json_format(raw_response)
     try:
         # try to extract the first JSON object from the raw response.
         # brace_match = re.search(r"^\s*\n*(\{[\s\S]+\})\s*\n*$", raw_response, re.DOTALL)
