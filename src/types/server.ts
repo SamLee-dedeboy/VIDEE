@@ -63,6 +63,7 @@ export type tPrimitiveTaskDescription = {
 }
 
 export type tPrimitiveTaskExecution = {
+  existing_keys? : string[]
     state_input_key: string,
     doc_input_keys: string[],
     state_output_key: any,

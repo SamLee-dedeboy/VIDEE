@@ -182,8 +182,7 @@ export const primitiveTaskState = {
         return primitiveTasks
     },
     set primitiveTasks(value) {
-        primitiveTasks = value
-        primitiveTasks = collectInputKeys(primitiveTasks)
+        primitiveTasks = collectInputKeys(value)
     },
     get inspected_primitive_task() {
         return inspected_primitive_task
@@ -277,14 +276,16 @@ function update_with_server() {
   }
 
 function collectInputKeys(primitive_tasks: tPrimitiveTask[]) {
-    if(primitive_tasks.length === 0) return primitive_tasks
-    if(primitive_tasks.some(t =>t.execution === undefined)) return primitive_tasks
+    let primitive_tasks_without_root = primitive_tasks.filter(t => t.id !== "-1")
+    if(primitive_tasks_without_root.length === 0) return primitive_tasks
+    if(primitive_tasks_without_root.some(t =>t.execution === undefined)) return primitive_tasks
     let existing_keys: Set<string> = new Set()
-    for(let primitive_task of primitive_tasks) {
-        // primitive_task.existing_keys = Array.from(existing_keys)
-        primitive_task.doc_input_keys?.forEach(key => existing_keys.add(key))
+    primitive_tasks.forEach(primitive_task => {
+        if(!primitive_task.doc_input_keys) return
+        primitive_task.doc_input_keys.forEach(key => existing_keys.add(key))
+        primitive_task.existing_keys = Array.from(existing_keys)
         existing_keys.add(primitive_task.state_output_key)
-    }
+    })
     return primitive_tasks
 
 }
