@@ -266,7 +266,10 @@ export class DAG {
     }
     resetTranslate() {
         const svg = d3.select(`#${this.svgId}`);
-        const new_nodes_bboxes = this.new_nodes.map(d => this.bbox_dict[d])
+        let new_nodes_bboxes = this.new_nodes.filter(d => this.bbox_dict[d]).map(d => this.bbox_dict[d])
+        if(new_nodes_bboxes.length === 0) {
+            new_nodes_bboxes = Object.values(this.bbox_dict)
+        }
         const new_nodes_center = [
             d3.mean(new_nodes_bboxes.map(d => d.x)),
             d3.mean(new_nodes_bboxes.map(d => d.y))
