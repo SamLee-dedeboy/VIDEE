@@ -772,6 +772,7 @@ async def run_input_key_generation_agent(
         max_retries=3,
         retry_delay=1.0,
         backoff_factor=2.0,
+        escape_JSON_format=True,
     )
 
 

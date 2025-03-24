@@ -131,6 +131,30 @@ def escape_output_schema(json_string: str) -> str:
         return json_string
 
 
+def escape_schema(json_string: str) -> str:
+    """
+    Identifies the 'schema' field inside a string and escapes its value
+    """
+    # Regular expression to find the "JSON_format" key and its string value
+    # pattern = r'"JSON_format"\s*:\s*"([^"]*)"'
+    # pattern = r'"JSON_format"\s*:\s*"\{[^}]+\}"'
+    pattern = r'"schema"\s*:\s*".*?"\n'
+    match = re.search(pattern, json_string)
+    if match:
+        content_inside_quotes = match.group(0)
+        escaped_content = (
+            content_inside_quotes.replace('"schema":', "")
+            .strip()[1:-1]
+            .replace('"', '\\"')
+        )
+        escaped_content = '"schema": "' + escaped_content + '"\n'
+
+        return re.sub(pattern, escaped_content, json_string)
+        # return escaped_content
+    else:
+        return json_string
+
+
 def normalize_json_braces(json_str):
     def replace_first_matching_double_braces(s):
         """Replace the first found '{{...}}' pair with '{...}'.
@@ -186,6 +210,7 @@ def extract_json_content(
         # reformat JSON_format field so that it is treated as a string
         raw_response = escape_json_format(raw_response)
         raw_response = escape_output_schema(raw_response)
+        raw_response = escape_schema(raw_response)
     try:
         # try to extract the first JSON object from the raw response.
         # brace_match = re.search(r"^\s*\n*(\{[\s\S]+\})\s*\n*$", raw_response, re.DOTALL)
