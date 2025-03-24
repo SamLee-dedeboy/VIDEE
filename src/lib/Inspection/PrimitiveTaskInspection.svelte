@@ -161,6 +161,9 @@
                           new_task.doc_input_keys = task.doc_input_keys!.filter(
                             (key) => key !== doc_input_key
                           );
+                          if (new_task.execution.tool === "prompt_tool") {
+                            new_task.execution.parameters.prompt_template[1].content = `${new_task.doc_input_keys.map((key) => `${key}: {${key}}`).join("\n")}`;
+                          }
                           primitiveTaskState.updatePrimitiveTask(
                             task.id,
                             new_task
@@ -199,6 +202,9 @@
                                 ...task.doc_input_keys!,
                                 existing_key,
                               ];
+                              if (new_task.execution.tool === "prompt_tool") {
+                                new_task.execution.parameters.prompt_template[1].content = `${new_task.doc_input_keys.map((key) => `${key}: {${key}}`).join("\n")}`;
+                              }
                               primitiveTaskState.updatePrimitiveTask(
                                 task.id,
                                 new_task

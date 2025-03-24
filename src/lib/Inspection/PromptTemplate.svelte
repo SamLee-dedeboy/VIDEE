@@ -1,6 +1,14 @@
 <script lang="ts">
   import { trim } from "lib/trim";
   let { messages, handleUpdatePrompt } = $props();
+  function highlight_variables(text: string) {
+    console.log("highlight_variables", text);
+    // replace ${var} with <span class="bg-yellow-200">${var}</span>
+    return text.replace(
+      /\{(.*?)}/g,
+      '<span class="text-yellow-600 italic text-sm" contenteditable=false>{$1}</span>'
+    );
+  }
 </script>
 
 <div class="container flex flex-col border-x-2 border-t-2 border-dashed">
@@ -31,7 +39,7 @@
           </div>
         </div>
       {:else if prompt_template_message.role === "human"}
-        <div class="flex flex-1 flex-col gap-x-2">
+        <div class="flex flex-1 flex-col gap-x-2 relative">
           <div class="flex justify-center bg-gray-100 font-mono">
             Input Data
           </div>
@@ -44,10 +52,17 @@
               let messages_copy = JSON.parse(JSON.stringify(messages));
               messages_copy[index].content = event.target.innerText;
               handleUpdatePrompt(messages_copy);
-              event.target.innerHTML = messages_copy[index].content;
+              event.target.innerHTML = highlight_variables(
+                messages_copy[index].content.trim()
+              );
             }}
           >
-            {prompt_template_message.content.trim()}
+            {@html highlight_variables(prompt_template_message.content.trim())}
+          </div>
+          <div class="absolute right-1 bottom-0">
+            <span class="text-yellow-600 italic text-xs"
+              >&#123x&#125 - template variable</span
+            >
           </div>
         </div>
       {/if}
