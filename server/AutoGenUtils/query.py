@@ -600,14 +600,13 @@ async def run_prompt_generation_agent(
         2. Task: Give instructions on how to analyze the text.
         3. Requirements: Provide any specific requirements or constraints for the prompt.
         4. JSON_format: A JSON object with one key, the key name should be suitable to store the result of the prompt, and value should be a valid JSON format for representing the output.
-        An example of the JSON_format section is: "{{\"themes": [{{\"theme": \"str\", \"definition\": \"str\"}}]}}"
+        An example of the JSON_format section is: "{{\"themes\": [{{\"theme\": \"str\", \"definition\": \"str\"}}]}}"
 
-
-        Next, generate a "output_schema" key, The "output_schema" key should provide a very detailed, nested description of the output structure defined for the key in JSON_format. Instead of using simple Python-type annotations, provide a complete JSON Schema-like structure that explicitly defines all properties, nested objects, and their types. For complex structures like lists of objects, specify the properties of each object within the list.
+        Next, generate a "output_schema" key. The "output_schema" key should provide a detailed description of the output structure defined for the key in JSON_format, using the clearer schema notation (like "list[str]" or "{{'field': 'type'}}").
 
         CRITICAL: DO NOT include the key itself in the output_schema. The output_schema should only define the shape of the output value.
-        for example, if the JSON_format is defined as "{{\"themes": [{{\"theme": \"str\", \"definition\": \"str\"}}]}}"
-        the output_schema should be: {{"items": {{"theme": "str", "definition": "str"}}}}
+        for example, if the JSON_format is defined as "{{\"themes\": [{{\"theme\": \"str\", \"definition\": \"str\"}}]}}"
+        the output_schema should be: "list[{{\"theme\": \"str\", \"definition\": \"str\"}}]"
 
         Examples for output_schema:
         For primitive types, the output_schema can be the same as the type:
@@ -618,8 +617,8 @@ async def run_prompt_generation_agent(
 
         For complex types, the output_schema should define the structure:
         - For a list of strings: "output_schema": "list[str]"
-        - For a list of objects: "output_schema": {{"items": {{"field1": "str", "field2": "int"}}}}
-        - For a dictionary: "output_schema": {{"properties": {{"key1": "str", "key2": "int"}}}}
+        - For a list of objects: "output_schema": "list[{{\"field1\": \"str\", \"field2\": \"int\"}}]"
+        - For a dictionary: "output_schema": "{{\"key1\": \"str\", \"key2\": \"int\"}}"
 
         Examples of output_schema definitions:
         1. Simple text content:
@@ -629,15 +628,15 @@ async def run_prompt_generation_agent(
            "output_schema": "list[str]"
 
         3. A person record:
-           "output_schema": {{"properties": {{"name": "str", "age": "int", "email": "str"}}}}
+           "output_schema": "{{\"name\": \"str\", \"age\": \"int\", \"email\": \"str\"}}"
 
         4. A collection of documents:
-           "output_schema": {{"items": {{"content": "str", "timestamp": "str", "author": "str"}}}}
+           "output_schema": "list[{{\"content\": \"str\", \"timestamp\": \"str\", \"author\": \"str\"}}]"
 
         5. Analytics results:
-           "output_schema": {{"properties": {{"total_count": "int", "average_score": "float", "categories": "list[str]"}}}}
+           "output_schema": "{{\"total_count\": \"int\", \"average_score\": \"float\", \"categories\": \"list[str]\"}}"
 
-        Combine the prompt and output_schema into one JSON output, The output JSON format should be a dictionary with only two keys, "prompt" and "output_schema", and the value can be any structure.
+        Combine the prompt and output_schema into one JSON output. The output JSON format should be a dictionary with only two keys, "prompt" and "output_schema", and the value can be any structure.
         Reply with this JSON format:
             {{
                "prompt": {{
@@ -646,9 +645,7 @@ async def run_prompt_generation_agent(
                     "Requirements": str
                     "JSON_format": str
                 }},
-                "output_schema": {{
-                    // Schema of the output data
-                }}
+                "output_schema": str or dict  // Using the clearer schema format described above
             }}
         """.format(
             existing_keys=existing_keys_str
@@ -709,12 +706,12 @@ async def run_input_key_generation_agent(
         The user will describe a task for you, and what data is available in the dataset. Your task is to pick the keys that are required from the dataset to complete the task, along with their detailed schema definition.
         ** Requirements **
         You MUST only select keys from the <existing_keys></existing_keys> block. No additional keys outside this list can be used.
-        Reply with this JSON format:
+        Reply with this JSON format, the output should be JSON compatible, you should not include any comments in the reply!:
             {
                "required_keys": [
                    {
-                       "key": str,  // The name of the required key
-                       "schema": str or object  // Detailed schema definition of the data structure
+                       "key": str,
+                       "schema": str or object
                    }
                ]
             }
@@ -729,8 +726,8 @@ async def run_input_key_generation_agent(
         
         For complex types, the schema should define the structure:
         - For a list of strings: "schema": "list[str]"
-        - For a list of objects: "schema": {"items": {"field1": "str", "field2": "int"}}
-        - For a dictionary: "schema": {"properties": {"key1": "str", "key2": "int"}}
+        - For a list of objects: "schema": "list[dict]" or "list[{\"field1\": \"str\", \"field2\": \"int\"}]"
+        - For a dictionary: "schema": "dict" or "{\"key1\": \"str\", \"key2\": \"int\"}"
         
         Examples of schema definitions:
         1. Simple text content:
@@ -740,13 +737,13 @@ async def run_input_key_generation_agent(
            {"key": "tags", "schema": "list[str]"}
            
         3. A person record:
-           {"key": "person", "schema": {"properties": {"name": "str", "age": "int", "email": "str"}}}
+           {"key": "person", "schema": "{\"name\": \"str\", \"age\": \"int\", \"email\": \"str\"}"}
            
         4. A collection of documents:
-           {"key": "documents", "schema": {"items": {"content": "str", "timestamp": "str", "author": "str"}}}
+           {"key": "documents", "schema": "list[{\"content\": \"str\", \"timestamp\": \"str\", \"author\": \"str\"}]"}
            
         5. Analytics results:
-           {"key": "stats", "schema": {"properties": {"total_count": "int", "average_score": "float", "categories": "list[str]"}}}
+           {"key": "stats", "schema": "{\"total_count\": \"int\", \"average_score\": \"float\", \"categories\": \"list[str]\"}"}
         """,
     )
 
@@ -939,13 +936,54 @@ async def run_data_transform_plan_agent(
         system_message="""
         ** Context **
         You are an expert in creating data transformation plans for document processing.
-        You will create a plan for transforming input data from one schema to another based on the task description.
+        You will create a plan for transforming input data from one schema to another based on the task description by writing executable Python code.
 
         ** Task **
         The user will describe a data transformation task. You need to create a transformation plan
-        that includes the operation type (usually it is "transform"), the required parameters for that operation, and the output schema.
-        The "output schema" should provide a detailed, nested description of the output structure. Instead of using simple Python-type annotations, provide a complete JSON Schema-like structure that explicitly defines all properties, nested objects, and their types. For complex structures like lists of objects, specify the properties of each object within the list.
+        that includes the operation type (usually it is "transform"), the required python code to finish the transformation, and the output schema.
+        The python code should handle the data transformation based on the user's task description, and return an object that contains necessary keys to store the transformation results.
+        The "output schema" should provide a detailed, nested description of the output structure of the Python code. The output schema format should follow the same pattern of the input schema  
         You also need to determine which feature_key to use for each operation, based on available keys from available input keys and their schema
+        
+        ** IMPORTANT: Input and Output Schema Interpretation **
+        When interpreting schemas, follow these rules carefully:
+        1. A schema like "list[str]" means the field is an ARRAY OF STRINGS
+        2. A schema like "list[dict]" or "list[{\"name\": \"str\", \"value\": \"int\"}]" means the field is an ARRAY OF OBJECTS
+        3. A schema like "dict" or "{\"name\": \"str\", \"age\": \"int\"}" means the field is a SINGLE OBJECT
+        
+        When accessing these in Python code:
+        - For "list[str]": Access directly as array, e.g., `doc["field_name"]` (returns an array)
+        - For "list[dict]": Access directly as array of objects, e.g., `doc["field_name"]` (returns an array of objects)
+        - For "dict": Access as object, e.g., `doc["field_name"]` (returns an object)
+        
+        ** CRITICAL: Variable Scope and Data Structure **
+        The transform function ALWAYS receives a parameter named 'data', which is a LIST of document objects. You MUST iterate through this list explicitly.
+        
+        KEY POINTS TO REMEMBER:
+        1. 'data' is a LIST - you must iterate through it to access individual documents
+        2. Each document in 'data' is accessed within a loop, e.g., 'for doc in data: ...'
+        3. NEVER use 'doc' outside of a loop context - it will be undefined!
+        4. If you need to access any document field, you MUST first establish the 'doc' variable in a loop
+        
+        COMMON ERRORS TO AVOID:
+        WRONG: def transform(data): return {'result': doc['content']}  # ERROR: 'doc' is undefined!
+        WRONG: def transform(data): return {'result': [doc['content'] for item in data]}  # ERROR: 'doc' is undefined!
+        WRONG: def transform(data): return {'result': data['content']}  # ERROR: 'data' is a list, not a dict!
+        
+        CORRECT PATTERNS:
+        CORRECT: def transform(data): return {'result': [doc['content'] for doc in data]}
+        CORRECT: 
+        def transform(data): 
+            results = []
+            for doc in data:
+                results.append(doc['content'])
+            return {'result': results}
+        
+        ** IMPORTANT: Requirement for the generated transformation Python code **
+        When you generate the Python code, you have to double check it can be run without any potential issues or undefined variables.
+        For example, this code is NOT ACCEPTABLE: "def transform(data): return { 'result': doc['content'] }"
+        because in 'result': doc['content'], doc is not defined.
+
         ** Note **
         The input data is a dictionary with user given input keys, the value of each key can have complex schemas with nested structures. You must create transformations 
         that account for the detailed schema of the input data and define a precise output schema.
@@ -955,31 +993,51 @@ async def run_data_transform_plan_agent(
         You MUST choose "transform" as the operation - no other operations are supported.
         definition of "transform" operation - Transform the given data to another schema
            - Required parameters: 
-              - "transform_code": Python code that defines a transform function
+              - "transform_code": Python code that defines a transform function, this function must be executable without any errors
               - "output_schema": Detailed schema of the output structure
            - The function must:
              - Be named "transform"
              - Take a "data" parameter (list of documents, each document is a dictionary with all the given input keys)
-             - Return transformed "data", based on user's requirements
+             - Return transformed "data", based on user's requirements. The transformed data should be an object.
            - Example: to transform documents to a complex aggregated result:
 ```
 Input keys and schema:
-"teacher": {"items": {"name": "str", "department": "str", "salary": "int", "skills": "list[str]"}}
-"department": {"properties": {"name": "str", "total_students": "int"}}
-This means the input is a dictionary with "teacher" and "department" key.
-data["teacher"] is an array of objects, each object has schema {"name": "str", "department": "str", "salary": "int", "skills": "list[str]"}.
-data["department"] is an object with schema {"name": "str", "total_students": "int"}
-The output should be:
-"transform_code": "def transform(data): return {\n    "summary": {\n        "total_salary": sum(t["salary"] for item in data for t in item["teacher"]),\n        "total_students": sum(item["department"]["total_students"] for item in data)\n    }\n}"
-"output_schema": {
-    "summary": {
-        "properties": {
-            "total_salary": "int",
-            "total_students": "int"
-        }
-    }
-}
+"teacher": "list[{'name': 'str', 'department': 'str', 'salary': 'int', 'skills': 'list[str]'}]"
+"department": "{'name': 'str', 'total_students': 'int'}"
+
+This means:
+- doc["teacher"] is an ARRAY of objects, each with name, department, salary, and skills properties
+- doc["department"] is a SINGLE OBJECT with name and total_students properties
+
+CORRECT transform_code:
+"transform_code": "def transform(data): return {\\n    \\"summary\\": {\\n        \\"total_salary\\": sum(t[\\"salary\\"] for doc in data for t in doc[\\"teacher\\"]),\\n        \\"total_students\\": sum(doc[\\"department\\"][\\"total_students\\"] for doc in data)\\n    }\\n}"
+
+Example 2:
+Input keys and schema:
+"quotes": "list[str]", 
+"summary": "list[str]"
+
+This means:
+- doc["quotes"] is an ARRAY of strings
+- doc["summary"] is an ARRAY of strings
+
+CORRECT transform_code:
+"transform_code": "def transform(data): return { 'bullet_points': [item for doc in data for item in (doc.get('quotes', []) + doc.get('summary', []))] }"
+
+Example 3 - Fix for the error in the example:
+INCORRECT: 
+"transform_code": "def transform(data): return { 'bullet_points': [doc['content']] + [item for doc in data for item in doc.get('quotes', [])] }"
+
+CORRECTED:
+"transform_code": "def transform(data): return { 'bullet_points': [doc['content'] for doc in data] + [item for doc in data for item in doc.get('quotes', [])] }"
 ```
+
+        ** FINAL VERIFICATION STEP **
+        Before finalizing your response, validate your code by:
+        1. Ensuring all variables are properly defined before use
+        2. Confirming that 'doc' is only used within loops iterating over 'data'
+        3. Checking that your code follows the correct patterns shown above
+        
         ** Response Format **
         You MUST respond with a JSON object in this exact format:
         {
@@ -1159,11 +1217,7 @@ async def run_clustering_plan_agent(
                 "feature_key": str,  // Feature to use for clustering
                 // Additional algorithm-specific parameters
             },
-            "output_schema": {
-                // Schema of the output data
-                // For standard output (return_metrics=False):
-                "labels": "list[int]"
-            }
+            "output_schema": "list[int]"  // The output will be a list of cluster labels
         }
         """,
     )
@@ -1282,12 +1336,7 @@ async def run_dim_reduction_plan_agent(
                 "n_components": int,  // Number of dimensions to reduce to (typically 2 or 3 for visualization)
                 // Additional algorithm-specific parameters
             },
-            "output_schema": {
-                // Schema of the output data
-                "properties": {
-                    "reduced_dimensions": "list[list[float]]"  // Each inner list is a point in lower-dimensional space
-                }
-            }
+            "output_schema": "list[list[float]]"  // Each inner list is a point in lower-dimensional space
         }
         """,
     )
@@ -1395,10 +1444,7 @@ async def run_embedding_plan_agent(
                 "model": str,  // Embedding model to use
                 // Any additional parameters specific to the provider
             },
-            "output_schema": {
-                // Schema of the output embeddings
-                "embedding": "list[float]"  // Vector representation as a list of floats
-            }
+            "output_schema": "list[float]"  // Vector representation as a list of floats
         }
         """,
     )
@@ -1524,12 +1570,7 @@ async def run_segmentation_plan_agent(
                 "output_key": str,   // Field name for storing segments (e.g., "segments")
                 // Additional strategy-specific parameters
             },
-            "output_schema": {
-                // Schema of the output segments
-                "properties": {
-                    "segments": "list[str]"  // List of text segments
-                }
-            }
+            "output_schema": "list[str]"  // List of text segments
         }
         """,
     )
@@ -1576,7 +1617,23 @@ def get_existing_keys_and_schema(existing_keys):
     for key in existing_keys:
         if isinstance(key, dict):
             if "key" in key and "schema" in key:
-                formatted_keys.append(f"{key['key']} (schema: {key['schema']})")
+                # Convert any JSON Schema format to the clearer format if needed, in case LLM returns a JSON Schema
+                schema = key['schema']
+                if isinstance(schema, dict):
+                    if 'items' in schema:
+                        if isinstance(schema['items'], dict):
+                            # Convert {"items": {"field1": "str", ...}} to "list[{'field1': 'str', ...}]"
+                            items_dict = str(schema['items']).replace('"', "'")
+                            schema = f"list[{items_dict}]"
+                        else:
+                            # Convert {"items": "str"} to "list[str]"
+                            schema = f"list[{schema['items']}]"
+                    elif 'properties' in schema:
+                        # Convert {"properties": {"field1": "str", ...}} to "{'field1': 'str', ...}"
+                        props_dict = str(schema['properties']).replace('"', "'")
+                        schema = props_dict
+
+                formatted_keys.append(f"{key['key']} (schema: {schema})")
             elif "key" in key:
                 formatted_keys.append(
                     f"{key['key']} (schema: str)"

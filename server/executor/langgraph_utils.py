@@ -108,9 +108,13 @@ async def execution_plan(
 ) -> list[PrimitiveTaskExecution]:
     plan = []
     # Initialize with default content key with schema
-    existing_keys = [{"key": "content", "schema": "str"}]
+    document_keys = [{"key": "content", "schema": "str"}]
+    transformed_data_keys = []
     current_state_key = "documents"
     for primitive_task in primitive_tasks:
+        # Use the appropriate existing_keys based on current_state_key
+        existing_keys = document_keys if current_state_key == "documents" else transformed_data_keys
+
         try:
             input_keys = await autogen_utils.run_input_key_generation_agent(
                 primitive_task, existing_keys, model=model, api_key=api_key
@@ -132,31 +136,46 @@ async def execution_plan(
             try:
                 # use the data transform agent to generate a plan
                 transform_config = await autogen_utils.run_data_transform_plan_agent(
-                    primitive_task, input_keys, model=model, api_key=api_key
+                    primitive_task, existing_keys, model=model, api_key=api_key
                 )
                 transform_plan = create_data_transform_plan(
                     primitive_task,
                     transform_config.get("operation", "transform"),
                     transform_config.get("parameters", {}),
-                    input_keys,  # Pass input keys with detailed schemas
+                    existing_keys,  # Pass input keys with detailed schemas
                     current_state_key
                 )
                 plan.append(transform_plan)
 
-                # Add output key to existing keys with the detailed output schema
-                output_key = transform_plan["state_output_key"]
-                output_schema = transform_config["parameters"]["output_schema"]
+                current_state_key = "transformed_data"
 
-                # For reduce, remove access to the old document, the transformed data will be the source of truth
-                if transform_config.get("operation") == "reduce":
-                    existing_keys = [{"key": output_key, "schema": output_schema}]
-                    current_state_key = "transformed_data"
-                else:
-                    # Add the output key with its schema to existing keys
-                    existing_keys.append({
-                        "key": output_key,
-                        "schema": output_schema
+                output_json = extract_json_content(transform_config["parameters"]["output_schema"], True)
+                for key in output_json:
+                    transformed_data_keys.append({
+                        "key": key,
+                        "schema": output_json[key]
                     })
+
+                # Add output key to existing keys with the detailed output schema
+                # output_key = transform_plan["state_output_key"]
+                # output_schema = transform_config["parameters"]["output_schema"]
+                #
+                # current_state_key = "transformed_data"
+                # transformed_data_keys.append({
+                #     "key": output_key,
+                #     "schema": output_schema
+                # })
+                # # Add the output key with its schema to the appropriate existing keys
+                # if current_state_key == "documents":
+                #     document_keys.append({
+                #         "key": output_key,
+                #         "schema": output_schema
+                #     })
+                # else:
+                #     transformed_data_keys.append({
+                #         "key": output_key,
+                #         "schema": output_schema
+                #     })
                 continue
             except Exception as e:
                 # Fall back to default prompting plan if agent fails
@@ -166,24 +185,32 @@ async def execution_plan(
             try:
                 # Use the clustering agent to generate a plan
                 clustering_config = await autogen_utils.run_clustering_plan_agent(
-                    primitive_task, input_keys, model=model, api_key=api_key
+                    primitive_task, existing_keys, model=model, api_key=api_key
                 )
                 clustering_plan = create_clustering_plan(
                     primitive_task,
                     clustering_config.get("algorithm", "kmeans"),
                     clustering_config.get("parameters", {}),
-                    input_keys
+                    existing_keys,
+                    current_state_key
                 )
                 plan.append(clustering_plan)
 
                 # Add output key to existing keys with the detailed output schema
                 output_key = clustering_plan["state_output_key"]
                 output_schema = clustering_plan.get("output_schema")
-                existing_keys.append({
-                    "key": output_key,
-                    "type": "list",
-                    "schema": output_schema
-                })
+
+                # Add the output key to the appropriate existing keys
+                if current_state_key == "documents":
+                    document_keys.append({
+                        "key": output_key,
+                        "schema": output_schema
+                    })
+                else:
+                    transformed_data_keys.append({
+                        "key": output_key,
+                        "schema": output_schema
+                    })
                 continue
             except Exception as e:
                 print(f"Error using clustering agent: {e}. Using default prompting plan.")
@@ -192,24 +219,32 @@ async def execution_plan(
             try:
                 # Use the dimension reduction agent to generate a plan
                 dim_reduction_config = await autogen_utils.run_dim_reduction_plan_agent(
-                    primitive_task, input_keys, model=model, api_key=api_key
+                    primitive_task, existing_keys, model=model, api_key=api_key
                 )
                 dim_reduction_plan = create_dim_reduction_plan(
                     primitive_task,
                     dim_reduction_config.get("algorithm", "pca"),
                     dim_reduction_config.get("parameters", {}),
-                    input_keys
+                    existing_keys,
+                    current_state_key
                 )
                 plan.append(dim_reduction_plan)
 
                 # Add output key to existing keys with the detailed output schema
                 output_key = dim_reduction_plan["state_output_key"]
                 output_schema = dim_reduction_plan.get("output_schema")
-                existing_keys.append({
-                    "key": output_key,
-                    "type": "list",
-                    "schema": output_schema
-                })
+
+                # Add the output key to the appropriate existing keys
+                if current_state_key == "documents":
+                    document_keys.append({
+                        "key": output_key,
+                        "schema": output_schema
+                    })
+                else:
+                    transformed_data_keys.append({
+                        "key": output_key,
+                        "schema": output_schema
+                    })
                 continue
             except Exception as e:
                 print(f"Error using dimension reduction agent: {e}. Using default prompting plan.")
@@ -218,13 +253,13 @@ async def execution_plan(
             try:
                 # Use the embedding agent to generate a plan
                 embedding_config = await autogen_utils.run_embedding_plan_agent(
-                    primitive_task, input_keys, model=model, api_key=api_key
+                    primitive_task, existing_keys, model=model, api_key=api_key
                 )
                 embedding_plan = create_embedding_plan(
                     primitive_task,
                     embedding_config.get("provider", "openai"),
                     embedding_config.get("parameters", {}),
-                    input_keys,
+                    existing_keys,
                     current_state_key,
                     api_key
                 )
@@ -233,11 +268,18 @@ async def execution_plan(
                 # Add output key to existing keys with the detailed output schema
                 output_key = embedding_plan["state_output_key"]
                 output_schema = embedding_plan.get("output_schema")
-                existing_keys.append({
-                    "key": output_key,
-                    "type": "list",
-                    "schema": output_schema
-                })
+
+                # Add the output key to the appropriate existing keys
+                if current_state_key == "documents":
+                    document_keys.append({
+                        "key": output_key,
+                        "schema": output_schema
+                    })
+                else:
+                    transformed_data_keys.append({
+                        "key": output_key,
+                        "schema": output_schema
+                    })
                 continue
             except Exception as e:
                 print(f"Error using embedding agent: {e}. Using default prompting plan.")
@@ -246,24 +288,32 @@ async def execution_plan(
             try:
                 # Use the segmentation agent to generate a plan
                 segmentation_config = await autogen_utils.run_segmentation_plan_agent(
-                    primitive_task, input_keys, model=model, api_key=api_key
+                    primitive_task, existing_keys, model=model, api_key=api_key
                 )
                 segmentation_plan = create_segmentation_plan(
                     primitive_task,
                     segmentation_config.get("strategy", "paragraph"),
                     segmentation_config.get("parameters", {}),
-                    input_keys
+                    existing_keys,
+                    current_state_key
                 )
                 plan.append(segmentation_plan)
 
                 # Add output key to existing keys with the detailed output schema
                 output_key = segmentation_plan["state_output_key"]
                 output_schema = segmentation_plan.get("output_schema")
-                existing_keys.append({
-                    "key": output_key,
-                    "type": "list",
-                    "schema": output_schema
-                })
+
+                # Add the output key to the appropriate existing keys
+                if current_state_key == "documents":
+                    document_keys.append({
+                        "key": output_key,
+                        "schema": output_schema
+                    })
+                else:
+                    transformed_data_keys.append({
+                        "key": output_key,
+                        "schema": output_schema
+                    })
                 continue
             except Exception as e:
                 print(f"Error using segmentation agent: {e}. Using default prompting plan.")
@@ -299,7 +349,12 @@ async def execution_plan(
             output_key = primitive_task["label"] + "_output"
             output_schema = "str"
 
-        existing_keys.append({"key": output_key, "schema": output_schema})
+        # Add the output key to the appropriate existing keys
+        if current_state_key == "documents":
+            document_keys.append({"key": output_key, "schema": output_schema})
+        else:
+            transformed_data_keys.append({"key": output_key, "schema": output_schema})
+
         # replace {} in the JSON format with {{}}
         prompt_structured["JSON_format"] = (
             prompt_structured["JSON_format"].replace("{", "{{").replace("}", "}}")
@@ -493,12 +548,12 @@ def create_node(step, custom_get_input_func=None, custom_reduce_func=None):
     state_output_key = step["state_output_key"]
     # how to get input
     if custom_get_input_func is None:
-        get_input = lambda state: get_input_func(state, state_input_key, doc_input_keys)
+        get_input = lambda state: get_input_func(state, state_input_key, doc_input_keys, step["execution"])
     else:
         get_input = custom_get_input_func
     # how to produce output
     if custom_reduce_func is None:
-        if step["execution"]["tool"] in ["clustering_tool", "embedding_tool", "dim_reduction_tool", "segmentation_tool", "data_transform_tool"]:
+        if state_input_key == "transformed_data" or step["execution"]["tool"] in ["clustering_tool", "embedding_tool", "dim_reduction_tool", "segmentation_tool", "data_transform_tool"]:
             reduce = lambda combined: tools_reduce_func(
                 combined, state_input_key, state_output_key, state_output_key
             )
@@ -538,72 +593,66 @@ def tools_reduce_func(
     label_key: str = "output",
 ):
     """
-    Assigns labels to documents in the state or handles special cases for reduce operations.
+    Updates the state with output data, handling both document-based and transformed data operations.
 
     Args:
-        combined (dict): State with input and output keys.
-        state_input_key (str): Key for input documents (e.g., "documents").
-        state_output_key (str): Key for output data (e.g., "cluster_label" or transformed data).
-        label_key (str): Key to store labels in each document (default: "output").
+        combined (dict): State with input and output keys
+        state_input_key (str): Key for input data ("documents" or "transformed_data")
+        state_output_key (str): Key for output data
+        label_key (str): Default key for labeling documents when output is a simple value
 
     Returns:
-        dict: Updated state with either:
-            - labels added to documents (for map/filter operations)
-            - or a dedicated "transformed_data" entry with detailed schema (e.g. for reduce operations)
+        dict: Updated state with properly merged output data
     """
     output_data = combined[state_output_key]
-    # Get the original documents
-    documents = combined[state_input_key]  # List of document dicts
-    # updated_documents = [
-    #     {**doc, label_key: label} for doc, label in zip(documents, labels)
-    # ]
-    # return {state_input_key: updated_documents}
 
-    # Case 1: Special handling for reduce operations that produce structured output with transformed_data
-    if isinstance(output_data, dict) and "transformed_data" == state_output_key:
-        return {
-            state_input_key: documents,  # Keep original documents unchanged
-            "transformed_data": output_data
-        }
+    # Get input data or use appropriate empty container if missing
+    input_data = combined.get(state_input_key, [] if state_input_key == "documents" else {})
+    result = {state_input_key: input_data}
 
-    # Case 2: Output is a list matching the documents (map operations)
-    elif isinstance(output_data, list) and len(output_data) == len(documents):
-        # Handle typical map operation where we apply output to each document
-        updated_documents = []
-        for doc, output in zip(documents, output_data):
-            if isinstance(output, dict):
-                # When output is a dictionary, merge it with the document
-                updated_doc = {**doc, **output}
-            else:
-                # When output is a simple value, assign it to label_key
-                updated_doc = {**doc, label_key: output}
-            updated_documents.append(updated_doc)
-        return {
-            state_input_key: updated_documents
-        }
+    # Handle operations based on input and output types
 
-    # Case 3: Output is a reduced list (filter operations)
-    elif isinstance(output_data, list):
-        # For filter operations, replace documents with the filtered subset, preserving schema
-        return {
-            state_input_key: output_data
-        }
+    # CASE 1: Working with transformed_data as input
+    if state_input_key == "transformed_data":
+        # Simply merge dictionaries or set the output directly
+        if isinstance(output_data, dict):
+            result["transformed_data"] = {**input_data, **output_data}
+        else:
+            # For non-dict outputs, store under the output key name
+            result["transformed_data"] = dict(input_data)
+            result["transformed_data"][label_key] = output_data
+        return result
 
-    # Case 4: Output is a complex structured object (not in transformed_data format)
-    elif isinstance(output_data, dict) and len(output_data) > 0:
-        # Convert to transformed_data format to ensure schema is preserved
-        return {
-            state_input_key: documents,
-            "transformed_data": output_data  # Wrap the dictionary in transformed_data
-        }
+    # CASE 2: Documents as input, with transformed_data as output
+    if state_output_key == "transformed_data" and isinstance(output_data, dict):
+        result["transformed_data"] = output_data
+        return result
 
-    # Case 5: Fallback for any other format
-    else:
-        # Default handling for any other case - store output in a dedicated field
-        return {
-            state_input_key: documents,
-            "output": output_data
-        }
+    # CASE 3: Document mapping operations (output matches documents)
+    if state_input_key == "documents" and isinstance(output_data, list):
+        # For lists matching document length, apply outputs to each document
+        if isinstance(input_data, list) and len(output_data) == len(input_data):
+            updated_docs = []
+            for doc, output in zip(input_data, output_data):
+                if isinstance(output, dict):
+                    updated_docs.append({**doc, **output})
+                else:
+                    updated_docs.append({**doc, label_key: output})
+            result[state_input_key] = updated_docs
+        else:
+            # For other list outputs (like filtering), directly use the output
+            result[state_input_key] = output_data
+        return result
+
+    # CASE 4: Documents as input with dictionary output (not transformed_data)
+    if state_input_key == "documents" and isinstance(output_data, dict):
+        # Store dictionary outputs in transformed_data
+        result["transformed_data"] = output_data
+        return result
+
+    # CASE 5: Fallback - store output under its key name
+    result[state_output_key] = output_data
+    return result
 
 
 # an empty node that is the root of the graph
@@ -612,7 +661,7 @@ def create_root():
 
 
 # a common get input function
-def get_input_func(state, state_input_key: str, doc_input_keys: list[str]):
+def get_input_func(state, state_input_key: str, doc_input_keys: list[str], execution = None):
     """
     Extract the required input fields from each document in the state.
 
@@ -623,44 +672,55 @@ def get_input_func(state, state_input_key: str, doc_input_keys: list[str]):
 
     Returns:
         A list of dictionaries containing only the required input fields from each document
+        or the transformed data structure when state_input_key is 'transformed_data'
     """
-    # For transformed_data, use the entire transformed data as input
-    if state_input_key == 'transformed_data':
-        return state[state_input_key]
-
-    docs = state[state_input_key]  # how to get the list of docs from the state (e.g. state["documents"])
-
-    # Extract key names and their schemas
-    key_names = []
-    key_schemas = {}
-    for key in doc_input_keys:
-        if isinstance(key, dict):
-            if "key" in key:
-                key_name = key["key"]
-                key_names.append(key_name)
-                # Store schema information if available
-                if "schema" in key:
-                    key_schemas[key_name] = key["schema"]
-        elif isinstance(key, str):
-            key_names.append(key)
-
-    # Extract only the requested fields from each document
     result = []
-    for doc in docs:
-        doc_data = {}
-        for key in key_names:
-            if key in doc:
-                # Get the value from the document
-                value = doc[key]
+    key_schemas = {}
+    feature_key = 'content'
+    if execution and 'parameters' in execution and 'feature_key' in execution['parameters']:
+        feature_key = execution['parameters']['feature_key']
+    elif len(doc_input_keys) > 0:
+        feature_key = doc_input_keys[0]
+    try:
+        key_schemas = execution['parameters']['input_key_schemas']
+    except Exception:
+        pass
+    # For transformed_data, handle it specially
+    if state_input_key == 'transformed_data':
+        # handle each key in the global transformed data store, ideally there should be only one key.
+        for key in doc_input_keys:
+            if key in key_schemas:
+                schema = key_schemas[key]
+                # TODO: schema validation/transform here, e.g. ensure data is an array.
+            transformed_data = state[state_input_key][key]
+            if isinstance(transformed_data, list):
+                for d in transformed_data:
+                    result.append({
+                        feature_key: d
+                    })
+            else:
+                result.append({
+                    feature_key: transformed_data
+                })
 
-                # Use schema information for potential data validation/conversion
-                if key in key_schemas:
-                    schema = key_schemas[key]
-                    # TODO: Here we could implement schema validation/conversion
-                    # For example, ensure lists contain the right types, etc.
+    else:
+        docs = state[state_input_key]  # how to get the list of docs from the state (e.g. state["documents"])
+        # Extract only the requested fields from each document
+        for doc in docs:
+            doc_data = {}
+            for key in doc_input_keys:
+                if key in doc:
+                    # Get the value from the document
+                    value = doc[key]
 
-                doc_data[key] = value
-        result.append(doc_data)
+                    # Use schema information for potential data validation/conversion
+                    if key in key_schemas:
+                        schema = key_schemas[key]
+                        # TODO: Here we could implement schema validation/conversion
+                        # For example, ensure lists contain the right types, etc.
+
+                    doc_data[key] = value
+            result.append(doc_data)
 
     return result
 

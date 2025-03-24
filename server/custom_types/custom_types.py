@@ -51,7 +51,7 @@ class MCT_Node(Node):
 
 class BaseStateSchema(TypedDict):
     documents: Annotated[list, lambda a, b: b]
-    transformed_data: dict[str, Any]
+    transformed_data: dict[str, Any] # a global storage on all transformed schema (i.e. aggregated data on all docs)
 
 
 class PrimitiveTaskDescription(BaseModel):
@@ -64,9 +64,9 @@ class PrimitiveTaskDescription(BaseModel):
 
 class PrimitiveTaskExecution(PrimitiveTaskDescription):
     state_input_key: str
-    doc_input_key: str
+    doc_input_keys: list[str]
     state_output_key: str
-    execution: str
+    execution: dict
 
 
 class UserExecutionState(BaseModel):

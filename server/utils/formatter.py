@@ -55,7 +55,7 @@ async def retry_llm_json_extraction(
 
             # Check if we got a valid result
             if json_result is None:
-                raise ValueError("Failed to extract JSON from LLM response")
+                raise ValueError(f"Failed to extract JSON from LLM response. content:{content}")
 
             # If an expected key is specified, check that it exists
             if expected_key and expected_key not in json_result:
@@ -107,6 +107,29 @@ def escape_json_format(json_string: str) -> str:
         print("No match found.")
         return json_string
 
+def escape_output_schema(json_string: str) -> str:
+    """
+    Identifies the 'output_schema' field inside a string and escapes its value
+    """
+    # Regular expression to find the "JSON_format" key and its string value
+    # pattern = r'"JSON_format"\s*:\s*"([^"]*)"'
+    # pattern = r'"JSON_format"\s*:\s*"\{[^}]+\}"'
+    pattern = r'"output_schema"\s*:\s*".*?"\n'
+    match = re.search(pattern, json_string)
+    if match:
+        content_inside_quotes = match.group(0)
+        escaped_content = (
+            content_inside_quotes.replace('"output_schema":', "")
+            .strip()[1:-1]
+            .replace('"', '\\"')
+        )
+        escaped_content = '"output_schema": "' + escaped_content + '"\n'
+
+        return re.sub(pattern, escaped_content, json_string)
+        # return escaped_content
+    else:
+        return json_string
+
 
 def normalize_json_braces(json_str):
     def replace_first_matching_double_braces(s):
@@ -147,6 +170,12 @@ def extract_json_content(
     Returns:
         Parsed JSON dict or None if unrecoverable
     """
+    try:
+        # a bold try to simply load JSON. if failed, we will need to do further formating
+        first_shot = json.loads(raw_response)
+        return first_shot
+    except Exception:
+        pass
     raw_response = raw_response.strip()
     raw_response = normalize_json_braces(raw_response)
     if escape_JSON_format:
@@ -156,6 +185,7 @@ def extract_json_content(
         raw_response = re.sub(r"\\", "", raw_response)
         # reformat JSON_format field so that it is treated as a string
         raw_response = escape_json_format(raw_response)
+        raw_response = escape_output_schema(raw_response)
     try:
         # try to extract the first JSON object from the raw response.
         # brace_match = re.search(r"^\s*\n*(\{[\s\S]+\})\s*\n*$", raw_response, re.DOTALL)

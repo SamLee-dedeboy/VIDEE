@@ -59,6 +59,7 @@ export type tPrimitiveTaskDescription = {
     parentIds: string[];
     children: string[];
     solves: string;
+    existing_keys?: string[];
 }
 
 export type tPrimitiveTaskExecution = {

@@ -107,7 +107,7 @@
             {#if show_formats}
               {@const input_key_options = task.existing_keys?.filter(
                 (k) => !task.doc_input_keys?.includes(k)
-              )!}
+              ) || []}
               <div
                 in:slide
                 class="format-container flex justify-around divide-x"
