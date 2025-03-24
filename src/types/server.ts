@@ -60,6 +60,7 @@ export type tPrimitiveTaskDescription = {
     children: string[];
     solves: string;
     existing_keys?: string[];
+    recompile_needed?: boolean;
 }
 
 export type tPrimitiveTaskExecution = {

@@ -4,34 +4,43 @@
   import { custom_confirm } from "lib/customConfirm";
   import { trim } from "lib/trim";
   import { primitiveTaskState } from "lib/ExecutionStates.svelte";
+  import PrimitiveTaskCardUtilities from "./PrimitiveTaskCardUtilities.svelte";
   let {
     task,
     label_options,
-    task_options,
+    add_parent_options,
+    remove_parent_options,
     expand,
     executable,
     compiling,
     handleAddParent = () => {},
+    handleRemoveParent = () => {},
     handleExecute = () => {},
+    handleCompile = () => {},
     handleInspectTask = () => {},
     handleDeleteTask = () => {},
     handleToggleExpand = () => {},
   }: {
     task: tPrimitiveTask;
     label_options: { label: string; definition: string }[];
-    task_options: [string, string][];
+    add_parent_options: [string, string][];
+    remove_parent_options: [string, string][];
     expand: boolean;
     executable: boolean;
-    compiling: boolean;
+    compiling: boolean | string | undefined;
     handleAddParent: Function;
+    handleRemoveParent: Function;
     handleExecute: (task: tPrimitiveTask) => void;
+    handleCompile: Function;
     handleInspectTask: Function;
     handleDeleteTask?: Function;
     handleToggleExpand?: Function;
   } = $props();
-  let adding_parent = $state(false);
   let isRoot = $derived(task.id === "-1");
   let show_label_options = $state(false);
+  let card_compiling = $derived(
+    compiling !== false && (compiling === undefined || compiling === task.id)
+  );
 </script>
 
 {#if isRoot}
@@ -46,17 +55,30 @@
   <div
     class="container task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline-2 outline-blue-100 bg-[#F2F8FD] shadow rounded relative flex gap-y-1 gap-x-2"
   >
-    {#if compiling}
+    {#if task.recompile_needed && !card_compiling}
+      <div
+        class="absolute bottom-[calc(100%+3px)] left-0 flex items-end gap-x-1 animate-bounce bg-gray-50"
+      >
+        <img
+          src="aperture.svg"
+          class="w-4 h-4 aniamte-bounce"
+          alt="needs compilation"
+          title="needs compilation"
+        />
+        <span class="text-sm italic text-gray-500"> Needs Compilation... </span>
+      </div>
+    {/if}
+    {#if card_compiling}
       <div
         class="absolute bottom-[calc(100%+3px)] left-0 flex items-end gap-x-1"
       >
         <img
-          src="loader_circle.svg"
-          alt="loading"
-          class="w-6 h-6 animate-spin opacity-80"
+          src="aperture.svg"
+          alt="compiling"
+          class="w-5 h-5 animate-spin opacity-80"
         />
         <span class="text-sm animate-pulse italic text-gray-500">
-          compiling...
+          Compiling...
         </span>
       </div>
     {/if}
@@ -125,57 +147,17 @@
             {task.description}
           </div>
         </div>
-        <div class="flex flex-col justify-between gap-y-2 mt-1">
-          <div class="flex gap-x-2">
-            <button
-              class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
-              class:disabled={!executable}
-              onclick={() => handleExecute(task)}>Execute</button
-            >
-            <button
-              class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"
-              onclick={() => handleInspectTask(task)}>Inspect</button
-            >
-            <div class="relative add-parent-container">
-              <button
-                class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300 relative"
-                onclick={() => (adding_parent = !adding_parent)}
-              >
-                Add Parent
-              </button>
-              {#if adding_parent}
-                <div
-                  class="options absolute flex top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
-                >
-                  <div class="flex flex-col w-max">
-                    {#each task_options as option}
-                      <button
-                        class="text-sm bg-gray-50 outline-2 outline-gray-200 px-1 py-0.5 hover:bg-gray-200"
-                        onclick={() => {
-                          handleAddParent(option[0]);
-                          adding_parent = false;
-                        }}
-                      >
-                        {option[1]}
-                      </button>
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-            </div>
-            <button
-              class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
-              onclick={async () => {
-                const result = await custom_confirm(
-                  `Are you sure you want to delete ${task.label}?`
-                );
-                if (result) handleDeleteTask(task);
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        </div>
+        <PrimitiveTaskCardUtilities
+          {task}
+          {add_parent_options}
+          {remove_parent_options}
+          {handleAddParent}
+          {handleRemoveParent}
+          {handleExecute}
+          {handleCompile}
+          {handleInspectTask}
+          {handleDeleteTask}
+        ></PrimitiveTaskCardUtilities>
       {/if}
     </div>
     {#if expand && task.explanation !== "N/A"}
@@ -200,55 +182,17 @@
         in:slide
         class="more-actions hidden absolute top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
       >
-        <div class="flex gap-x-2">
-          <button
-            class="action-button outline-gray-200 bg-gray-100 hover:bg-gray-200"
-            class:disabled={!executable}
-            onclick={() => handleExecute(task)}>Execute</button
-          >
-          <button
-            class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"
-            onclick={() => handleInspectTask(task)}>Inspect</button
-          >
-          <div class="relative add-parent-container">
-            <button
-              class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300 relative"
-              onclick={() => (adding_parent = !adding_parent)}
-            >
-              Add Parent
-            </button>
-            {#if adding_parent}
-              <div
-                class="options absolute flex top-[calc(100%+1px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
-              >
-                <div class="flex flex-col w-max">
-                  {#each task_options as option}
-                    <button
-                      class="text-sm bg-gray-50 outline-2 outline-gray-200 px-1 py-0.5 hover:bg-gray-200"
-                      onclick={() => {
-                        handleAddParent(option[0]);
-                        adding_parent = false;
-                      }}
-                    >
-                      {option[1]}
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-          </div>
-          <button
-            class="action-button outline-red-300 bg-red-200 hover:bg-red-300 rounded-full ml-auto right-0"
-            onclick={async () => {
-              const result = await custom_confirm(
-                `Are you sure you want to delete ${task.label}?`
-              );
-              if (result) handleDeleteTask(task);
-            }}
-          >
-            Delete
-          </button>
-        </div>
+        <PrimitiveTaskCardUtilities
+          {task}
+          {add_parent_options}
+          {remove_parent_options}
+          {handleAddParent}
+          {handleRemoveParent}
+          {handleExecute}
+          {handleCompile}
+          {handleInspectTask}
+          {handleDeleteTask}
+        ></PrimitiveTaskCardUtilities>
       </div>
     {/if}
   </div>
@@ -259,19 +203,10 @@
   .container:hover > .more-actions {
     @apply flex flex-wrap;
   }
-  .action-button {
-    @apply outline-2 rounded px-1 py-0.5 text-sm font-mono;
-  }
-  .disabled {
-    @apply cursor-not-allowed pointer-events-none bg-gray-300 outline-gray-200 opacity-50;
-  }
 
   .task-card {
     transition:
       width 0.3s ease,
       height 0.3s ease;
   }
-  /* .add-parent-container:hover .options {
-    @apply block;
-  } */
 </style>

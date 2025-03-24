@@ -423,6 +423,7 @@ async def compile_primitive_tasks(request: Request) -> dict:
     session_id = request["session_id"]
     assert session_id in user_sessions
     primitive_task_descriptions = request["primitive_tasks"]
+    compile_target = request["compile_target"] if "compile_target" in request else None
     root_description = next(
         (x for x in primitive_task_descriptions if x["id"] == "-1"), None
     )
@@ -437,12 +438,9 @@ async def compile_primitive_tasks(request: Request) -> dict:
     else:
         primitive_task_execution_plan = await executor.execution_plan(
             primitive_task_descriptions,
+            compile_target=compile_target,
             model=default_model,
             api_key=api_key,
-        )
-        save_json(
-            primitive_task_execution_plan,
-            relative_path("dev_data/test_execution_plan.json"),
         )
 
     execution_graph, checkpointer = executor.create_graph(
@@ -456,6 +454,10 @@ async def compile_primitive_tasks(request: Request) -> dict:
     )
     user_sessions[session_id]["execution_state"] = execution_state
     primitive_task_execution_plan.insert(0, root_description)
+    save_json(
+        primitive_task_execution_plan,
+        relative_path("dev_data/test_execution_plan.json"),
+    )
     return {
         "primitive_tasks": primitive_task_execution_plan,
         "execution_state": execution_state,
@@ -635,6 +637,40 @@ def get_dev_plan():
 @app.post("/semantic_task/decomposition_to_primitive_tasks/dev/")
 def dev_convert():
     return json.load(open(relative_path("dev_data/test_execution_plan.json")))
+
+
+@app.post("/primitive_task/compile/dev/")
+async def compile_primitive_tasks(request: Request) -> dict:
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    compile_target = request["compile_target"] if "compile_target" in request else None
+    primitive_task_execution_plan = json.load(
+        open(relative_path("dev_data/test_execution_plan.json"))
+    )
+    root_description = next(
+        (x for x in primitive_task_execution_plan if x["id"] == "-1"), None
+    )
+
+    primitive_task_execution_plan = list(
+        filter(lambda x: x["id"] != "-1", primitive_task_execution_plan)
+    )
+    execution_graph, checkpointer = executor.create_graph(
+        primitive_task_execution_plan, checkpointer=None
+    )
+    user_sessions[session_id]["execution_graph"] = execution_graph
+    user_sessions[session_id]["checkpointer"] = checkpointer
+    execution_state = executor.init_user_execution_state(
+        execution_graph,
+        primitive_task_execution_plan,
+    )
+    user_sessions[session_id]["execution_state"] = execution_state
+    primitive_task_execution_plan.insert(0, root_description)
+    return {
+        "primitive_tasks": primitive_task_execution_plan,
+        "execution_state": execution_state,
+    }
 
 
 def dfs_find_and_do(task_tree: list[custom_types.Node], task_id: str, action: Callable):

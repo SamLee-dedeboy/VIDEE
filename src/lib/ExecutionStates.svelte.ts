@@ -209,33 +209,60 @@ export const primitiveTaskState = {
                 explanation: "N/A",
                 parentIds: [],
                 children: [],
+                recompile_needed: true,
             })
         primitiveTasks = [...primitiveTasks]
-        console.log({primitiveTasks})
+        this.sortAndCollectInputKeys()
     },
     delete(task_id) {
         primitiveTasks = primitiveTasks.filter((_task) => _task.id !== task_id);
+        primitiveTasks = primitiveTasks.map(t => {
+            t.parentIds = t.parentIds.filter(id => id !== task_id)
+            t.children = t.children.filter(id => id !== task_id)
+            return t
+        })
+
+        if(task_id === inspected_primitive_task_id) {
+            this.updateInspectedPrimitiveTask(undefined)
+        }
+        this.sortAndCollectInputKeys()
     },
     addParent(task: tPrimitiveTask, parent_id: string) {
-        task.parentIds = [...task.parentIds, parent_id]
-        this.updatePrimitiveTask(task.id, task)
-
         const parent_task = primitiveTasks.find(t => t.id === parent_id)
         if(parent_task) {
+            task.parentIds = [...task.parentIds, parent_id]
+            this.updatePrimitiveTask(task.id, task)
             parent_task.children = [...parent_task.children, task.id]
             this.updatePrimitiveTask(parent_task.id, parent_task)
+            primitiveTasks = this.sortAndCollectInputKeys()
+            this.sortAndCollectInputKeys()
+        }
+    },
+    removeParent(task: tPrimitiveTask, parent_id: string) {
+        const parent_task = primitiveTasks.find(t => t.id === parent_id)
+        if(parent_task) {
+            task.parentIds = task.parentIds.filter(id => id !== parent_id)
+            this.updatePrimitiveTask(task.id, task)
+            parent_task.children = parent_task.children.filter(id => id !== task.id)
+            this.updatePrimitiveTask(parent_task.id, parent_task)
+            this.sortAndCollectInputKeys()
         }
     },
     updatePrimitiveTask(task_id: string, primitiveTask: tPrimitiveTask) {
         const index = primitiveTasks.map(t => t.id).indexOf(task_id)
-        console.log("update task", task_id, index, primitiveTask)
         if(index !== -1) {
             primitiveTasks[index] = primitiveTask
             primitiveTasks = [...primitiveTasks]
-            primitiveTasks = collectInputKeys(primitiveTasks)
-            update_with_server();
         }
     },
+    sortAndCollectInputKeys() {
+        // sort the tasks by the parent-child relationships
+        primitiveTasks = sortNodesByHierarchy(primitiveTasks)
+        console.log("sorted tasks", primitiveTasks)
+        primitiveTasks = collectInputKeys(primitiveTasks)
+        return primitiveTasks
+    },
+
     updateInspectedPrimitiveTask(task_id: string | undefined) {
         inspected_primitive_task_id = task_id
     },
@@ -267,6 +294,7 @@ function update_with_server() {
       .then((data) => {
         console.log("Update primitive tasks success:", data);
         console.log(data);
+        primitiveTasks.forEach(t => t.recompile_needed = false)
         // primitiveTaskState.primitiveTasks = data.primitive_tasks;
         // primitiveTaskExecutionStates.execution_states = data.execution_state;
       })
@@ -274,6 +302,38 @@ function update_with_server() {
         console.error("Error:", error);
       });
   }
+function sortNodesByHierarchy(nodes: { id: string; parentIds: string[]; children: string[] }[]) {
+    const nodeMap = new Map();
+    const inDegree = new Map();
+
+    nodes.forEach(node => {
+        nodeMap.set(node.id, node);
+        inDegree.set(node.id, node.parentIds.length);
+    });
+
+    const queue = nodes.filter(node => inDegree.get(node.id) === 0);
+    const sortedNodes: any[] = [];
+
+    while (queue.length > 0) {
+        const currentNode = queue.shift()!;
+        sortedNodes.push(currentNode);
+
+        currentNode.children.forEach(childId => {
+            if (inDegree.has(childId)) {
+                inDegree.set(childId, inDegree.get(childId) - 1);
+                if (inDegree.get(childId) === 0) {
+                    queue.push(nodeMap.get(childId));
+                }
+            }
+        });
+    }
+
+    if (sortedNodes.length !== nodes.length) {
+        throw new Error("Cycle detected in the graph, topological sort not possible.");
+    }
+
+    return sortedNodes;
+}
 
 function collectInputKeys(primitive_tasks: tPrimitiveTask[]) {
     let primitive_tasks_without_root = primitive_tasks.filter(t => t.id !== "-1")

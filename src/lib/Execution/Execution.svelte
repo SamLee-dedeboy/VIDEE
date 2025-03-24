@@ -36,7 +36,7 @@
     handleConvert: Function;
 
     converting: boolean;
-    compiling: boolean;
+    compiling: boolean | string | undefined;
     handleInspectPrimitiveTask: Function;
 
     // evaluators: tExecutionEvaluator[];

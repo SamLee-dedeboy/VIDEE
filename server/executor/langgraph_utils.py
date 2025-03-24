@@ -105,6 +105,7 @@ async def execution_plan(
     primitive_tasks: list[PrimitiveTaskDescription],
     model: str,
     api_key: str,
+    compile_target: str | None = None,
 ) -> list[PrimitiveTaskExecution]:
     plan = []
     # Initialize with default content key with schema
@@ -113,7 +114,21 @@ async def execution_plan(
     current_state_key = "documents"
     for primitive_task in primitive_tasks:
         # Use the appropriate existing_keys based on current_state_key
-        existing_keys = document_keys if current_state_key == "documents" else transformed_data_keys
+        existing_keys = (
+            document_keys if current_state_key == "documents" else transformed_data_keys
+        )
+        if compile_target is not None and compile_target != primitive_task["id"]:
+            # Add the output key to the appropriate existing keys
+            output_key = primitive_task["state_output_key"]
+            output_schema = primitive_task["execution"]["parameters"]["output_schema"]
+            if current_state_key == "documents":
+                document_keys.append({"key": output_key, "schema": output_schema})
+            else:
+                transformed_data_keys.append(
+                    {"key": output_key, "schema": output_schema}
+                )
+            plan.append({**primitive_task})
+            continue
 
         try:
             input_keys = await autogen_utils.run_input_key_generation_agent(

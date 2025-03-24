@@ -17,7 +17,7 @@
     handleInspectPrimitiveTask = () => {},
   }: {
     converting: boolean;
-    compiling: boolean;
+    compiling: boolean | string | undefined;
     handleInspectPrimitiveTask: Function;
   } = $props();
 
@@ -260,30 +260,33 @@
           class="primitive-task-card-container absolute task-wrapper bg-blue-200 flex outline-1 outline-gray-300 rounded-sm shadow transition-all"
           class:executing={executing_task_id === task.id}
           data-id={task.id}
+          style={`z-index: ${primitive_tasks.length - index}`}
         >
           {#if ask_to_check_results && executed_task_id === task.id}
             <div
-              class="absolute bottom-[calc(100%+2px)] left-4 right-4 flex justify-center z-20"
+              class="absolute bottom-[calc(100%+2px)] left-1/2 -translate-x-1/2 flex justify-center z-20"
             >
               <div
-                class="rounded w-[18rem] bg-[#f6faff] outline-0 outline-gray-200 border-t-6 border-blue-200 shadow-[0px_0px_1px_1px_lightgray] px-2 py-1 flex flex-col font-mono gap-y-4"
+                class="rounded w-max bg-[#f6faff] outline-0 outline-gray-200 border-t-6 border-blue-200 shadow-[0px_0px_1px_1px_lightgray] px-2 py-1 flex items-center font-mono gap-x-8"
               >
-                <span class="text-slate-600 text-sm">
-                  Execution Done! <br /> Would you like to see the results?
+                <span class="text-slate-600 font-semibold italic">
+                  Execution Complete!
                 </span>
-                <div class="flex justify-between text-sm">
+                <div
+                  class="flex justify-between text-sm gap-x-2 self-end italic"
+                >
                   <button
                     class="bg-green-100 outline-2 outline-gray-200 hover:bg-green-200 px-2 py-1 rounded text-slate-600"
                     onclick={() => {
                       ask_to_check_results = false;
                       navigate_to_results(executed_task_id!);
-                    }}>Yes</button
+                    }}>Results</button
                   >
                   <button
                     class="bg-red-100 outline-2 outline-gray-200 hover:bg-red-200 px-2 py-1 rounded text-slate-600"
                     onclick={() => {
                       ask_to_check_results = false;
-                    }}>No</button
+                    }}>Close</button
                   >
                 </div>
               </div>
@@ -292,7 +295,7 @@
 
           <PrimitiveTaskCard
             label_options={primitiveTaskOptions}
-            task_options={primitive_tasks
+            add_parent_options={primitive_tasks
               .filter(
                 (t) =>
                   t.id !== task.id &&
@@ -300,28 +303,49 @@
                   !task.children.includes(t.id)
               )
               .map((t) => [t.id, t.label])}
+            remove_parent_options={task.parentIds.map((id) => [
+              id,
+              primitive_tasks.find((t) => t.id === id)!.label,
+            ])}
             {task}
             expand={task_card_expanded.includes(task.id)}
             {compiling}
             executable={primitiveTaskExecutionStates.executable(task.id)}
             {handleExecute}
+            {handleCompile}
             {handleDeleteTask}
             handleInspectTask={handleInspectPrimitiveTask}
             handleToggleExpand={() => handleToggleExpand(task.id)}
             handleAddParent={(parent_id) =>
               primitiveTaskState.addParent(task, parent_id)}
+            handleRemoveParent={(parent_id) =>
+              primitiveTaskState.removeParent(task, parent_id)}
           ></PrimitiveTaskCard>
         </div>
       {/each}
     </div>
     {#if primitive_tasks.length > 0}
       <button
-        class="self-end font-mono text-sm bg-blue-50 text-slate-700 hover:bg-blue-100 px-4 py-1 mx-2 w-min flex justify-center rounded outline-2 outline-blue-200 z-10"
+        class="self-end font-mono text-sm bg-blue-50 text-slate-700 hover:bg-blue-100 px-2 py-1 mx-2 w-min flex gap-x-2 items-center justify-center rounded outline-2 outline-blue-200 z-10"
         class:disabled={primitive_tasks === undefined}
         tabindex="0"
         onclick={() => handleCompile()}
         onkeyup={() => {}}
       >
+        <svg
+          class="w-5 h-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#405065"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><circle cx="12" cy="12" r="10" /><path d="m14.31 8 5.74 9.94" /><path
+            d="M9.69 8h11.48"
+          /><path d="m7.38 12 5.74-9.94" /><path d="M9.69 16 3.95 6.06" /><path
+            d="M14.31 16H2.83"
+          /><path d="m16.62 12-5.74 9.94" /></svg
+        >
         Compile
       </button>
     {/if}

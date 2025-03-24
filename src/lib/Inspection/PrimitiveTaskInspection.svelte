@@ -14,7 +14,7 @@
   let {
     task,
   }: {
-    task: tPrimitiveTask;
+    task: tPrimitiveTask | undefined;
   } = $props();
   let show_description = $state(true);
   let show_formats = $state(false);
@@ -22,7 +22,10 @@
   let execution_states = $derived(
     primitiveTaskExecutionStates.execution_states
   );
-  let executed = $derived(execution_states?.[task.id].executed);
+  let executed = $derived.by(() => {
+    if (task === undefined) return false;
+    return execution_states?.[task.id]?.executed;
+  });
   $inspect(executed);
   let execution_result_inspection_panel: any = $state();
 
@@ -30,7 +33,8 @@
     const new_task = JSON.parse(JSON.stringify(task));
     new_task.execution!.parameters.prompt_template = messages;
     console.log("Updated primitive task", new_task);
-    primitiveTaskState.updatePrimitiveTask(task.id, new_task);
+    if (task !== undefined)
+      primitiveTaskState.updatePrimitiveTask(task.id, new_task);
   }
 
   export async function navigate_to_results() {
@@ -47,7 +51,7 @@
   <div
     class="text-[1.5rem] text-slate-600 font-semibold italic bg-[#f2f8fd] flex justify-center"
   >
-    {task.label} - Detail
+    {task?.label} - Detail
   </div>
   {#if task}
     <div class="flex flex-col px-2 gap-y-1">
@@ -97,6 +101,29 @@
             }}
           >
             Input/Output Formats
+            {#if task.recompile_needed}
+              <div
+                class="flex items-center gap-x-1 text-slate-700 italic text-sm ml-2"
+                title="Recompile Needed"
+              >
+                <svg
+                  class="w-5 h-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#45556c"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><circle cx="12" cy="12" r="10" /><path
+                    d="m14.31 8 5.74 9.94"
+                  /><path d="M9.69 8h11.48" /><path
+                    d="m7.38 12 5.74-9.94"
+                  /><path d="M9.69 16 3.95 6.06" /><path
+                    d="M14.31 16H2.83"
+                  /><path d="m16.62 12-5.74 9.94" /></svg
+                >
+              </div>
+            {/if}
             <img
               src="chevron_down.svg"
               alt="expand"
@@ -105,9 +132,10 @@
           </button>
           {#if task.doc_input_keys}
             {#if show_formats}
-              {@const input_key_options = task.existing_keys?.filter(
-                (k) => !task.doc_input_keys?.includes(k)
-              ) || []}
+              {@const input_key_options =
+                task.existing_keys?.filter(
+                  (k) => !task.doc_input_keys?.includes(k)
+                ) || []}
               <div
                 in:slide
                 class="format-container flex justify-around divide-x"
@@ -222,7 +250,27 @@
               </div>
             {/if}
           {:else}
-            <div>Needs Compilation...</div>
+            <div
+              class="flex items-center gap-x-1 text-slate-700 italic text-sm"
+            >
+              <svg
+                class="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#405065"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><circle cx="12" cy="12" r="10" /><path
+                  d="m14.31 8 5.74 9.94"
+                /><path d="M9.69 8h11.48" /><path d="m7.38 12 5.74-9.94" /><path
+                  d="M9.69 16 3.95 6.06"
+                /><path d="M14.31 16H2.83" /><path
+                  d="m16.62 12-5.74 9.94"
+                /></svg
+              >
+              Needs Compilation...
+            </div>
           {/if}
         </div>
         <button
@@ -236,7 +284,30 @@
               ?.scrollIntoView({ behavior: "smooth", block: "center" });
           }}
         >
-          Execution Parameters
+          Execution Parameter
+          {#if task.recompile_needed}
+            <div
+              class="flex items-center gap-x-1 text-slate-700 italic text-sm ml-2"
+              title="Recompile Needed"
+            >
+              <svg
+                class="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#45556c"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><circle cx="12" cy="12" r="10" /><path
+                  d="m14.31 8 5.74 9.94"
+                /><path d="M9.69 8h11.48" /><path d="m7.38 12 5.74-9.94" /><path
+                  d="M9.69 16 3.95 6.06"
+                /><path d="M14.31 16H2.83" /><path
+                  d="m16.62 12-5.74 9.94"
+                /></svg
+              >
+            </div>
+          {/if}
           <img
             src="chevron_down.svg"
             alt="expand"
@@ -257,7 +328,23 @@
             </div>
           {/if}
         {:else}
-          <div>Needs Compilation...</div>
+          <div class="flex items-center gap-x-1 text-slate-700 italic text-sm">
+            <svg
+              class="w-4 h-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#405065"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><circle cx="12" cy="12" r="10" /><path
+                d="m14.31 8 5.74 9.94"
+              /><path d="M9.69 8h11.48" /><path d="m7.38 12 5.74-9.94" /><path
+                d="M9.69 16 3.95 6.06"
+              /><path d="M14.31 16H2.83" /><path d="m16.62 12-5.74 9.94" /></svg
+            >
+            Needs Compilation...
+          </div>
         {/if}
       </div>
       {#if executed}

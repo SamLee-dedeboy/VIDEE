@@ -26,7 +26,10 @@
     paused: false,
     finished: false,
   });
-  let controllers = $state({
+  let controllers: {
+    converting: boolean;
+    compiling: boolean | string | undefined;
+  } = $state({
     converting: false,
     compiling: false,
   });
@@ -315,28 +318,28 @@
       });
   }
 
-  function handleCompile() {
-    console.log("Compiling...", { primitive_tasks, session_id });
-    controllers.compiling = true;
+  function handleCompile(task: tPrimitiveTask | undefined = undefined) {
+    console.log("Compiling...", { primitive_tasks, task, session_id });
+    controllers.compiling = task?.id;
     fetch(`${server_address}/primitive_task/compile/`, {
+      // fetch(`${server_address}/primitive_task/compile/dev/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ primitive_tasks, session_id }),
+      body: JSON.stringify({
+        primitive_tasks,
+        compile_target: task?.id,
+        session_id,
+      }),
     })
       .then((response) => response.json())
       .then((data) => {
         controllers.compiling = false;
+        data.primitive_tasks.forEach((t) => (t.recompile_needed = false));
         primitiveTaskState.primitiveTasks = data.primitive_tasks;
         primitiveTaskExecutionStates.execution_states = data.execution_state;
         console.log({ data });
-        // if (inspected_primitive_task !== undefined) {
-        //   const original_id = inspected_primitive_task.id;
-        //   inspected_primitive_task = primitive_tasks.find(
-        //     (t) => t.id === original_id
-        //   );
-        // }
         execution_panel.generate_evaluator_recommendations(
           data.primitive_tasks
         );
