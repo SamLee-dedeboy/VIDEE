@@ -161,21 +161,25 @@ async def execution_plan(
 
 
 async def generate_input_keys(primitive_task, existing_keys, model, api_key):
-        try:
-            input_keys = await autogen_utils.run_input_key_generation_agent(
-                primitive_task, existing_keys, model=model, api_key=api_key
-            )
-            # Check if all required keys exist in existing keys
-            existing_key_names = [k["key"] if isinstance(k, dict) else k for k in existing_keys]
-            input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
-            assert all(k in existing_key_names for k in input_key_names)
+    try:
+        input_keys = await autogen_utils.run_input_key_generation_agent(
+            primitive_task, existing_keys, model=model, api_key=api_key
+        )
+        # Check if all required keys exist in existing keys
+        existing_key_names = [
+            k["key"] if isinstance(k, dict) else k for k in existing_keys
+        ]
+        input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
+        assert all(k in existing_key_names for k in input_key_names)
         return input_keys, input_key_names
-        except AssertionError:
-            input_keys = await autogen_utils.run_input_key_generation_agent(
-                primitive_task, [], model=model, api_key=api_key
-            )
-            existing_key_names = [k["key"] if isinstance(k, dict) else k for k in existing_keys]
-            input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
+    except AssertionError:
+        input_keys = await autogen_utils.run_input_key_generation_agent(
+            primitive_task, [], model=model, api_key=api_key
+        )
+        existing_key_names = [
+            k["key"] if isinstance(k, dict) else k for k in existing_keys
+        ]
+        input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
 
 
 async def generate_execution_parameters(
@@ -190,199 +194,186 @@ async def generate_execution_parameters(
     model,
     api_key,
 ):
-        # Handle local tools tasks differently
-        if primitive_task["label"] == "Data Transformation":
-            # For data transformation, we'll use the data_transform_tool
-            try:
-                # use the data transform agent to generate a plan
-                transform_config = await autogen_utils.run_data_transform_plan_agent(
+    # Handle local tools tasks differently
+    if primitive_task["label"] == "Data Transformation":
+        # For data transformation, we'll use the data_transform_tool
+        try:
+            # use the data transform agent to generate a plan
+            transform_config = await autogen_utils.run_data_transform_plan_agent(
                 primitive_task,
                 # existing_keys,
                 input_keys,
                 model=model,
                 api_key=api_key,
-                )
-                transform_plan = create_data_transform_plan(
-                    primitive_task,
-                    transform_config.get("operation", "transform"),
-                    transform_config.get("parameters", {}),
+            )
+            transform_plan = create_data_transform_plan(
+                primitive_task,
+                transform_config.get("operation", "transform"),
+                transform_config.get("parameters", {}),
                 # !! I think we need to pass "input_keys" here instead of "existing_keys"?
                 # existing_keys,  # Pass input keys with detailed schemas
                 input_keys,
                 current_state_key,
-                )
-                plan.append(transform_plan)
+            )
+            plan.append(transform_plan)
 
-                current_state_key = "transformed_data"
+            current_state_key = "transformed_data"
 
-                output_json = extract_json_content(transform_config["parameters"]["output_schema"], True)
-                for key in output_json:
-                    transformed_data_keys.append({
-                        "key": key,
-                        "schema": output_json[key]
-                    })
+            output_json = extract_json_content(
+                transform_config["parameters"]["output_schema"], True
+            )
+            for key in output_json:
+                transformed_data_keys.append({"key": key, "schema": output_json[key]})
 
-                # Add output key to existing keys with the detailed output schema
-                # output_key = transform_plan["state_output_key"]
-                # output_schema = transform_config["parameters"]["output_schema"]
-                #
-                # current_state_key = "transformed_data"
-                # transformed_data_keys.append({
-                #     "key": output_key,
-                #     "schema": output_schema
-                # })
-                # # Add the output key with its schema to the appropriate existing keys
-                # if current_state_key == "documents":
-                #     document_keys.append({
-                #         "key": output_key,
-                #         "schema": output_schema
-                #     })
-                # else:
-                #     transformed_data_keys.append({
-                #         "key": output_key,
-                #         "schema": output_schema
-                #     })
+            # Add output key to existing keys with the detailed output schema
+            # output_key = transform_plan["state_output_key"]
+            # output_schema = transform_config["parameters"]["output_schema"]
+            #
+            # current_state_key = "transformed_data"
+            # transformed_data_keys.append({
+            #     "key": output_key,
+            #     "schema": output_schema
+            # })
+            # # Add the output key with its schema to the appropriate existing keys
+            # if current_state_key == "documents":
+            #     document_keys.append({
+            #         "key": output_key,
+            #         "schema": output_schema
+            #     })
+            # else:
+            #     transformed_data_keys.append({
+            #         "key": output_key,
+            #         "schema": output_schema
+            #     })
             return plan, current_state_key, document_keys, transformed_data_keys
-            except Exception as e:
-                # Fall back to default prompting plan if agent fails
-                print(f"Error using data transform agent: {e}. Using default prompting plan.")
+        except Exception as e:
+            # Fall back to default prompting plan if agent fails
+            print(
+                f"Error using data transform agent: {e}. Using default prompting plan."
+            )
 
-        if primitive_task["label"] == "Clustering Analysis":
-            try:
-                # Use the clustering agent to generate a plan
-                clustering_config = await autogen_utils.run_clustering_plan_agent(
-                    primitive_task, existing_keys, model=model, api_key=api_key
-                )
-                clustering_plan = create_clustering_plan(
-                    primitive_task,
-                    clustering_config.get("algorithm", "kmeans"),
-                    clustering_config.get("parameters", {}),
-                    existing_keys,
-                    current_state_key
-                )
-                plan.append(clustering_plan)
+    if primitive_task["label"] == "Clustering Analysis":
+        try:
+            # Use the clustering agent to generate a plan
+            clustering_config = await autogen_utils.run_clustering_plan_agent(
+                primitive_task, existing_keys, model=model, api_key=api_key
+            )
+            clustering_plan = create_clustering_plan(
+                primitive_task,
+                clustering_config.get("algorithm", "kmeans"),
+                clustering_config.get("parameters", {}),
+                existing_keys,
+                current_state_key,
+            )
+            plan.append(clustering_plan)
 
-                # Add output key to existing keys with the detailed output schema
-                output_key = clustering_plan["state_output_key"]
-                output_schema = clustering_plan.get("output_schema")
+            # Add output key to existing keys with the detailed output schema
+            output_key = clustering_plan["state_output_key"]
+            output_schema = clustering_plan.get("output_schema")
 
-                # Add the output key to the appropriate existing keys
-                if current_state_key == "documents":
-                    document_keys.append({
-                        "key": output_key,
-                        "schema": output_schema
-                    })
-                else:
-                    transformed_data_keys.append({
-                        "key": output_key,
-                        "schema": output_schema}
+            # Add the output key to the appropriate existing keys
+            if current_state_key == "documents":
+                document_keys.append({"key": output_key, "schema": output_schema})
+            else:
+                transformed_data_keys.append(
+                    {"key": output_key, "schema": output_schema}
                 )
             return plan, current_state_key, document_keys, transformed_data_keys
-            except Exception as e:
-                print(f"Error using clustering agent: {e}. Using default prompting plan.")
+        except Exception as e:
+            print(f"Error using clustering agent: {e}. Using default prompting plan.")
 
-        if primitive_task["label"] == "Dimensionality Reduction":
-            try:
-                # Use the dimension reduction agent to generate a plan
-                dim_reduction_config = await autogen_utils.run_dim_reduction_plan_agent(
-                    primitive_task, existing_keys, model=model, api_key=api_key
-                )
-                dim_reduction_plan = create_dim_reduction_plan(
-                    primitive_task,
-                    dim_reduction_config.get("algorithm", "pca"),
-                    dim_reduction_config.get("parameters", {}),
-                    existing_keys,
-                    current_state_key
-                )
-                plan.append(dim_reduction_plan)
+    if primitive_task["label"] == "Dimensionality Reduction":
+        try:
+            # Use the dimension reduction agent to generate a plan
+            dim_reduction_config = await autogen_utils.run_dim_reduction_plan_agent(
+                primitive_task, existing_keys, model=model, api_key=api_key
+            )
+            dim_reduction_plan = create_dim_reduction_plan(
+                primitive_task,
+                dim_reduction_config.get("algorithm", "pca"),
+                dim_reduction_config.get("parameters", {}),
+                existing_keys,
+                current_state_key,
+            )
+            plan.append(dim_reduction_plan)
 
-                # Add output key to existing keys with the detailed output schema
-                output_key = dim_reduction_plan["state_output_key"]
-                output_schema = dim_reduction_plan.get("output_schema")
+            # Add output key to existing keys with the detailed output schema
+            output_key = dim_reduction_plan["state_output_key"]
+            output_schema = dim_reduction_plan.get("output_schema")
 
-                # Add the output key to the appropriate existing keys
-                if current_state_key == "documents":
-                    document_keys.append({
-                        "key": output_key,
-                        "schema": output_schema
-                    })
-                else:
-                    transformed_data_keys.append({
-                        "key": output_key,
-                        "schema": output_schema}
+            # Add the output key to the appropriate existing keys
+            if current_state_key == "documents":
+                document_keys.append({"key": output_key, "schema": output_schema})
+            else:
+                transformed_data_keys.append(
+                    {"key": output_key, "schema": output_schema}
                 )
             return plan, current_state_key, document_keys, transformed_data_keys
-            except Exception as e:
-                print(f"Error using dimension reduction agent: {e}. Using default prompting plan.")
+        except Exception as e:
+            print(
+                f"Error using dimension reduction agent: {e}. Using default prompting plan."
+            )
 
-        if primitive_task["label"] == "Embedding Generation":
-            try:
-                # Use the embedding agent to generate a plan
-                embedding_config = await autogen_utils.run_embedding_plan_agent(
-                    primitive_task, existing_keys, model=model, api_key=api_key
-                )
-                embedding_plan = create_embedding_plan(
-                    primitive_task,
-                    embedding_config.get("provider", "openai"),
-                    embedding_config.get("parameters", {}),
-                    existing_keys,
-                    current_state_key,
-                    api_key
-                )
-                plan.append(embedding_plan)
+    if primitive_task["label"] == "Embedding Generation":
+        try:
+            # Use the embedding agent to generate a plan
+            embedding_config = await autogen_utils.run_embedding_plan_agent(
+                primitive_task, existing_keys, model=model, api_key=api_key
+            )
+            embedding_plan = create_embedding_plan(
+                primitive_task,
+                embedding_config.get("provider", "openai"),
+                embedding_config.get("parameters", {}),
+                existing_keys,
+                current_state_key,
+                api_key,
+            )
+            plan.append(embedding_plan)
 
-                # Add output key to existing keys with the detailed output schema
-                output_key = embedding_plan["state_output_key"]
-                output_schema = embedding_plan.get("output_schema")
+            # Add output key to existing keys with the detailed output schema
+            output_key = embedding_plan["state_output_key"]
+            output_schema = embedding_plan.get("output_schema")
 
-                # Add the output key to the appropriate existing keys
-                if current_state_key == "documents":
-                    document_keys.append({
-                        "key": output_key,
-                        "schema": output_schema
-                    })
-                else:
-                    transformed_data_keys.append({
-                        "key": output_key,
-                        "schema": output_schema}
+            # Add the output key to the appropriate existing keys
+            if current_state_key == "documents":
+                document_keys.append({"key": output_key, "schema": output_schema})
+            else:
+                transformed_data_keys.append(
+                    {"key": output_key, "schema": output_schema}
                 )
             return plan, current_state_key, document_keys, transformed_data_keys
-            except Exception as e:
-                print(f"Error using embedding agent: {e}. Using default prompting plan.")
+        except Exception as e:
+            print(f"Error using embedding agent: {e}. Using default prompting plan.")
 
-        if primitive_task["label"] == "Segmentation":
-            try:
-                # Use the segmentation agent to generate a plan
-                segmentation_config = await autogen_utils.run_segmentation_plan_agent(
-                    primitive_task, existing_keys, model=model, api_key=api_key
-                )
-                segmentation_plan = create_segmentation_plan(
-                    primitive_task,
-                    segmentation_config.get("strategy", "paragraph"),
-                    segmentation_config.get("parameters", {}),
-                    existing_keys,
-                    current_state_key
-                )
-                plan.append(segmentation_plan)
+    if primitive_task["label"] == "Segmentation":
+        try:
+            # Use the segmentation agent to generate a plan
+            segmentation_config = await autogen_utils.run_segmentation_plan_agent(
+                primitive_task, existing_keys, model=model, api_key=api_key
+            )
+            segmentation_plan = create_segmentation_plan(
+                primitive_task,
+                segmentation_config.get("strategy", "paragraph"),
+                segmentation_config.get("parameters", {}),
+                existing_keys,
+                current_state_key,
+            )
+            plan.append(segmentation_plan)
 
-                # Add output key to existing keys with the detailed output schema
-                output_key = segmentation_plan["state_output_key"]
-                output_schema = segmentation_plan.get("output_schema")
+            # Add output key to existing keys with the detailed output schema
+            output_key = segmentation_plan["state_output_key"]
+            output_schema = segmentation_plan.get("output_schema")
 
-                # Add the output key to the appropriate existing keys
-                if current_state_key == "documents":
-                    document_keys.append({
-                        "key": output_key,
-                        "schema": output_schema
-                    })
-                else:
-                    transformed_data_keys.append({
-                        "key": output_key,
-                        "schema": output_schema}
+            # Add the output key to the appropriate existing keys
+            if current_state_key == "documents":
+                document_keys.append({"key": output_key, "schema": output_schema})
+            else:
+                transformed_data_keys.append(
+                    {"key": output_key, "schema": output_schema}
                 )
             return plan, current_state_key, document_keys, transformed_data_keys
-            except Exception as e:
-                print(f"Error using segmentation agent: {e}. Using default prompting plan.")
+        except Exception as e:
+            print(f"Error using segmentation agent: {e}. Using default prompting plan.")
 
         # Default to using prompt_generation_agent for other tasks
         prompt_config = await autogen_utils.run_prompt_generation_agent(
@@ -456,7 +447,7 @@ async def generate_execution_parameters(
                 "state_input_key": current_state_key,
                 "doc_input_keys": input_key_names,
                 "state_output_key": output_key,
-            "input_keys": input_keys,
+                "input_keys": input_keys,
                 # "input_key_schemas": input_key_schemas,
                 # "output_schema": output_schema,
                 "execution": {
@@ -615,12 +606,20 @@ def create_node(step, custom_get_input_func=None, custom_reduce_func=None):
     state_output_key = step["state_output_key"]
     # how to get input
     if custom_get_input_func is None:
-        get_input = lambda state: get_input_func(state, state_input_key, doc_input_keys, step["execution"])
+        get_input = lambda state: get_input_func(
+            state, state_input_key, doc_input_keys, step["execution"]
+        )
     else:
         get_input = custom_get_input_func
     # how to produce output
     if custom_reduce_func is None:
-        if state_input_key == "transformed_data" or step["execution"]["tool"] in ["clustering_tool", "embedding_tool", "dim_reduction_tool", "segmentation_tool", "data_transform_tool"]:
+        if state_input_key == "transformed_data" or step["execution"]["tool"] in [
+            "clustering_tool",
+            "embedding_tool",
+            "dim_reduction_tool",
+            "segmentation_tool",
+            "data_transform_tool",
+        ]:
             reduce = lambda combined: tools_reduce_func(
                 combined, state_input_key, state_output_key, state_output_key
             )
@@ -633,13 +632,12 @@ def create_node(step, custom_get_input_func=None, custom_reduce_func=None):
     # create the map-reduce chain
     # for clustering, dim reduction, data transformation the input is all documents
     # We cannot do batch process document by document
-    if step["execution"]["tool"] in ["clustering_tool", "data_transform_tool", "dim_reduction_tool"]:
-        map = RunnableAssign(
-            {
-                state_output_key: get_input
-                | execution_chain
-            }
-        )
+    if step["execution"]["tool"] in [
+        "clustering_tool",
+        "data_transform_tool",
+        "dim_reduction_tool",
+    ]:
+        map = RunnableAssign({state_output_key: get_input | execution_chain})
     else:
         map = RunnableAssign(
             {
@@ -674,7 +672,9 @@ def tools_reduce_func(
     output_data = combined[state_output_key]
 
     # Get input data or use appropriate empty container if missing
-    input_data = combined.get(state_input_key, [] if state_input_key == "documents" else {})
+    input_data = combined.get(
+        state_input_key, [] if state_input_key == "documents" else {}
+    )
     result = {state_input_key: input_data}
 
     # Handle operations based on input and output types
@@ -728,7 +728,9 @@ def create_root():
 
 
 # a common get input function
-def get_input_func(state, state_input_key: str, doc_input_keys: list[str], execution = None):
+def get_input_func(
+    state, state_input_key: str, doc_input_keys: list[str], execution=None
+):
     """
     Extract the required input fields from each document in the state.
 
@@ -743,17 +745,21 @@ def get_input_func(state, state_input_key: str, doc_input_keys: list[str], execu
     """
     result = []
     key_schemas = {}
-    feature_key = 'content'
-    if execution and 'parameters' in execution and 'feature_key' in execution['parameters']:
-        feature_key = execution['parameters']['feature_key']
+    feature_key = "content"
+    if (
+        execution
+        and "parameters" in execution
+        and "feature_key" in execution["parameters"]
+    ):
+        feature_key = execution["parameters"]["feature_key"]
     elif len(doc_input_keys) > 0:
         feature_key = doc_input_keys[0]
     try:
-        key_schemas = execution['parameters']['input_key_schemas']
+        key_schemas = execution["parameters"]["input_key_schemas"]
     except Exception:
         pass
     # For transformed_data, handle it specially
-    if state_input_key == 'transformed_data':
+    if state_input_key == "transformed_data":
         # handle each key in the global transformed data store, ideally there should be only one key.
         for key in doc_input_keys:
             if key in key_schemas:
@@ -762,16 +768,14 @@ def get_input_func(state, state_input_key: str, doc_input_keys: list[str], execu
             transformed_data = state[state_input_key][key]
             if isinstance(transformed_data, list):
                 for d in transformed_data:
-                    result.append({
-                        feature_key: d
-                    })
+                    result.append({feature_key: d})
             else:
-                result.append({
-                    feature_key: transformed_data
-                })
+                result.append({feature_key: transformed_data})
 
     else:
-        docs = state[state_input_key]  # how to get the list of docs from the state (e.g. state["documents"])
+        docs = state[
+            state_input_key
+        ]  # how to get the list of docs from the state (e.g. state["documents"])
         # Extract only the requested fields from each document
         for doc in docs:
             doc_data = {}
@@ -802,6 +806,7 @@ def reduce_func(combined: dict, state_input_key: str, state_output_key: str):
             for doc, output in zip(documents, outputs)
         ]
     }
+
 
 def convert_spec_to_chain(spec):
     if spec["tool"] == "prompt_tool":
@@ -838,16 +843,26 @@ def convert_spec_to_chain(spec):
         feature_key = spec["parameters"].get("feature_key", "content")
         n_components = spec["parameters"].get("n_components", 2)
         # Extract any other parameters for specific algorithms
-        extra_params = {k: v for k, v in spec["parameters"].items()
-                        if k not in ["name", "algorithm", "feature_key", "n_components",
-                                     "input_key_schemas", "output_schema"]}
+        extra_params = {
+            k: v
+            for k, v in spec["parameters"].items()
+            if k
+            not in [
+                "name",
+                "algorithm",
+                "feature_key",
+                "n_components",
+                "input_key_schemas",
+                "output_schema",
+            ]
+        }
         return RunnableLambda(
             lambda inputs: dim_reduction_tool(
                 inputs,
                 algorithm=algorithm,
                 feature_key=feature_key,
                 n_components=n_components,
-                **extra_params
+                **extra_params,
             )
         )
 
@@ -864,7 +879,7 @@ def convert_spec_to_chain(spec):
                 provider=provider,
                 model=model,
                 feature_key=feature_key,
-                api_key=api_key
+                api_key=api_key,
             )
         )
 
@@ -880,7 +895,7 @@ def convert_spec_to_chain(spec):
                 provider=provider,
                 model=model,
                 feature_key=feature_key,
-                api_key=api_key
+                api_key=api_key,
             )
         )
 
@@ -890,9 +905,19 @@ def convert_spec_to_chain(spec):
         content_key = spec["parameters"].get("content_key", "content")
         output_key = spec["parameters"].get("output_key", "segments")
         # Extract any other parameters for specific strategies
-        extra_params = {k: v for k, v in spec["parameters"].items()
-                        if k not in ["name", "strategy", "content_key", "output_key",
-                                     "input_key_schemas", "output_schema"]}
+        extra_params = {
+            k: v
+            for k, v in spec["parameters"].items()
+            if k
+            not in [
+                "name",
+                "strategy",
+                "content_key",
+                "output_key",
+                "input_key_schemas",
+                "output_schema",
+            ]
+        }
 
         return RunnableLambda(
             lambda inputs: segmentation_tool(
@@ -900,7 +925,7 @@ def convert_spec_to_chain(spec):
                 strategy=strategy,
                 content_key=content_key,
                 output_key=output_key,
-                **extra_params
+                **extra_params,
             )
         )
     elif spec["tool"] == "data_transform_tool":
@@ -913,7 +938,7 @@ def convert_spec_to_chain(spec):
                 inputs,
                 operation=operation,
                 transform_code=transform_code,
-                wrap_result=wrap_result
+                wrap_result=wrap_result,
             )
         )
     else:
@@ -921,11 +946,11 @@ def convert_spec_to_chain(spec):
 
 
 def create_data_transform_plan(
-        primitive_task,
-        operation=None,
-        config_params=None,
-        input_keys=None,
-        current_state_key="documents"
+    primitive_task,
+    operation=None,
+    config_params=None,
+    input_keys=None,
+    current_state_key="documents",
 ):
     """
     Creates an execution plan for data transformation tasks based on operation type.
@@ -953,12 +978,15 @@ def create_data_transform_plan(
     default_output_schema = None
     if operation == "reduce":
         # For reduce operations, use a structured schema template
-        default_output_schema = {
-            "result": "any"
-        }
+        default_output_schema = {"result": "any"}
     else:
         # Filter and map operations typically maintain the same schema as input..
-        if input_keys and len(input_keys) > 0 and isinstance(input_keys[0], dict) and "schema" in input_keys[0]:
+        if (
+            input_keys
+            and len(input_keys) > 0
+            and isinstance(input_keys[0], dict)
+            and "schema" in input_keys[0]
+        ):
             # Use the schema of the first input key as template
             default_output_schema = input_keys[0]["schema"]
         else:
@@ -969,7 +997,7 @@ def create_data_transform_plan(
         "name": primitive_task["label"],
         "operation": operation,
         "input_key_schemas": input_key_schemas,
-        "output_schema": default_output_schema
+        "output_schema": default_output_schema,
     }
 
     # If config_params is provided, use them
@@ -988,12 +1016,13 @@ def create_data_transform_plan(
         },
     }
 
+
 def create_clustering_plan(
     primitive_task,
     algorithm=None,
     config_params=None,
     input_keys=None,
-    current_state_key="documents"
+    current_state_key="documents",
 ):
     """
     Creates an execution plan for clustering tasks based on algorithm type.
@@ -1017,9 +1046,7 @@ def create_clustering_plan(
     # Get detailed schema information
     input_key_schemas = get_input_key_schemas(input_keys)
 
-    default_output_schema = {
-        "labels": "list[int]"
-    }
+    default_output_schema = {"labels": "list[int]"}
     output_key = "cluster_labels"
     default_algorithm = "kmeans"
 
@@ -1029,7 +1056,7 @@ def create_clustering_plan(
         "feature_key": config_params.get("feature_key", "content"),
         "n_clusters": 3,  # Default number of clusters
         "input_key_schemas": input_key_schemas,
-        "output_schema": default_output_schema
+        "output_schema": default_output_schema,
     }
 
     # If config_params is provided, use them
@@ -1057,12 +1084,13 @@ def create_clustering_plan(
         },
     }
 
+
 def create_dim_reduction_plan(
     primitive_task,
     algorithm=None,
     config_params=None,
     input_keys=None,
-    current_state_key="documents"
+    current_state_key="documents",
 ):
     """
     Creates an execution plan for dimensionality reduction tasks based on algorithm type.
@@ -1085,11 +1113,7 @@ def create_dim_reduction_plan(
     input_key_schemas = get_input_key_schemas(input_keys)
 
     # Default output schema
-    default_output_schema = {
-        "properties": {
-            "reduced_dimensions": "list[list[float]]"
-        }
-    }
+    default_output_schema = {"properties": {"reduced_dimensions": "list[list[float]]"}}
 
     output_key = "reduced_dimensions"
     default_algorithm = "pca"  # Default algorithm
@@ -1101,7 +1125,7 @@ def create_dim_reduction_plan(
         "feature_key": config_params.get("feature_key", "content"),
         "n_components": 2,  # Default number of dimensions to reduce to
         "input_key_schemas": input_key_schemas,
-        "output_schema": default_output_schema
+        "output_schema": default_output_schema,
     }
 
     # If config_params is provided, use them
@@ -1129,13 +1153,14 @@ def create_dim_reduction_plan(
         },
     }
 
+
 def create_embedding_plan(
     primitive_task,
     provider=None,
     config_params=None,
     input_keys=None,
     current_state_key="documents",
-    api_key=""
+    api_key="",
 ):
     """
     Creates an execution plan for embedding tasks based on provider type.
@@ -1159,9 +1184,7 @@ def create_embedding_plan(
     input_key_schemas = get_input_key_schemas(input_keys)
 
     # Default output schema
-    default_output_schema = {
-        "embedding": "list[float]"
-    }
+    default_output_schema = {"embedding": "list[float]"}
 
     output_key = "embedding"
     default_provider = "openai"  # Default provider
@@ -1206,12 +1229,13 @@ def create_embedding_plan(
         },
     }
 
+
 def create_segmentation_plan(
     primitive_task,
     strategy=None,
     config_params=None,
     input_keys=None,
-    current_state_key="documents"
+    current_state_key="documents",
 ):
     """
     Creates an execution plan for segmentation tasks based on strategy type.
@@ -1235,11 +1259,7 @@ def create_segmentation_plan(
     input_key_schemas = get_input_key_schemas(input_keys)
 
     # Default output schema
-    default_output_schema = {
-        "properties": {
-            "segments": "list[str]"
-        }
-    }
+    default_output_schema = {"properties": {"segments": "list[str]"}}
 
     output_key = "segments"
     default_strategy = "paragraph"
@@ -1250,7 +1270,7 @@ def create_segmentation_plan(
         "content_key": "content",  # Default content key
         "output_key": output_key,  # Default output key
         "input_key_schemas": input_key_schemas,
-        "output_schema": default_output_schema
+        "output_schema": default_output_schema,
     }
 
     # If config_params is provided, use them
@@ -1277,6 +1297,7 @@ def create_segmentation_plan(
             "parameters": parameters,
         },
     }
+
 
 def get_input_key_schemas(input_keys: list):
     input_key_schemas = {}
