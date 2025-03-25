@@ -174,7 +174,7 @@ export const primitiveTaskState = {
         if(task_id === inspected_primitive_task_id) {
             this.updateInspectedPrimitiveTask(undefined)
         }
-        update_with_server();
+        update_execution_with_server();
         this.sortAndCollectInputKeys()
     },
     addParent(task: tPrimitiveTask, parent_id: string) {
@@ -204,7 +204,7 @@ export const primitiveTaskState = {
             primitiveTasks[index] = primitiveTask
             primitiveTasks = [...primitiveTasks]
             if(needs_update){
-                update_with_server();
+                update_execution_with_server();
             }
         }
     },
@@ -219,24 +219,39 @@ export const primitiveTaskState = {
     updateInspectedPrimitiveTask(task_id: string | undefined) {
         inspected_primitive_task_id = task_id
     },
+    updateDocInputKeys(task_id: string, doc_input_keys: string[], needs_update=false) {
+        const new_task = JSON.parse(JSON.stringify(primitiveTasks.find(t => t.id === task_id)))
+        new_task.doc_input_keys = doc_input_keys
+        if (new_task.execution.tool === "prompt_tool") {
+            new_task.execution.parameters.prompt_template[1].content = `${new_task.doc_input_keys.map((key) => `${key}: {${key}}`).join("\n")}`;
+        } else {
+            new_task.recompile_needed_IO = false;
+            new_task.recompile_needed_parameters = true;
+        }
+        this.updatePrimitiveTask(task_id, new_task, needs_update)
+        evaluators = collectTargetTaskKeys(evaluators, primitiveTasks)
+    },
     updateOutputKey(task_id: string, output_key: string) {
         console.log("update output key", task_id, output_key)
         const index = primitiveTasks.map(t => t.id).indexOf(task_id)
         if(index !== -1) {
             const original_output_key = primitiveTasks[index].state_output_key
+            // update the output key of the task
             primitiveTasks[index].state_output_key = output_key
+            // update the input keys of the children
             for(let primitive_task of primitiveTasks) {
                 if(primitive_task.doc_input_keys?.includes(original_output_key)) {
                     primitive_task.doc_input_keys = primitive_task.doc_input_keys?.map(key => key === original_output_key? output_key: key)
                 }
             }
             primitiveTasks = collectInputKeys(primitiveTasks)
-            update_with_server();
+            evaluators = collectTargetTaskKeys(evaluators, primitiveTasks)
+            update_execution_with_server();
         }
     }
 }
 
-function update_with_server() {
+function update_execution_with_server() {
     fetch(`${server_address}/primitive_task/update/`, {
       method: "POST",
       headers: {
@@ -249,8 +264,8 @@ function update_with_server() {
         console.log("Update primitive tasks success:", data);
         console.log(data);
         primitiveTasks.forEach(t => {
-            t.recompile_needed_IO = false
-            t.recompile_needed_parameters = false
+            // t.recompile_needed_IO = false
+            // t.recompile_needed_parameters = false
         })
         // primitiveTaskState.primitiveTasks = data.primitive_tasks;
         // primitiveTaskExecutionStates.execution_states = data.execution_state;
@@ -366,11 +381,49 @@ export const evaluatorState = {
     },
     updateEvaluator(name: string, evaluator: tExecutionEvaluator) {
         const index = evaluators.map(e => e.name).indexOf(name)
-        if(index === -1) {
+        console.log({name, evaluator, index})
+        if(index !== -1) {
             evaluators[index] = evaluator
+            evaluators = [...evaluators]
+            console.log({evaluators})
         }
     },
     updateInspectedEvaluator(name: string | undefined) {
         inspected_evaluator_name = name
     }
 }
+
+function collectTargetTaskKeys(evaluators: tExecutionEvaluator[], primitiveTasks: tPrimitiveTask[]) {
+    // update the input keys of the evaluators
+    for(let evaluator of evaluators) {
+        const target_task = primitiveTasks.find(t => t.id === evaluator.task)
+        if(target_task) {
+            evaluator.existing_keys = target_task.doc_input_keys?.concat([target_task.state_output_key])
+            evaluator.doc_input_keys = evaluator.doc_input_keys?.filter(key => evaluator.existing_keys?.includes(key))
+        }
+    }
+    return evaluators
+}
+// function update_evaluator_with_server() {
+//     fetch(`${server_address}/primitive_task/evaluators/update/`, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({ primitive_tasks: primitiveTasks, session_id }),
+//     })
+//       .then((response) => response.json())
+//       .then((data) => {
+//         console.log("Update primitive tasks success:", data);
+//         console.log(data);
+//         primitiveTasks.forEach(t => {
+//             // t.recompile_needed_IO = false
+//             // t.recompile_needed_parameters = false
+//         })
+//         // primitiveTaskState.primitiveTasks = data.primitive_tasks;
+//         // primitiveTaskExecutionStates.execution_states = data.execution_state;
+//       })
+//       .catch((error) => {
+//         console.error("Error:", error);
+//       });
+//   }

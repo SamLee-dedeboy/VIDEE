@@ -13,6 +13,7 @@
   import EvaluatorResult from "../Evaluation/EvaluatorResult.svelte";
   import EvaluatorResultRadialChart from "../Evaluation/EvaluatorResultRadialChart.svelte";
   import PagedDocuments from "./PagedDocuments.svelte";
+  import IoInspection from "./IOInspection.svelte";
 
   let {
     evaluator = $bindable(),
@@ -132,7 +133,40 @@
         </button>
         {#if evaluator.doc_input_keys}
           {#if show_formats}
-            <div in:slide class="flex justify-around divide-x divide-dashed">
+            {@const input_key_options =
+              evaluator.existing_keys?.filter(
+                (k) => !evaluator.doc_input_keys?.includes(k)
+              ) || []}
+            <IoInspection
+              {input_key_options}
+              state_input_key={evaluator.state_input_key}
+              doc_input_keys={evaluator.doc_input_keys}
+              state_output_key={evaluator.state_output_key}
+              handleDeleteDocInputKey={(doc_input_key) => {
+                console.log("Deleting", doc_input_key);
+                const new_evaluator = JSON.parse(JSON.stringify(evaluator));
+                new_evaluator.doc_input_keys = evaluator.doc_input_keys?.filter(
+                  (k) => k !== doc_input_key
+                );
+                new_evaluator.parameters.prompt_template[1].content = `${new_evaluator.doc_input_keys.map((key) => `${key}: {${key}}`).join("\n")}`;
+                evaluatorState.updateEvaluator(evaluator.name, new_evaluator);
+              }}
+              handleAddDocInputKey={(doc_input_key) => {
+                const new_evaluator = JSON.parse(JSON.stringify(evaluator));
+                new_evaluator.doc_input_keys = [
+                  ...(evaluator.doc_input_keys || []),
+                  doc_input_key,
+                ];
+                new_evaluator.parameters.prompt_template[1].content = `${new_evaluator.doc_input_keys.map((key) => `${key}: {${key}}`).join("\n")}`;
+                evaluatorState.updateEvaluator(evaluator.name, new_evaluator);
+              }}
+              handleEditStateOutputKey={(state_output_key) => {
+                const new_evaluator = JSON.parse(JSON.stringify(evaluator));
+                new_evaluator.state_output_key = state_output_key;
+                evaluatorState.updateEvaluator(evaluator.name, new_evaluator);
+              }}
+            ></IoInspection>
+            <!-- <div in:slide class="flex justify-around divide-x divide-dashed">
               <div class="key-section">
                 <div class="option-label">State Input Key</div>
                 <div class="option-value">
@@ -167,7 +201,7 @@
                   <img src="plus_gray.svg" alt="add" class="w-5 h-5" />
                 </div>
               </div>
-            </div>
+            </div> -->
           {/if}
         {/if}
       </div>

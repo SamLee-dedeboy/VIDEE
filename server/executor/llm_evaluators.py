@@ -120,6 +120,7 @@ async def evaluator_for_task(task, user_description: str, model: str, api_key: s
         "definition": evaluator["definition"],
         "state_input_key": task["state_input_key"],
         "doc_input_keys": input_keys,
+        "existing_keys": input_keys,
         "state_output_key": output_key,
         "tool": "prompt_tool",
         "parameters": {

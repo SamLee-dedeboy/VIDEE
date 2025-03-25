@@ -65,8 +65,8 @@ export type tPrimitiveTaskDescription = {
 }
 
 export type tPrimitiveTaskExecution = {
-  existing_keys? : string[]
-  state_input_key: string,
+  existing_keys? : string[] // input keys are calculated from the backend, and will be used by the backend
+  state_input_key: string, // existing keys are only for the frontend to use
   doc_input_keys: string[],
   state_output_key: any,
   input_keys: string[],
@@ -92,8 +92,9 @@ export type tExecutionEvaluator = {
   } & Partial<tExecutionEvaluatorParams>;
 
 export type tExecutionEvaluatorParams = {
-    state_input_key: string;
-    doc_input_keys: string[];
+    state_input_key: string; 
+    existing_keys: string[], // existing keys are from the backend, and will be used by the backend
+    doc_input_keys: string[]; // the doc_input_keys of evaluators should be the doc_input_keys + the state_output_key of the task, which should change (only in frontend) when the task changes
     state_output_key: string;
     possible_scores: string[];
     parameters: {
