@@ -49,7 +49,7 @@
       .scaleBand()
       .range([margin.left, width - margin.left - margin.right])
       .padding(0.1);
-    const y = d3.scaleLinear().range([height - margin.top, margin.bottom]);
+    const y = d3.scaleLinear().range([height - margin.bottom, margin.top]);
 
     x.domain(Object.keys(_barChartData));
     y.domain([0, d3.max(Object.values(_barChartData))]);
@@ -88,11 +88,9 @@
       .attr("transform", `translate(0,${height - margin.bottom})`)
       .call(d3.axisBottom(x));
 
-    const yTickValues = d3.range(
-      0,
-      d3.max(Object.values(_barChartData)) + 1,
-      1
-    );
+    const max_value = d3.max(Object.values(_barChartData));
+    const interval = max_value < 10 ? 1 : Math.ceil(max_value / 10);
+    const yTickValues = d3.range(0, max_value + 1, interval);
     svg
       .select(".axis-group")
       .select(".y-axis")

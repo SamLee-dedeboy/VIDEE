@@ -3,10 +3,10 @@
   import type { tDRResult, tExecutionEvaluatorResult, tDocument } from "types";
   import { RadialEvaluationChart } from "renderer/RadialEvaluationChart";
   import { server_address } from "constants";
+  import { session_id } from "lib/ExecutionStates.svelte";
   let { result }: { result: tExecutionEvaluatorResult } = $props();
   const svgId = "evaluator-result-radial-chart-svg";
   let evaluationChart: RadialEvaluationChart = new RadialEvaluationChart(svgId);
-  const session_id = (getContext("session_id") as Function)();
 
   $effect(() => {
     fetchDR(result);
