@@ -340,7 +340,10 @@
       .then((response) => response.json())
       .then((data) => {
         controllers.compiling = false;
-        data.primitive_tasks.forEach((t) => (t.recompile_needed = false));
+        data.primitive_tasks.forEach((t) => {
+          t.recompile_needed_IO = false;
+          t.recompile_needed_parameters = false;
+        });
         primitiveTaskState.primitiveTasks = data.primitive_tasks;
         primitiveTaskExecutionStates.execution_states = data.execution_state;
         console.log({ data });
