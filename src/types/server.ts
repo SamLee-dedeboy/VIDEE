@@ -60,18 +60,20 @@ export type tPrimitiveTaskDescription = {
     children: string[];
     solves: string;
     existing_keys?: string[];
-    recompile_needed?: boolean;
+    recompile_needed_IO?: boolean;
+    recompile_needed_parameters?: boolean;
 }
 
 export type tPrimitiveTaskExecution = {
   existing_keys? : string[]
-    state_input_key: string,
-    doc_input_keys: string[],
-    state_output_key: any,
-    execution: {
-        tool: string,
-        parameters: any
-    }
+  state_input_key: string,
+  doc_input_keys: string[],
+  state_output_key: any,
+  input_keys: string[],
+  execution: {
+      tool: string,
+      parameters: any
+  }
 }
 
 export type tExecutionState = {

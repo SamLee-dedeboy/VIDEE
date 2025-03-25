@@ -101,7 +101,7 @@
             }}
           >
             Input/Output Formats
-            {#if task.recompile_needed}
+            {#if task.recompile_needed_IO}
               <div
                 class="flex items-center gap-x-1 text-slate-700 italic text-sm ml-2"
                 title="Recompile Needed"
@@ -163,10 +163,14 @@
                           );
                           if (new_task.execution.tool === "prompt_tool") {
                             new_task.execution.parameters.prompt_template[1].content = `${new_task.doc_input_keys.map((key) => `${key}: {${key}}`).join("\n")}`;
+                          } else {
+                            new_task.recompile_needed_IO = false;
+                            new_task.recompile_needed_parameters = true;
                           }
                           primitiveTaskState.updatePrimitiveTask(
                             task.id,
-                            new_task
+                            new_task,
+                            true
                           );
                         }}
                         ><img
@@ -204,10 +208,14 @@
                               ];
                               if (new_task.execution.tool === "prompt_tool") {
                                 new_task.execution.parameters.prompt_template[1].content = `${new_task.doc_input_keys.map((key) => `${key}: {${key}}`).join("\n")}`;
+                              } else {
+                                new_task.recompile_needed_IO = false;
+                                new_task.recompile_needed_parameters = true;
                               }
                               primitiveTaskState.updatePrimitiveTask(
                                 task.id,
-                                new_task
+                                new_task,
+                                true
                               );
                             }}
                           >
@@ -291,7 +299,7 @@
           }}
         >
           Execution Parameter
-          {#if task.recompile_needed}
+          {#if task.recompile_needed_parameters}
             <div
               class="flex items-center gap-x-1 text-slate-700 italic text-sm ml-2"
               title="Recompile Needed"

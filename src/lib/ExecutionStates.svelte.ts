@@ -225,15 +225,16 @@ export const primitiveTaskState = {
         if(task_id === inspected_primitive_task_id) {
             this.updateInspectedPrimitiveTask(undefined)
         }
+        update_with_server();
         this.sortAndCollectInputKeys()
     },
     addParent(task: tPrimitiveTask, parent_id: string) {
         const parent_task = primitiveTasks.find(t => t.id === parent_id)
         if(parent_task) {
             task.parentIds = [...task.parentIds, parent_id]
-            this.updatePrimitiveTask(task.id, task)
+            this.updatePrimitiveTask(task.id, task, true)
             parent_task.children = [...parent_task.children, task.id]
-            this.updatePrimitiveTask(parent_task.id, parent_task)
+            this.updatePrimitiveTask(parent_task.id, parent_task, true)
             primitiveTasks = this.sortAndCollectInputKeys()
             this.sortAndCollectInputKeys()
         }
@@ -242,17 +243,20 @@ export const primitiveTaskState = {
         const parent_task = primitiveTasks.find(t => t.id === parent_id)
         if(parent_task) {
             task.parentIds = task.parentIds.filter(id => id !== parent_id)
-            this.updatePrimitiveTask(task.id, task)
+            this.updatePrimitiveTask(task.id, task, true)
             parent_task.children = parent_task.children.filter(id => id !== task.id)
-            this.updatePrimitiveTask(parent_task.id, parent_task)
+            this.updatePrimitiveTask(parent_task.id, parent_task, true)
             this.sortAndCollectInputKeys()
         }
     },
-    updatePrimitiveTask(task_id: string, primitiveTask: tPrimitiveTask) {
+    updatePrimitiveTask(task_id: string, primitiveTask: tPrimitiveTask, needs_update=false) {
         const index = primitiveTasks.map(t => t.id).indexOf(task_id)
         if(index !== -1) {
             primitiveTasks[index] = primitiveTask
             primitiveTasks = [...primitiveTasks]
+            if(needs_update){
+                update_with_server();
+            }
         }
     },
     sortAndCollectInputKeys() {
@@ -278,6 +282,7 @@ export const primitiveTaskState = {
                 }
             }
             primitiveTasks = collectInputKeys(primitiveTasks)
+            update_with_server();
         }
     }
 }

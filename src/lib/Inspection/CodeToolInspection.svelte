@@ -2,7 +2,7 @@
   let { task } = $props();
   const parameter_keys = {
     data_transform_tool: ["name", "transform_code"],
-    embedding_tool: ["name", "provider", "model"],
+    embedding_tool: ["name", "provider", "model", "feature_key"],
     clustering_tool: ["name", "algorithm", "feature_key", "n_clusters"], // there are more, but these are the most important
   };
 </script>

@@ -318,7 +318,10 @@
       });
   }
 
-  function handleCompile(task: tPrimitiveTask | undefined = undefined) {
+  function handleCompile(
+    task: tPrimitiveTask | undefined = undefined,
+    skip_IO = false
+  ) {
     console.log("Compiling...", { primitive_tasks, task, session_id });
     controllers.compiling = task?.id;
     fetch(`${server_address}/primitive_task/compile/`, {
@@ -330,6 +333,7 @@
       body: JSON.stringify({
         primitive_tasks,
         compile_target: task?.id,
+        skip_IO,
         session_id,
       }),
     })

@@ -55,7 +55,7 @@
   <div
     class="container task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline-2 outline-blue-100 bg-[#F2F8FD] shadow rounded relative flex gap-y-1 gap-x-2"
   >
-    {#if task.recompile_needed && !card_compiling}
+    {#if (task.recompile_needed_IO || task.recompile_needed_parameters) && !card_compiling}
       <div
         class="absolute bottom-[calc(100%+3px)] left-0 flex items-end gap-x-1 animate-bounce bg-gray-50"
       >
@@ -65,7 +65,11 @@
           alt="needs compilation"
           title="needs compilation"
         />
-        <span class="text-sm italic text-gray-500"> Needs Compilation... </span>
+        <span class="text-sm italic text-gray-500">
+          Needs Compilation {task.recompile_needed_IO
+            ? "From Scratch"
+            : "(Skip I/O enabled)"}
+        </span>
       </div>
     {/if}
     {#if card_compiling}
@@ -149,6 +153,7 @@
         </div>
         <PrimitiveTaskCardUtilities
           {task}
+          {executable}
           {add_parent_options}
           {remove_parent_options}
           {handleAddParent}
@@ -184,6 +189,7 @@
       >
         <PrimitiveTaskCardUtilities
           {task}
+          {executable}
           {add_parent_options}
           {remove_parent_options}
           {handleAddParent}

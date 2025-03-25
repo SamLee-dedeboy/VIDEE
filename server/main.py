@@ -424,6 +424,7 @@ async def compile_primitive_tasks(request: Request) -> dict:
     assert session_id in user_sessions
     primitive_task_descriptions = request["primitive_tasks"]
     compile_target = request["compile_target"] if "compile_target" in request else None
+    skip_IO = request["skip_IO"] if "skip_IO" in request else False
     root_description = next(
         (x for x in primitive_task_descriptions if x["id"] == "-1"), None
     )
@@ -439,6 +440,7 @@ async def compile_primitive_tasks(request: Request) -> dict:
         primitive_task_execution_plan = await executor.execution_plan(
             primitive_task_descriptions,
             compile_target=compile_target,
+            skip_IO=skip_IO,
             model=default_model,
             api_key=api_key,
         )

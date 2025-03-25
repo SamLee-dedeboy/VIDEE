@@ -106,6 +106,7 @@ async def execution_plan(
     model: str,
     api_key: str,
     compile_target: str | None = None,
+    skip_IO: bool = False,
 ) -> list[PrimitiveTaskExecution]:
     plan = []
     # Initialize with default content key with schema
@@ -129,7 +130,37 @@ async def execution_plan(
                 )
             plan.append({**primitive_task})
             continue
+        if skip_IO:
+            input_keys, input_key_names = (
+                primitive_task["input_keys"],
+                primitive_task["doc_input_keys"],
+            )
+            input_keys = [k for k in input_keys if k["key"] in input_key_names]
+        else:
+            input_keys, input_key_names = await generate_input_keys(
+                primitive_task,
+                existing_keys,
+                model,
+                api_key,
+            )
+        plan, current_state_key, document_keys, transformed_data_keys = (
+            await generate_execution_parameters(
+                plan,
+                primitive_task,
+                current_state_key,
+                input_keys,
+                input_key_names,
+                existing_keys,
+                document_keys,
+                transformed_data_keys,
+                model,
+                api_key,
+            )
+        )
+    return plan
 
+
+async def generate_input_keys(primitive_task, existing_keys, model, api_key):
         try:
             input_keys = await autogen_utils.run_input_key_generation_agent(
                 primitive_task, existing_keys, model=model, api_key=api_key
@@ -138,6 +169,7 @@ async def execution_plan(
             existing_key_names = [k["key"] if isinstance(k, dict) else k for k in existing_keys]
             input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
             assert all(k in existing_key_names for k in input_key_names)
+        return input_keys, input_key_names
         except AssertionError:
             input_keys = await autogen_utils.run_input_key_generation_agent(
                 primitive_task, [], model=model, api_key=api_key
@@ -145,20 +177,39 @@ async def execution_plan(
             existing_key_names = [k["key"] if isinstance(k, dict) else k for k in existing_keys]
             input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
 
+
+async def generate_execution_parameters(
+    plan,
+    primitive_task,
+    current_state_key,
+    input_keys,
+    input_key_names,
+    existing_keys,
+    document_keys,
+    transformed_data_keys,
+    model,
+    api_key,
+):
         # Handle local tools tasks differently
         if primitive_task["label"] == "Data Transformation":
             # For data transformation, we'll use the data_transform_tool
             try:
                 # use the data transform agent to generate a plan
                 transform_config = await autogen_utils.run_data_transform_plan_agent(
-                    primitive_task, existing_keys, model=model, api_key=api_key
+                primitive_task,
+                # existing_keys,
+                input_keys,
+                model=model,
+                api_key=api_key,
                 )
                 transform_plan = create_data_transform_plan(
                     primitive_task,
                     transform_config.get("operation", "transform"),
                     transform_config.get("parameters", {}),
-                    existing_keys,  # Pass input keys with detailed schemas
-                    current_state_key
+                # !! I think we need to pass "input_keys" here instead of "existing_keys"?
+                # existing_keys,  # Pass input keys with detailed schemas
+                input_keys,
+                current_state_key,
                 )
                 plan.append(transform_plan)
 
@@ -191,7 +242,7 @@ async def execution_plan(
                 #         "key": output_key,
                 #         "schema": output_schema
                 #     })
-                continue
+            return plan, current_state_key, document_keys, transformed_data_keys
             except Exception as e:
                 # Fall back to default prompting plan if agent fails
                 print(f"Error using data transform agent: {e}. Using default prompting plan.")
@@ -224,9 +275,9 @@ async def execution_plan(
                 else:
                     transformed_data_keys.append({
                         "key": output_key,
-                        "schema": output_schema
-                    })
-                continue
+                        "schema": output_schema}
+                )
+            return plan, current_state_key, document_keys, transformed_data_keys
             except Exception as e:
                 print(f"Error using clustering agent: {e}. Using default prompting plan.")
 
@@ -258,9 +309,9 @@ async def execution_plan(
                 else:
                     transformed_data_keys.append({
                         "key": output_key,
-                        "schema": output_schema
-                    })
-                continue
+                        "schema": output_schema}
+                )
+            return plan, current_state_key, document_keys, transformed_data_keys
             except Exception as e:
                 print(f"Error using dimension reduction agent: {e}. Using default prompting plan.")
 
@@ -293,9 +344,9 @@ async def execution_plan(
                 else:
                     transformed_data_keys.append({
                         "key": output_key,
-                        "schema": output_schema
-                    })
-                continue
+                        "schema": output_schema}
+                )
+            return plan, current_state_key, document_keys, transformed_data_keys
             except Exception as e:
                 print(f"Error using embedding agent: {e}. Using default prompting plan.")
 
@@ -327,9 +378,9 @@ async def execution_plan(
                 else:
                     transformed_data_keys.append({
                         "key": output_key,
-                        "schema": output_schema
-                    })
-                continue
+                        "schema": output_schema}
+                )
+            return plan, current_state_key, document_keys, transformed_data_keys
             except Exception as e:
                 print(f"Error using segmentation agent: {e}. Using default prompting plan.")
 
@@ -405,6 +456,7 @@ async def execution_plan(
                 "state_input_key": current_state_key,
                 "doc_input_keys": input_key_names,
                 "state_output_key": output_key,
+            "input_keys": input_keys,
                 # "input_key_schemas": input_key_schemas,
                 # "output_schema": output_schema,
                 "execution": {
@@ -421,7 +473,7 @@ async def execution_plan(
                 },
             }
         )
-    return plan
+    return plan, current_state_key, document_keys, transformed_data_keys
 
 
 def create_nodes(steps: list[PrimitiveTaskExecution]):
@@ -995,6 +1047,7 @@ def create_clustering_plan(
         **primitive_task,
         "state_input_key": current_state_key,
         "doc_input_keys": input_key_names,
+        "input_keys": input_keys,
         # "input_key_schemas": input_key_schemas,
         # "output_schema": output_schema,
         "state_output_key": output_key,
@@ -1066,6 +1119,7 @@ def create_dim_reduction_plan(
         **primitive_task,
         "state_input_key": current_state_key,
         "doc_input_keys": input_key_names,
+        "input_keys": input_keys,
         # "input_key_schemas": input_key_schemas,
         # "output_schema": output_schema,
         "state_output_key": output_key,
@@ -1142,6 +1196,7 @@ def create_embedding_plan(
         **primitive_task,
         "state_input_key": current_state_key,
         "doc_input_keys": input_key_names,
+        "input_keys": input_keys,
         # "input_key_schemas": input_key_schemas,
         # "output_schema": output_schema,
         "state_output_key": output_key,
@@ -1213,6 +1268,7 @@ def create_segmentation_plan(
         **primitive_task,
         "state_input_key": current_state_key,
         "doc_input_keys": input_key_names,
+        "input_keys": input_keys,
         # "input_key_schemas": input_key_schemas,
         # "output_schema": output_schema,
         "state_output_key": output_key,

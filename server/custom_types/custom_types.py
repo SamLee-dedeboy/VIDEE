@@ -66,6 +66,7 @@ class PrimitiveTaskExecution(PrimitiveTaskDescription):
     state_input_key: str
     doc_input_keys: list[str]
     state_output_key: str
+    input_keys: list[str]
     execution: dict
 
 
