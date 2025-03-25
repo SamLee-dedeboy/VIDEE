@@ -1008,6 +1008,7 @@ def create_data_transform_plan(
         **primitive_task,
         "state_input_key": current_state_key,
         "doc_input_keys": input_key_names,
+        "input_keys": input_keys,
         # "input_key_schemas": input_key_schemas,  # Add detailed schema information to the plan
         "state_output_key": output_key,
         "execution": {
