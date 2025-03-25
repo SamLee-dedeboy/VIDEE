@@ -6,7 +6,7 @@
   import { server_address } from "constants";
   import * as d3 from "d3";
   import { DAG } from "renderer/dag";
-  import { evaluatorState } from "../ExecutionStates.svelte";
+  import { evaluatorState, session_id } from "../ExecutionStates.svelte";
   let {
     tasks,
     generating_recommendations,
@@ -23,7 +23,6 @@
   let loading = $state(false);
   let adding_evaluator = $state(false);
   let generating_for_description = $state("");
-  const session_id = (getContext("session_id") as Function)();
   let ask_to_check_results = $state(false);
 
   let executing_evaluator_name: string | undefined = $state(undefined);

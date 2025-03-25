@@ -122,58 +122,6 @@ export const semanticTaskPlanState = {
         }
     }
 }
-let evaluators: tExecutionEvaluator[] = $state([])
-let inspected_evaluator_name: string | undefined = $state(undefined)
-let inspected_evaluator_node: tExecutionEvaluator | undefined = $derived(inspected_evaluator_name? evaluators.find(t => t.name === inspected_evaluator_name): undefined)
-export const evaluatorState = {
-    get evaluators() {
-        return evaluators
-    },
-    set evaluators(value: tExecutionEvaluator[]) {
-        // check and de-duplicate names
-        let names: Record<string, number> = {}
-        const primitive_task_ids = primitiveTasks.map(t => t.id)
-        const primitive_task_id_index = primitive_task_ids.reduce((acc, id, index) => {
-            acc[id] = index
-            return acc
-        }, {})
-
-        evaluators = value.map((e, index) => {
-            if(names[e.name]) {
-                names[e.name] += 1
-                e.name = e.name + "-" + names[e.name]
-            } else {
-                names[e.name] = 1
-            }
-            return e
-        }).sort((a, b) => primitive_task_id_index[a.task] - primitive_task_id_index[b.task])
-
-        let primitive_tasks_w_root: string[] = []
-        evaluators.forEach(e => {
-            const target_primitive_task = e.task
-            if(primitive_tasks_w_root.includes(target_primitive_task)) {
-                e.isRoot = false
-                return
-            }
-            e.isRoot = true
-            primitive_tasks_w_root.push(target_primitive_task)
-        })
-
-    },
-    get inspected_evaluator_node() {
-        return inspected_evaluator_node
-    },
-    updateEvaluator(name: string, evaluator: tExecutionEvaluator) {
-        const index = evaluators.map(e => e.name).indexOf(name)
-        if(index === -1) {
-            evaluators[index] = evaluator
-        }
-    },
-    updateInspectedEvaluator(name: string | undefined) {
-        inspected_evaluator_name = name
-    }
-}
-
 let primitiveTasks: tPrimitiveTask[] = $state([])
 let inspected_primitive_task_id: string | undefined = $state(undefined)
 let inspected_primitive_task: tPrimitiveTask | undefined = $derived(inspected_primitive_task_id? primitiveTasks.find(t => t.id === inspected_primitive_task_id): undefined)
@@ -209,7 +157,8 @@ export const primitiveTaskState = {
                 explanation: "N/A",
                 parentIds: [],
                 children: [],
-                recompile_needed: true,
+                recompile_needed_IO: true,
+                recompile_needed_parameters: true,
             })
         primitiveTasks = [...primitiveTasks]
         this.sortAndCollectInputKeys()
@@ -299,7 +248,10 @@ function update_with_server() {
       .then((data) => {
         console.log("Update primitive tasks success:", data);
         console.log(data);
-        primitiveTasks.forEach(t => t.recompile_needed = false)
+        primitiveTasks.forEach(t => {
+            t.recompile_needed_IO = false
+            t.recompile_needed_parameters = false
+        })
         // primitiveTaskState.primitiveTasks = data.primitive_tasks;
         // primitiveTaskExecutionStates.execution_states = data.execution_state;
       })
@@ -368,5 +320,57 @@ export const primitiveTaskExecutionStates = {
     },
     executed(task_id: string) {
         return execution_states?.[task_id]?.executed || false
+    }
+}
+
+let evaluators: tExecutionEvaluator[] = $state([])
+let inspected_evaluator_name: string | undefined = $state(undefined)
+let inspected_evaluator_node: tExecutionEvaluator | undefined = $derived(inspected_evaluator_name? evaluators.find(t => t.name === inspected_evaluator_name): undefined)
+export const evaluatorState = {
+    get evaluators() {
+        return evaluators
+    },
+    set evaluators(value: tExecutionEvaluator[]) {
+        // check and de-duplicate names
+        let names: Record<string, number> = {}
+        const primitive_task_ids = primitiveTasks.map(t => t.id)
+        const primitive_task_id_index = primitive_task_ids.reduce((acc, id, index) => {
+            acc[id] = index
+            return acc
+        }, {})
+
+        evaluators = value.map((e, index) => {
+            if(names[e.name]) {
+                names[e.name] += 1
+                e.name = e.name + "-" + names[e.name]
+            } else {
+                names[e.name] = 1
+            }
+            return e
+        }).sort((a, b) => primitive_task_id_index[a.task] - primitive_task_id_index[b.task])
+
+        let primitive_tasks_w_root: string[] = []
+        evaluators.forEach(e => {
+            const target_primitive_task = e.task
+            if(primitive_tasks_w_root.includes(target_primitive_task)) {
+                e.isRoot = false
+                return
+            }
+            e.isRoot = true
+            primitive_tasks_w_root.push(target_primitive_task)
+        })
+
+    },
+    get inspected_evaluator_node() {
+        return inspected_evaluator_node
+    },
+    updateEvaluator(name: string, evaluator: tExecutionEvaluator) {
+        const index = evaluators.map(e => e.name).indexOf(name)
+        if(index === -1) {
+            evaluators[index] = evaluator
+        }
+    },
+    updateInspectedEvaluator(name: string | undefined) {
+        inspected_evaluator_name = name
     }
 }

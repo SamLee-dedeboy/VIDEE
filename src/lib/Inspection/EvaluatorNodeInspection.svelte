@@ -9,7 +9,7 @@
   } from "types";
   import { server_address } from "constants";
   import { getContext } from "svelte";
-  import { evaluatorState } from "../ExecutionStates.svelte";
+  import { evaluatorState, session_id } from "../ExecutionStates.svelte";
   import EvaluatorResult from "../Evaluation/EvaluatorResult.svelte";
   import EvaluatorResultRadialChart from "../Evaluation/EvaluatorResultRadialChart.svelte";
   import PagedDocuments from "./PagedDocuments.svelte";
@@ -28,7 +28,6 @@
   let viz_mode = $state("bar"); // "bar" or "radial"
 
   let result: tExecutionEvaluatorResult | undefined = $state(undefined);
-  const session_id = (getContext("session_id") as Function)();
   $effect(() => {
     handleFetchEvaluationResult(evaluator);
   });
