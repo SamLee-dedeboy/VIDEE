@@ -375,95 +375,95 @@ async def generate_execution_parameters(
         except Exception as e:
             print(f"Error using segmentation agent: {e}. Using default prompting plan.")
 
-        # Default to using prompt_generation_agent for other tasks
-        prompt_config = await autogen_utils.run_prompt_generation_agent(
-            primitive_task, input_keys, model=model, api_key=api_key
-        )
-        prompt_structured = prompt_config.get("prompt")
-        output_schema = prompt_config.get("output_schema")
-        # extract output key from JSON format
-        try:
-            pattern = r'\{\s*"(\w+)"\s*:\s*'
-            if isinstance(prompt_structured["JSON_format"], dict):
-                prompt_structured["JSON_format"] = json.dumps(
-                    prompt_structured["JSON_format"],
-                    indent=4,
-                    ensure_ascii=False,
-                )
-            else:
-                prompt_structured["JSON_format"] = prompt_structured[
-                    "JSON_format"
-                ].replace("'", '"')
-            match = re.search(pattern, prompt_structured["JSON_format"])
-            # Extract and print the result
-            if match:
-                output_key = match.group(1)
-            else:
-                raise ValueError("Output key not found in JSON format")
-
-        except ValueError as e:
-            print(e)
-            output_key = primitive_task["label"] + "_output"
-            output_schema = "str"
-
-        # Add the output key to the appropriate existing keys
-        if current_state_key == "documents":
-            document_keys.append({"key": output_key, "schema": output_schema})
+    # Default to using prompt_generation_agent for other tasks
+    prompt_config = await autogen_utils.run_prompt_generation_agent(
+        primitive_task, input_keys, model=model, api_key=api_key
+    )
+    prompt_structured = prompt_config.get("prompt")
+    output_schema = prompt_config.get("output_schema")
+    # extract output key from JSON format
+    try:
+        pattern = r'\{\s*"(\w+)"\s*:\s*'
+        if isinstance(prompt_structured["JSON_format"], dict):
+            prompt_structured["JSON_format"] = json.dumps(
+                prompt_structured["JSON_format"],
+                indent=4,
+                ensure_ascii=False,
+            )
         else:
-            transformed_data_keys.append({"key": output_key, "schema": output_schema})
+            prompt_structured["JSON_format"] = prompt_structured["JSON_format"].replace(
+                "'", '"'
+            )
+        match = re.search(pattern, prompt_structured["JSON_format"])
+        # Extract and print the result
+        if match:
+            output_key = match.group(1)
+        else:
+            raise ValueError("Output key not found in JSON format")
 
-        # replace {} in the JSON format with {{}}
-        prompt_structured["JSON_format"] = (
-            prompt_structured["JSON_format"].replace("{", "{{").replace("}", "}}")
-        )
-        input_key_schemas = get_input_key_schemas(input_keys)
-        prompt_template = [
-            {
-                "role": "system",
-                "content": """
-                    ** Context **
-                    {prompt_context}
-                    ** Task **
-                    {prompt_task}
-                    ** Requirements **
-                    {prompt_requirements}
-                    Reply with the following JSON format:
-                    {prompt_output_format}
-                    """.format(
-                    prompt_context=prompt_structured["Context"],
-                    prompt_task=prompt_structured["Task"],
-                    prompt_requirements=prompt_structured["Requirements"],
-                    prompt_output_format=prompt_structured["JSON_format"],
-                ),
-            },
-            {
-                "role": "human",
-                "content": "\n".join([f"{key}: {{{key}}}" for key in input_key_names]),
-            },
-        ]
-        plan.append(
-            {
-                **primitive_task,
-                "state_input_key": current_state_key,
-                "doc_input_keys": input_key_names,
-                "state_output_key": output_key,
-                "input_keys": input_keys,
-                # "input_key_schemas": input_key_schemas,
-                # "output_schema": output_schema,
-                "execution": {
-                    "tool": "prompt_tool",
-                    "parameters": {
-                        "name": primitive_task["label"],
-                        "model": model,
-                        "api_key": api_key,
-                        "format": "json",
-                        "prompt_template": prompt_template,
-                        "input_key_schemas": input_key_schemas,
-                        "output_schema": output_schema,
-                    },
+    except ValueError as e:
+        print(e)
+        output_key = primitive_task["label"] + "_output"
+        output_schema = "str"
+
+    # Add the output key to the appropriate existing keys
+    if current_state_key == "documents":
+        document_keys.append({"key": output_key, "schema": output_schema})
+    else:
+        transformed_data_keys.append({"key": output_key, "schema": output_schema})
+
+    # replace {} in the JSON format with {{}}
+    prompt_structured["JSON_format"] = (
+        prompt_structured["JSON_format"].replace("{", "{{").replace("}", "}}")
+    )
+    input_key_schemas = get_input_key_schemas(input_keys)
+    prompt_template = [
+        {
+            "role": "system",
+            "content": """
+                ** Context **
+                {prompt_context}
+                ** Task **
+                {prompt_task}
+                ** Requirements **
+                {prompt_requirements}
+                Reply with the following JSON format:
+                {prompt_output_format}
+                """.format(
+                prompt_context=prompt_structured["Context"],
+                prompt_task=prompt_structured["Task"],
+                prompt_requirements=prompt_structured["Requirements"],
+                prompt_output_format=prompt_structured["JSON_format"],
+            ),
+        },
+        {
+            "role": "human",
+            "content": "\n".join([f"{key}: {{{key}}}" for key in input_key_names]),
+        },
+    ]
+    plan.append(
+        {
+            **primitive_task,
+            "state_input_key": current_state_key,
+            "doc_input_keys": input_key_names,
+            "state_output_key": output_key,
+            "input_keys": input_keys,
+            # "input_key_schemas": input_key_schemas,
+            # "output_schema": output_schema,
+            "execution": {
+                "tool": "prompt_tool",
+                "parameters": {
+                    "name": primitive_task["label"],
+                    "model": model,
+                    "api_key": api_key,
+                    "format": "json",
+                    "prompt_template": prompt_template,
+                    "input_key_schemas": input_key_schemas,
+                    "output_schema": output_schema,
                 },
-            }
-        )
+            },
+        }
+    )
     return plan, current_state_key, document_keys, transformed_data_keys
 
 
