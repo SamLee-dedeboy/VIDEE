@@ -25,9 +25,9 @@ class Node(SemanticTaskResponse):
 
 
 class Evaluation(BaseModel):
-    complexity: bool = False
-    coherence: bool = False
-    importance: bool = False
+    complexity: int = 0
+    coherence: int = 0
+    importance: int = 0
     complexity_reason: str = ""
     coherence_reason: str = ""
     importance_reason: str = ""
