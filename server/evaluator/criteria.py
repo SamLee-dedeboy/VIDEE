@@ -153,31 +153,60 @@ async def run_all_evaluations(
             ),
         ]
 
-        reasons = [
-            await summarize_reason(
-                [
-                    complexity_results[model_name]["reason"]
-                    for model_name in complexity_results.keys()
-                ]
-            ),
-            await summarize_reason(
-                [
-                    coherence_results[model_name]["reason"]
-                    for model_name in coherence_results.keys()
-                ]
-            ),
-            await summarize_reason(
-                [
-                    importance_results[model_name]["reason"]
-                    for model_name in importance_results.keys()
-                ]
-            ),
-        ]
+        summarize_reason_tasks.append(
+            [
+                summarize_reason(
+                    [
+                        complexity_results[model_name]["reason"]
+                        for model_name in complexity_results.keys()
+                    ]
+                ),
+                summarize_reason(
+                    [
+                        coherence_results[model_name]["reason"]
+                        for model_name in coherence_results.keys()
+                    ]
+                ),
+                summarize_reason(
+                    [
+                        importance_results[model_name]["reason"]
+                        for model_name in importance_results.keys()
+                    ]
+                ),
+            ]
+        )
 
+        # reasons = [
+        #     await summarize_reason(
+        #         [
+        #             complexity_results[model_name]["reason"]
+        #             for model_name in complexity_results.keys()
+        #         ]
+        #     ),
+        #     await summarize_reason(
+        #         [
+        #             coherence_results[model_name]["reason"]
+        #             for model_name in coherence_results.keys()
+        #         ]
+        #     ),
+        #     await summarize_reason(
+        #         [
+        #             importance_results[model_name]["reason"]
+        #             for model_name in importance_results.keys()
+        #         ]
+        #     ),
+        # ]
         results_grouped.append(summed_results)
-        reasons_grouped.append(reasons)
+        # reasons_grouped.append(reasons)
 
     num_agents = len(results_sequence[0].keys())
+    summarize_reason_tasks_sequence = list(itertools.chain(*summarize_reason_tasks))
+    summarize_reason_results_sequence = await asyncio.gather(
+        *summarize_reason_tasks_sequence
+    )
+    for i in range(0, len(summarize_reason_results_sequence), num_of_evaluators):
+        reasons = summarize_reason_results_sequence[i : i + num_of_evaluators]
+        reasons_grouped.append(reasons)
 
     return results_grouped, reasons_grouped, num_agents
 
