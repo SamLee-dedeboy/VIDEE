@@ -267,13 +267,11 @@ async def reward(
             eval_params.append((goal, node, node_dict[node.MCT_parent_id]))
 
         # runs evaluation on all children in parallel
-        eval_results, eval_reasons = await evaluator.run_all_evaluations(
+        eval_results, eval_reasons, num_agents = await evaluator.run_all_evaluations(
             goal=goal,
             eval_params=eval_params,
             eval_definitions=eval_definitions,
             eval_few_shot_examples=eval_few_shot_examples,
-            model=model,
-            api_key=api_key,
         )
 
         # update the eval results for each child
@@ -286,11 +284,11 @@ async def reward(
             
             [complexity_reason, coherence_reason, importance_reason] = eval_reason
             
-            reward_value = (complexity_value + coherence_value + importance_value) / 3
+            reward_value = (complexity_value + coherence_value + importance_value) / (3 * num_agents)
 
-            node.llm_evaluation.complexity = bool(complexity_value >= 0.5)
-            node.llm_evaluation.coherence = bool(coherence_value >= 0.5)
-            node.llm_evaluation.importance = bool(importance_value >= 0.5)
+            node.llm_evaluation.complexity = complexity_value
+            node.llm_evaluation.coherence = coherence_value
+            node.llm_evaluation.importance = importance_value
             
             node.llm_evaluation.complexity_reason = complexity_reason
             node.llm_evaluation.coherence_reason = coherence_reason

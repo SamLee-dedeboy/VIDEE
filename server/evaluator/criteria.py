@@ -3,11 +3,13 @@ from autogen_agentchat.messages import TextMessage
 import asyncio
 import itertools
 from server.custom_types import MCT_Node
-from .agents import get_agents, get_response, get_openai_client
+from agents import get_agents, get_response, get_openai_client
 
 import json
 import re
 import yaml
+import random
+import copy
 
 
 def save_json(data, filename):
@@ -61,8 +63,6 @@ async def run_all_evaluations(
     eval_params: list[tuple[str, dict, dict]],  # [goal, node, parent_node]
     eval_definitions: dict[str, str],
     eval_few_shot_examples: dict[str, list[dict]],
-    model: str,
-    api_key: str,
 ):
     """Run all evaluation agents for all nodes. Each node is evaluated for complexity, coherence, and importance.
     Args:
@@ -84,8 +84,6 @@ async def run_all_evaluations(
                 run_complexity_evaluation_agent(
                     goal=goal,
                     node=node,
-                    model=model,
-                    api_key=api_key,
                     complexity_definition=eval_definitions["complexity"],
                     few_shot_examples=(
                         eval_few_shot_examples["complexity"]
@@ -97,8 +95,6 @@ async def run_all_evaluations(
                     goal=goal,
                     parent_node=parent_node,
                     child_node=node,
-                    model=model,
-                    api_key=api_key,
                     coherence_definition=eval_definitions["coherence"],
                     few_shot_examples=(
                         eval_few_shot_examples["coherence"]
@@ -109,8 +105,6 @@ async def run_all_evaluations(
                 run_importance_evaluation_agent(
                     goal=goal,
                     node=node,
-                    model=model,
-                    api_key=api_key,
                     importance_definition=eval_definitions["importance"],
                     few_shot_examples=(
                         eval_few_shot_examples["importance"]
@@ -120,6 +114,7 @@ async def run_all_evaluations(
                 ),
             ]
         )
+
     tasks = list(itertools.chain(*nested_tasks))
     # must use asyncio.gather to ensure order of results is the same as the order of tasks
     # this is importance for the next step, where we group results by node
@@ -136,10 +131,10 @@ async def run_all_evaluations(
         coherence_results = node_results[1]
         importance_results = node_results[2]
         
-        averaged_results = [
-            sum(complexity_results[model_name]["value"] for model_name in complexity_results.keys()) / len(complexity_results),
-            sum(coherence_results[model_name]["value"] for model_name in coherence_results.keys()) / len(coherence_results),
-            sum(importance_results[model_name]["value"] for model_name in importance_results.keys()) / len(importance_results),
+        summed_results = [
+            sum(complexity_results[model_name]["value"] for model_name in complexity_results.keys()),
+            sum(coherence_results[model_name]["value"] for model_name in coherence_results.keys()),
+            sum(importance_results[model_name]["value"] for model_name in importance_results.keys()),
         ]
         
         reasons = [
@@ -148,10 +143,32 @@ async def run_all_evaluations(
             await summarize_reason([importance_results[model_name]["reason"] for model_name in importance_results.keys()]),
         ]
         
-        results_grouped.append(averaged_results)
+        results_grouped.append(summed_results)
         reasons_grouped.append(reasons)
     
-    return results_grouped, reasons_grouped
+    num_agents = len(results_sequence[0].keys())
+
+    return results_grouped, reasons_grouped, num_agents
+
+
+def distribute_few_shot_examples(few_shot_examples: list[dict], num_of_evaluators: int) -> list[dict]:
+    """Distribute the few shot examples among the evaluators.
+    
+    Args:
+        few_shot_examples: List of examples, each containing 'user_evaluation' (0 or 1)
+        num_of_evaluators: Number of evaluators
+    """
+    distributed_examples = [[] for _ in range(num_of_evaluators)]
+    for example in few_shot_examples:
+        score = example["user_evaluation"]
+        eval_scores = [0] * score + [1] * (num_of_evaluators - score)
+        random.shuffle(eval_scores)
+        for i, eval_score in enumerate(eval_scores):
+            copied_example = copy.deepcopy(example)
+            copied_example["user_evaluation"] = eval_score
+            distributed_examples[i].append(copied_example)
+        
+    return distributed_examples
 
 
 def balance_few_shot_examples(few_shot_examples: list[dict], max_diff: int = 1) -> list[dict]:
@@ -191,8 +208,6 @@ def balance_few_shot_examples(few_shot_examples: list[dict], max_diff: int = 1) 
 async def run_complexity_evaluation_agent(
     goal: str,
     node: MCT_Node,
-    model: str,
-    api_key: str,
     complexity_definition: str,
     few_shot_examples: list[dict],
 ):
@@ -207,45 +222,50 @@ async def run_complexity_evaluation_agent(
         few_shot_examples: Few-shot examples for the evaluation. (optional)
     """
 
-    few_shot_examples = balance_few_shot_examples(few_shot_examples)
-
     system_message = load_system_message("complexity_evaluator").format(definition=complexity_definition)
     agents = get_agents(agent_name="complexity_evaluator", system_message=system_message)
 
-    few_shot_messages = []
-    for example in few_shot_examples:
-        user_reasoning = example.get("user_reasoning", "").strip()
-        if not user_reasoning:
-            user_reasoning = await get_llm_reasoning(
-                criteria="complexity",
-                content=task_def_toString(
-                    MCT_Node.model_validate(example["node"]), goal
-                ),
-                answer=example["user_evaluation"],
-                definition=complexity_definition,
-            )
+    distributed_few_shot_examples = distribute_few_shot_examples(few_shot_examples, len(agents))
+    balanced_few_shot_examples = [balance_few_shot_examples(examples) for examples in distributed_few_shot_examples]
 
-        few_shot_messages.extend(
-            [
-                TextMessage(
+    async def few_shot_message_generator(examples: list[dict]):
+        few_shot_messages = []
+        for example in examples:
+            user_reasoning = example.get("user_reasoning", "").strip()
+            if not user_reasoning:
+                user_reasoning = await get_llm_reasoning(
+                    criteria="complexity",
                     content=task_def_toString(
                         MCT_Node.model_validate(example["node"]), goal
                     ),
-                    source="user",
-                ),
-                TextMessage(
-                    content=f"<REASONING>{user_reasoning}</REASONING>\n"
-                    f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
-                    source="assistant",
-                ),
-            ]
-        )
+                    answer=example["user_evaluation"],
+                    definition=complexity_definition,
+                )
 
+            few_shot_messages.extend(
+                [
+                    TextMessage(
+                        content=task_def_toString(
+                            MCT_Node.model_validate(example["node"]), goal
+                        ),
+                        source="user",
+                    ),
+                    TextMessage(
+                        content=f"<REASONING>{user_reasoning}</REASONING>\n"
+                        f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
+                        source="assistant",
+                    ),
+                ]
+            )
+        return few_shot_messages
+    
     user_message = task_def_toString(node, goal)
-    messages = few_shot_messages + [TextMessage(content=user_message, source="user")]
+    few_shot_messages = []
+    for examples in balanced_few_shot_examples:
+        few_shot_messages.append(await few_shot_message_generator(examples) + [TextMessage(content=user_message, source="user")])
 
     results = await asyncio.gather(
-        *[get_response(agent, messages) for _, agent in agents]
+        *[get_response(agent, agent_messages) for (_, agent), agent_messages in zip(agents, few_shot_messages)]
     )
 
     parsed_results = {
@@ -260,8 +280,6 @@ async def run_coherence_evaluation_agent(
     goal: str,
     parent_node: MCT_Node,
     child_node: MCT_Node,
-    model: str,
-    api_key: str,
     coherence_definition: str,
     few_shot_examples: list[dict],
 ):
@@ -277,10 +295,11 @@ async def run_coherence_evaluation_agent(
         few_shot_examples: Few-shot examples for the evaluation. (optional)
     """
 
-    few_shot_examples = balance_few_shot_examples(few_shot_examples)
-
     system_message = load_system_message("coherence_evaluator").format(definition=coherence_definition)
     agents = get_agents(agent_name="coherence_evaluator", system_message=system_message)
+
+    distributed_few_shot_examples = distribute_few_shot_examples(few_shot_examples, len(agents))
+    balanced_few_shot_examples = [balance_few_shot_examples(examples) for examples in distributed_few_shot_examples]
 
     def user_message_generator(_parent_node, _child_node):
         return """
@@ -291,43 +310,46 @@ async def run_coherence_evaluation_agent(
             child_part=task_def_toString(_child_node, goal),
         )
 
-    few_shot_messages = []
-    for example in few_shot_examples:
-        user_reasoning = example.get("user_reasoning", "").strip()
-
-        if not user_reasoning:
-            user_reasoning = await get_llm_reasoning(
-                criteria="coherence",
-                content=user_message_generator(
-                    MCT_Node.model_validate(example["parent_node"]),
-                    MCT_Node.model_validate(example["node"]),
-                ),
-                answer=example["user_evaluation"],
-                definition=coherence_definition,
-            )
-
-        few_shot_messages.extend(
-            [
-                TextMessage(
+    async def few_shot_message_generator(examples: list[dict]):
+        few_shot_messages = []
+        for example in examples:
+            user_reasoning = example.get("user_reasoning", "").strip()
+            if not user_reasoning:
+                user_reasoning = await get_llm_reasoning(
+                    criteria="coherence",
                     content=user_message_generator(
                         MCT_Node.model_validate(example["parent_node"]),
                         MCT_Node.model_validate(example["node"]),
                     ),
-                    source="user",
-                ),
-                TextMessage(
-                    content=f"<REASONING>{user_reasoning}</REASONING>\n"
-                    f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
-                    source="assistant",
-                ),
-            ]
-        )
+                    answer=example["user_evaluation"],
+                    definition=coherence_definition,
+                )
+
+            few_shot_messages.extend(
+                [
+                    TextMessage(
+                        content=user_message_generator(
+                            MCT_Node.model_validate(example["parent_node"]),
+                            MCT_Node.model_validate(example["node"]),
+                        ),
+                        source="user",
+                    ),
+                    TextMessage(
+                        content=f"<REASONING>{user_reasoning}</REASONING>\n"
+                        f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
+                        source="assistant",
+                    ),
+                ]
+            )
+        return few_shot_messages
 
     user_message = user_message_generator(parent_node, child_node)
-    messages = few_shot_messages + [TextMessage(content=user_message, source="user")]
+    few_shot_messages = []
+    for examples in balanced_few_shot_examples:
+        few_shot_messages.append(await few_shot_message_generator(examples) + [TextMessage(content=user_message, source="user")])
 
     results = await asyncio.gather(
-        *[get_response(agent, messages) for _, agent in agents]
+        *[get_response(agent, agent_messages) for (_, agent), agent_messages in zip(agents, few_shot_messages)]
     )
 
     parsed_results = {
@@ -341,8 +363,6 @@ async def run_coherence_evaluation_agent(
 async def run_importance_evaluation_agent(
     goal: str,
     node: MCT_Node,
-    model: str,
-    api_key: str,
     importance_definition: str,
     few_shot_examples: list[dict],
 ):
@@ -357,10 +377,11 @@ async def run_importance_evaluation_agent(
         few_shot_examples: Few-shot examples for the evaluation. (optional)
     """
 
-    few_shot_examples = balance_few_shot_examples(few_shot_examples)
-
     system_message = load_system_message("importance_evaluator").format(definition=importance_definition)
     agents = get_agents(agent_name="importance_evaluator", system_message=system_message)
+
+    distributed_few_shot_examples = distribute_few_shot_examples(few_shot_examples, len(agents))
+    balanced_few_shot_examples = [balance_few_shot_examples(examples) for examples in distributed_few_shot_examples]
 
     def user_message_generator(_goal, _node):
         return """
@@ -370,41 +391,44 @@ async def run_importance_evaluation_agent(
             final_goal=_goal, subtask_description=task_def_toString(_node, goal)
         )
 
-    few_shot_messages = []
-    for example in few_shot_examples:
-        user_reasoning = example.get("user_reasoning", "").strip()
-
-        if not user_reasoning:
-            user_reasoning = await get_llm_reasoning(
-                criteria="importance",
-                content=user_message_generator(
-                    goal, MCT_Node.model_validate(example["node"])
-                ),
-                answer=example["user_evaluation"],
-                definition=importance_definition,
-            )
-
-        few_shot_messages.extend(
-            [
-                TextMessage(
+    async def few_shot_message_generator(examples: list[dict]):
+        few_shot_messages = []
+        for example in examples:
+            user_reasoning = example.get("user_reasoning", "").strip()
+            if not user_reasoning:
+                user_reasoning = await get_llm_reasoning(
+                    criteria="importance",
                     content=user_message_generator(
                         goal, MCT_Node.model_validate(example["node"])
                     ),
-                    source="user",
-                ),
-                TextMessage(
-                    content=f"<REASONING>{user_reasoning}</REASONING>\n"
-                    f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
-                    source="assistant",
-                ),
-            ]
-        )
+                    answer=example["user_evaluation"],
+                    definition=importance_definition,
+                )
+
+            few_shot_messages.extend(
+                [
+                    TextMessage(
+                        content=user_message_generator(
+                            goal, MCT_Node.model_validate(example["node"])
+                        ),
+                        source="user",
+                    ),
+                    TextMessage(
+                        content=f"<REASONING>{user_reasoning}</REASONING>\n"
+                        f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
+                        source="assistant",
+                    ),
+                ]
+            )
+        return few_shot_messages
 
     user_message = user_message_generator(goal, node)
-    messages = few_shot_messages + [TextMessage(content=user_message, source="user")]
+    few_shot_messages = []
+    for examples in balanced_few_shot_examples:
+        few_shot_messages.append(await few_shot_message_generator(examples) + [TextMessage(content=user_message, source="user")])
 
     results = await asyncio.gather(
-        *[get_response(agent, messages) for _, agent in agents]
+        *[get_response(agent, agent_messages) for (_, agent), agent_messages in zip(agents, few_shot_messages)]
     )
 
     parsed_results = {
