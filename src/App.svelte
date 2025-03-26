@@ -38,6 +38,7 @@
 
   let semantic_tasks: tSemanticTask[] = $state([]);
   let next_expansion: tSemanticTask | undefined = $state(undefined);
+  let select_strategy: string = $derived(semanticTaskPlanState.select_strategy);
   let selected_semantic_task_path: tSemanticTask[] = $state([]);
   $effect(() => {
     semanticTaskPlanState.semantic_tasks = selected_semantic_task_path;
@@ -197,6 +198,7 @@
             semantic_tasks,
             next_expansion,
             eval_few_shot_examples: few_shot_examples_semantic_tasks,
+            select_strategy: select_strategy,
           }),
           signal,
         }

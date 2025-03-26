@@ -45,6 +45,7 @@ async def stream_MCTS(
     next_selection=None,
     eval_definitions=None,
     eval_few_shot_examples=[],
+    select_strategy_arg="UCT",
 ):
     try:
         while True:
@@ -60,7 +61,9 @@ async def stream_MCTS(
             )
             if all_END(root, node_dict):
                 yield root, node_dict, None, None
-            next_selection = select(root, node_dict)
+            next_selection = select(
+                root, node_dict, select_strategy_arg=select_strategy_arg
+            )
             max_value_path = get_max_value_path(root, node_dict)
             yield root, node_dict, next_selection, max_value_path
     except Exception as e:
@@ -192,7 +195,21 @@ def UCT(node: MCT_Node, parent_node: MCT_Node | None, exploration_weight=1.41) -
     )
 
 
-def select(node: MCT_Node, node_dict: dict) -> MCT_Node:
+def greedy(node: MCT_Node, parent_node: MCT_Node | None) -> float:
+    """Greedy selection"""
+    if node.label == "END":
+        return float("-inf")  # Avoid END nodes
+    return node.value
+
+
+def select(
+    node: MCT_Node, node_dict: dict, select_strategy_arg: str = "UCT"
+) -> MCT_Node:
+    if select_strategy_arg == "UCT":
+        select_strategy = UCT
+    else:
+        select_strategy = greedy
+
     while node.MCT_children_ids:
         candidate_children_ids = list(
             filter(
@@ -205,7 +222,7 @@ def select(node: MCT_Node, node_dict: dict) -> MCT_Node:
             map(
                 lambda node_id: (
                     node_dict[node_id],
-                    UCT(node_dict[node_id], parent_node),
+                    select_strategy(node_dict[node_id], parent_node),
                 ),
                 candidate_children_ids,
             )

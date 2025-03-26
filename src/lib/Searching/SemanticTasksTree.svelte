@@ -7,6 +7,7 @@
   import SemanticTaskCard from "./SemanticTaskCard.svelte";
   import { fade } from "svelte/transition";
   import AddMctNode from "./AddMCTNode.svelte";
+  import { semanticTaskPlanState } from "lib/ExecutionStates.svelte";
   let {
     semantic_tasks = $bindable([]),
     next_expansion = $bindable(undefined),
@@ -31,6 +32,7 @@
     handleRegenerate: Function;
   } = $props();
   const id_key = "MCT_id"; // id key for the semantic task
+  let select_strategy = $derived(semanticTaskPlanState.select_strategy);
   // const id_key = "id"; // id key for the semantic task
   /**
    * Stores the id of the expanded tasks
@@ -453,6 +455,9 @@
     {/if}
     <svg id={svgId} class="dag-svg w-full h-full absolute"></svg>
     <div class="semantic-tasks relative w-full">
+      <!-- <div
+        class="absolute bg-[#fafafa] left-[calc(50%-5.3rem)] w-[20.7rem] h-[3rem] rounded shadow-md"
+      ></div> -->
       <button
         class="next-expansion-legend text-orange-900 font-mono absolute left-1/2 top-1 -translate-x-1/2 px-2 py-1 rounded outline-3 outline-orange-500 outline-dashed bg-[#fbfaec]"
         class:inactive={!controllers.show_next_expansion}
@@ -465,22 +470,43 @@
       >
         Next Expansion
       </button>
-      <button
-        class="best-path-legend text-orange-900 font-mono font-bold absolute text-xs left-[calc(50%+8.1rem)] top-1.5 -translate-x-1/2 px-2 py-1 rounded bg-[#fbfaec] border-3 border-black"
-        class:inactive={!controllers.show_max_value_path}
-        onclick={() =>
-          (controllers.show_max_value_path = !controllers.show_max_value_path)}
+      <div
+        class="select-strategy-legend font-mono absolute text-xs left-[calc(50%+10.5rem)] top-0 -translate-x-1/2 flex flex-col gap-y-1 items-center"
       >
-        Best Path
-      </button>
+        Selection Strategy:
+        <div
+          class=" text-orange-900 font-mono rounded outline-2 outline-orange-500 bg-[#fbfaec] divide-x-2 divide-orange-500 flex"
+        >
+          <button
+            class="px-2 py-1 hover:!opacity-100 hover:scale-110 transition-all"
+            class:inactive={select_strategy !== "UCT"}
+            onclick={() => (semanticTaskPlanState.select_strategy = "UCT")}
+            >Balanced</button
+          >
+          <button
+            class="px-2 py-1 hover:!opacity-100 hover:scale-110 transition-all"
+            class:inactive={select_strategy !== "greedy"}
+            onclick={() => (semanticTaskPlanState.select_strategy = "greedy")}
+            >Exploit</button
+          >
+        </div>
+      </div>
       <button
-        class="new-node-legend font-bold text-orange-900 font-mono absolute text-xs left-[calc(50%-8rem)] top-2 -translate-x-1/2 px-2 py-1 rounded outline-2 outline-orange-900 bg-[#fbfaec]"
+        class="new-node-legend font-bold text-orange-900 font-mono absolute text-xs left-[calc(50%+25rem)] top-2 -translate-x-1/2 px-2 py-1 rounded outline-2 outline-orange-900 bg-[#fbfaec]"
         class:inactive={!controllers.show_new_nodes}
         onclick={() => {
           controllers.show_new_nodes = !controllers.show_new_nodes;
         }}
       >
         New Nodes
+      </button>
+      <button
+        class="best-path-legend text-orange-900 font-mono font-bold absolute text-xs left-[calc(50%+31rem)] top-1.5 -translate-x-1/2 px-2 py-1 rounded bg-[#fbfaec] border-2 border-black"
+        class:inactive={!controllers.show_max_value_path}
+        onclick={() =>
+          (controllers.show_max_value_path = !controllers.show_max_value_path)}
+      >
+        Best Path
       </button>
       <button
         class="clear-button font-bold text-slate-500 font-mono absolute text-xs right-0 top-2 -translate-x-1/2 px-2 py-1 rounded outline-2 outline-gray-300 bg-gray-50 hover:bg-gray-200"

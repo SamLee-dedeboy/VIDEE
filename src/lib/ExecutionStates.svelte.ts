@@ -5,6 +5,7 @@ import type { tSemanticTask, tExecutionEvaluator, tPrimitiveTask, tExecutionStat
 export let session_id: string = $state("312321321312321");
 // let random_session_id = Math.random().toString(36).substring(2, 15);
 let semantic_tasks: tSemanticTask[] = $state([])
+let select_strategy: string = $state("UCT") // UCT, greedy
 
 export const semanticTaskPlanState = {
     get semantic_tasks() {
@@ -12,6 +13,12 @@ export const semanticTaskPlanState = {
     },
     set semantic_tasks(value) {
         semantic_tasks = value
+    },
+    get select_strategy() {
+        return select_strategy
+    },
+    set select_strategy(value) {
+        select_strategy = value
     },
 
     addTask() {
