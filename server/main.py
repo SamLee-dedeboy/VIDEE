@@ -154,6 +154,9 @@ async def goal_decomposition_MCTS_stepped(request: Request):
     eval_few_shot_examples = (
         request["eval_few_shot_examples"] if "eval_few_shot_examples" in request else []
     )
+    select_strategy_arg = (
+        request["select_strategy"] if "select_strategy" in request else None
+    )
     next_selection = (
         custom_types.MCT_Node.model_validate(request["next_expansion"])
         if "next_expansion" in request
@@ -171,7 +174,13 @@ async def goal_decomposition_MCTS_stepped(request: Request):
     # node_dict = decomposer.collect_MCT_node_dict(user_root)
 
     async def iter_response(
-        root, node_dict, goal, next_selection, eval_definitions, eval_few_shot_examples
+        root,
+        node_dict,
+        goal,
+        next_selection,
+        eval_definitions,
+        eval_few_shot_examples,
+        select_strategy_arg,
     ):  # (1)
         async for (
             new_root,
@@ -187,6 +196,7 @@ async def goal_decomposition_MCTS_stepped(request: Request):
             eval_few_shot_examples=eval_few_shot_examples,
             model=default_model,
             api_key=api_key,
+            select_strategy_arg=select_strategy_arg,
         ):
             if next_selection is None:
                 break
@@ -224,6 +234,7 @@ async def goal_decomposition_MCTS_stepped(request: Request):
                 next_selection=next_selection,
                 eval_definitions=eval_definitions,
                 eval_few_shot_examples=eval_few_shot_examples,
+                select_strategy_arg=select_strategy_arg,
             ),
             media_type="application/json",
         )

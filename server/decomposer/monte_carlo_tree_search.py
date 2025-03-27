@@ -58,6 +58,7 @@ async def stream_MCTS(
                 goal=goal,
                 model=model,
                 api_key=api_key,
+                select_strategy_arg=select_strategy_arg,
             )
             if all_END(root, node_dict):
                 yield root, node_dict, None, None
@@ -82,6 +83,7 @@ async def MCTS_step(
     next_selection=None,
     eval_definitions=None,
     eval_few_shot_examples=[],
+    select_strategy_arg="UCT",
 ) -> tuple[MCT_Node, dict]:
     # update node status
     for node_id, node in node_dict.items():
@@ -89,7 +91,7 @@ async def MCTS_step(
 
     # select a node to expand
     if next_selection is None:
-        node = select(root, node_dict)
+        node = select(root, node_dict, select_strategy_arg)
     else:
         node = node_dict[next_selection.MCT_id]
     # expand the node with children
