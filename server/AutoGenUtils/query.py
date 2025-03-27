@@ -117,18 +117,6 @@ async def run_goal_decomposition_agent_stepped(
             }
         ]
 
-    if remain_steps <= 0:
-        ids = list(map(lambda step: step["id"], previous_steps))
-        return [
-            {
-                # "id": "END_PATH_" + str(ids),
-                "label": "END",
-                "description": "END",
-                "explanation": "END",
-                "parentIds": ids,
-            }
-        ]
-
     model_client = OpenAIChatCompletionClient(
         model=model,
         api_key=api_key,
@@ -147,24 +135,14 @@ async def run_goal_decomposition_agent_stepped(
         You are a text analytics task planner. 
         Users have collected a dataset of documents. The user will describe a goal to achieve through some text analytics, and what they have done already.
         ** Task **
-        Your task is to provide a single next step based on what the user have done so far and the remaining steps to finish the task.
-        Your task is to provide a single next step based on what the user have done so far and the remaining steps to finish the task.
+        Your task is to provide a single next step, but with {n} possible alternatives for user to choose.
+        Focus on the conceptual next step in terms of text analytics. If no further steps are needed, label the next step with "END".
+        DO NOT output steps like data collection, implementation, any kind of validation or visualization, or reporting.
         ** Requirements **
-        Please specify the logical next step to take.
         The name of the step should be one concise noun-phrase.
-        Ignore the practical steps such as data collection, cleaning or visualization.
-        Focus on the conceptual next step. If no further steps are needed, label the next step with "END".
         For the parentIds, provide the ids of the steps that this step **directly** depends on in terms of input-output data.
-        You should reply with {n} possible alternatives, so the user can have more choices.
         The alternatives should have varying complexity, coherence with previous steps, and importance.
         Reply with this JSON format. Do not wrap the json codes in JSON markers. Do not include any comments.
-            {{
-                "next_steps": [
-                    {{
-                        "label": (string) name of the step or "END 
-        You should reply with {n} different next steps, so the user can have more choices.
-        The different steps should have varying complexity, coherence with previous steps, and importance.
-        Reply with this JSON format. Do not wrap the json codes in JSON markers.
             {{
                 "next_steps": [
                     {{
@@ -180,12 +158,9 @@ async def run_goal_decomposition_agent_stepped(
         ),
     )
     user_message = "My goal is: {goal}".format(goal=goal) + "\n"
-    user_message += "There are {remaining_steps} steps remaining until you have to finish the task.\n".format(
-        remaining_steps=remain_steps
-    )
-    user_message += "There are {remaining_steps} steps remaining until you have to finish the task.\n".format(
-        remaining_steps=remain_steps
-    )
+    # user_message += "There are {remaining_steps} steps remaining until you have to finish the task.\n".format(
+    #     remaining_steps=remain_steps
+    # )
     if len(previous_steps) > 0:
         previous_steps_str = "\n".join(
             list(
@@ -222,7 +197,7 @@ async def run_goal_decomposition_agent_stepped(
         ids = list(map(lambda step: step["id"], previous_steps))
         return [
             {
-                "id": "END_PATH_" + str(ids) + "_FALLBACK",
+                # "id": "END_PATH_" + str(ids) + "_FALLBACK",
                 "label": "END",
                 "description": "Unable to determine next steps after multiple attempts",
                 "explanation": "The system encountered difficulties determining the next steps",

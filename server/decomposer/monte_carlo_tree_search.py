@@ -253,12 +253,15 @@ async def expand(
             remain_steps=MAX_STEPS - parent_node.level,
         )
         for index, child_node in enumerate(children):
+            child_node["parentIds"] = [
+                str(parent_id) for parent_id in child_node["parentIds"]
+            ]
             child_as_MCT_node = MCT_Node(
                 **child_node,
                 MCT_id=f"{parent_node.MCT_id}/{index}",
                 id=f"{int(parent_node.id)+1}",
                 print_label=f"{child_node['label']} (0/0)",
-                MCT_parent_id=parent_node.MCT_id,
+                MCT_parent_id=str(parent_node.MCT_id),
                 level=parent_node.level + 1,
                 new_node=True,
             )
