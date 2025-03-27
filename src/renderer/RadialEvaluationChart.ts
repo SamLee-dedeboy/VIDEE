@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import type { tDRResult } from "types";
+import type { tDRResult, tExecutionEvaluatorResult } from "types";
 export class RadialEvaluationChart {
   svgId: string;
   width: number = 300;
@@ -50,52 +50,24 @@ export class RadialEvaluationChart {
     };
     this.dispatch = d3.dispatch("force_end", "node_clicked");
 
-    this.polarRadiusScale = d3
-      .scaleLinear()
-      .domain([0, 1])
-      .range([30, Math.min(this.innerSize.width, this.innerSize.height) / 2]);
     // this.noiseColorScale = d3.scaleSequential(d3.interpolateRainbow);
     this.noiseColorScale = () => "#c3c3c3";
     this.clusterColorScale = d3.scaleOrdinal(d3.schemeSet3);
 
-    svg.append("g").attr("class", "radius-axis-group");
     svg.append("g").attr("class", "participant-group");
     svg.append("g").attr("class", "node-group");
     svg.append("g").attr("class", "angle-axis-group");
     svg.append("g").attr("class", "legend-group");
     svg.append("g").attr("class", "cluster-label-group");
+    svg.append("g").attr("class", "radius-axis-group");
 
-    svg
-      .select("g.radius-axis-group")
-      .selectAll("circle")
-      //   .data([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-      .data([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-      .join("circle")
-      .attr("cx", this.innerSize.center[0])
-      .attr("cy", this.innerSize.center[1])
-      .attr("r", (d) => this.polarRadiusScale(d))
-      .attr("fill", "none")
-      .attr("stroke", "lightgray")
-      .attr("stroke-width", 1);
-    svg
-      .select("g.radius-axis-group")
-      .selectAll("text")
-      .data([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
-      .join("text")
-      .text((d) => d)
-      .attr("x", this.innerSize.center[0])
-      .attr("y", (d) => this.innerSize.center[1] - this.polarRadiusScale(d))
-      .attr("text-anchor", "middle")
-      .attr("dominant-baseline", "middle")
-      .attr("font-size", 10)
-      .attr("fill", "#3c3c3c");
 
     // .attr("stroke-dasharray", "5,5");
   }
   on(event, handler) {
     this.dispatch.on(event, handler);
   }
-  update(data: tDRResult[], highlight_ids: string[] | undefined, func_id = (d) => d.id, func_value = (d) => d.value) {
+  update(data: tDRResult[], evaluation_result: tExecutionEvaluatorResult, highlight_ids: string[] | undefined, func_id = (d) => d.id, func_value = (d) => d.value) {
     const self = this;
     const svg = d3.select("#" + this.svgId);
     const circle_radius = 1.5
@@ -115,9 +87,17 @@ export class RadialEvaluationChart {
         acc[cur[0]] = cur[1];
         return acc;
       }, {});
+    
+    this.polarRadiusScale = d3
+      .scaleBand()
+      .domain(evaluation_result.possible_scores)
+      .range([30, Math.min(this.innerSize.width, this.innerSize.height) / 2]);
 
+      // .scaleLinear()
+      // .domain([0, 1])
+      // .range([30, Math.min(this.innerSize.width, this.innerSize.height) / 2]);
     // update axis
-    this.updateAxis(cluster_angles);
+    this.updateAxis(cluster_angles, evaluation_result.possible_scores);
     this.updateClusterLabels(cluster_angles, cluster_labels);
 
     const data_w_coordinates = data.map((datum) => {
@@ -127,11 +107,10 @@ export class RadialEvaluationChart {
           self.innerSize.center,
           cluster_angles[datum.cluster].mid,
           // datum.angle,
-          self.polarRadiusScale(func_value(datum)),
+          self.polarRadiusScale(func_value(datum)) - self.polarRadiusScale.bandwidth() / 2,
         ),
       };
     });
-    console.log({ data_w_coordinates });
 
     const nodes = svg
       .select("g.node-group")
@@ -165,7 +144,7 @@ export class RadialEvaluationChart {
           }
           const simulation = d3
             .forceSimulation(data_w_coordinates)
-            .alphaMin(0.15)
+            .alphaMin(0.10)
             .force(
               "radial",
               d3
@@ -174,7 +153,7 @@ export class RadialEvaluationChart {
                   this.innerSize.center[0],
                   this.innerSize.center[1],
                 )
-                .radius((d) => self.polarRadiusScale(func_value(d)))
+                .radius((d) => self.polarRadiusScale(func_value(d)) - self.polarRadiusScale.bandwidth() / 2)
                 .strength(1),
             )
             .force(
@@ -225,8 +204,31 @@ export class RadialEvaluationChart {
     const svg = d3.select("#" + this.svgId);
     svg.select("g.node-group").selectAll("circle.node").remove();
   }
-  updateAxis(cluster_angles: Record<number, any>) {
+  updateAxis(cluster_angles: Record<number, any>, possible_scores: string[]) {
     const svg = d3.select("#" + this.svgId);
+    svg
+      .select("g.radius-axis-group")
+      .selectAll("circle")
+      .data(possible_scores)
+      .join("circle")
+      .attr("cx", this.innerSize.center[0])
+      .attr("cy", this.innerSize.center[1])
+      .attr("r", (d) => this.polarRadiusScale(d))
+      .attr("fill", "none")
+      .attr("stroke", "lightgray")
+      .attr("stroke-width", 1);
+    svg
+      .select("g.radius-axis-group")
+      .selectAll("text")
+      .data(possible_scores)
+      .join("text")
+      .text((d) => d)
+      .attr("x", this.innerSize.center[0])
+      .attr("y", (d) => this.innerSize.center[1] - this.polarRadiusScale(d) + this.polarRadiusScale.bandwidth() / 2)
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "middle")
+      .attr("font-size", 10)
+      .attr("fill", "#6d6d6d");
     const axis_group = svg.select("g.angle-axis-group");
     axis_group
       .selectAll("line")

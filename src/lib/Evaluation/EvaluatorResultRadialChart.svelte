@@ -27,20 +27,43 @@
       .then((response) => response.json())
       .then((data) => {
         console.log("DR result:", data);
-        updateRadialChart(data);
+        updateRadialChart(data, _result);
       })
       .catch((error) => {
         console.error("Error:", error);
       });
   }
 
-  function updateRadialChart(dr_result: tDRResult[]) {
-    console.log({ dr_result });
+  function updateRadialChart(
+    dr_result: (tDRResult & tDocument)[],
+    evaluation_result: tExecutionEvaluatorResult
+  ) {
+    const evaluator_name = result.name;
+    const evaluator_output_key = evaluator_name + "_output";
+    const reduce_result = evaluation_result.result.documents.reduce(
+      (acc, doc) => {
+        acc["doc_id_to_score"][doc.id] = doc[evaluator_output_key];
+        if (!acc["score_frequency"][doc[evaluator_output_key]]) {
+          acc["score_frequency"][doc[evaluator_output_key]] = 0;
+        }
+        acc["score_frequency"][doc[evaluator_output_key]] += 1;
+        return acc;
+      },
+      {
+        doc_id_to_score: {},
+        score_frequency: {},
+      }
+    );
     // this should be replaced with real ensemble scores
     dr_result.forEach((doc) => {
-      doc.value = Math.random();
+      doc.value = reduce_result["doc_id_to_score"][doc.id] || 0;
     });
-    evaluationChart.update(dr_result, undefined);
+    evaluation_result.possible_scores = evaluation_result.possible_scores.sort(
+      (a, b) =>
+        (reduce_result["score_frequency"][a] || 0) -
+        (reduce_result["score_frequency"][b] || 0)
+    );
+    evaluationChart.update(dr_result, evaluation_result, undefined);
   }
 
   const navigateToDoc: (doc: tDocument) => void = getContext("navigate_to_doc");

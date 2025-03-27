@@ -5,7 +5,7 @@
   const svgId = "evaluator-result-svg";
 
   let barChartData: Record<string, number> = $derived.by(() => {
-    console.log($state.snapshot(result));
+    // console.log($state.snapshot(result));
     const evaluator_name = result.name;
     const evaluator_output_key = evaluator_name + "_output";
     const documents = result.result.documents;
@@ -13,6 +13,7 @@
     const scores_count = documents.reduce(
       (acc, doc) => {
         const score = doc[evaluator_output_key];
+        if (!score) return acc;
         acc[score] += 1;
         return acc;
       },
