@@ -4,6 +4,7 @@
   import type { Snippet } from "svelte";
   import { evaluation_colors } from "constants";
   import { trim } from "lib/trim";
+  import { likert_scale_num } from "lib/ExecutionStates.svelte";
   import type { tSemanticTask } from "types";
   let {
     task,
@@ -46,6 +47,7 @@
         : evaluation_colors.bad}"
       onclick={() => {
         console.log(value, llm_value);
+        // TODO: this should be value = (value+1) % likert_scale_num
         value = !value;
         handleToggle(value);
         if (value !== llm_value) {
@@ -58,7 +60,18 @@
       {@render icon()}
     </button>
     <div
-      class="reasoning absolute hidden left-[calc(100%+5px)] top-0 text-xs rounded min-w-[18rem] max-w-[25rem] text-slate-600 flex-wrap text-left ml-[-0.5rem] pl-[0.5rem]"
+      class="scale absolute hidden left-1/2 -translate-x-1/2 bottom-[calc(100%+5px)] max-w-[10rem] items-center gap-x-0.5 bg-slate-100 p-0.5 shadow-sm transition-all"
+    >
+      {#each Array.from({ length: likert_scale_num + 1 }, (_, i) => i) as i}
+        <div
+          class="select-none h-[0.5rem]"
+          style={`background-color: ${3 <= i ? "#aaaaaa" : evaluation_colors.path_value_color_scale(i / (likert_scale_num + 1))}; width: ${5 / (likert_scale_num + 1)}rem`}
+        ></div>
+      {/each}
+    </div>
+
+    <div
+      class="reasoning absolute hidden left-[calc(100%+5px)] top-0 text-xs rounded min-w-[22rem] max-w-[30rem] text-slate-600 flex-wrap text-left ml-[-0.5rem] pl-[0.5rem]"
     >
       <div
         class="outline-2 outline-gray-300 px-1 rounded bg-white flex flex-col"
@@ -78,7 +91,7 @@
           If you disagree with the AI, click the icon to flip the score <img
             src="flip.svg"
             alt="flip"
-            class="inline w-6 h-6"
+            class="inline h-8"
           />
         </div>
       </div>
@@ -125,7 +138,8 @@
     content: "Why do you think this is good/bad?";
     cursor: text;
   }
-  .indicator-button:hover > .reasoning {
+  .indicator-button:hover > .reasoning,
+  .indicator-button:hover > .scale {
     @apply flex;
   }
 </style>

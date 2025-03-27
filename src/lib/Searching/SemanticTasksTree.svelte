@@ -8,6 +8,7 @@
   import { fade } from "svelte/transition";
   import AddMctNode from "./AddMCTNode.svelte";
   import { semanticTaskPlanState } from "lib/ExecutionStates.svelte";
+  import ColorScaleLegend from "./ColorScaleLegend.svelte";
   let {
     semantic_tasks = $bindable([]),
     next_expansion = $bindable(undefined),
@@ -363,9 +364,6 @@
   onMount(() => {
     dag_renderer.init();
     update_dag(semantic_tasks, max_value_path, controllers);
-    evaluation_colors.create_color_scale_legend(
-      document.querySelector(".color-scale-legend")
-    );
   });
 </script>
 
@@ -515,60 +513,13 @@
       >
         Clear
       </button>
-      <div
-        class="evaluation-legends-container absolute left-2 top-2 px-2 py-1 rouned flex flex-col gap-y-2"
-      >
-        <div class="px-2 w-[12rem] h-[1rem]">
-          <svg class="color-scale-legend w-full h-full overflow-visible"></svg>
-        </div>
-        <div class="flex justify-between gap-x-1 italic mt-1">
-          <div
-            class="flex text-xs items-center gap-x-1 text-slate-600 select-none"
-          >
-            <svg class="w-6 h-6" viewBox="0 0 10 10">
-              <circle cx="5" cy="5" r="5" fill={evaluation_colors.bad} />
-            </svg>
-            <span>Bad</span>
-          </div>
-          <div
-            class="flex text-xs items-center gap-x-1 text-slate-600 select-none"
-          >
-            <svg class="w-6 h-6" viewBox="0 0 10 10">
-              <circle cx="5" cy="5" r="5" fill={evaluation_colors.good} />
-            </svg>
-            <span>Good</span>
-          </div>
-        </div>
-        <button
-          class="evaluation-legend complexity"
-          class:inactive={!controllers.show_complexity}
-          class:no-interaction={true}
-          onclick={() =>
-            (controllers.show_complexity = !controllers.show_complexity)}
-        >
-          {@render complexity_icon()}
-          <span> Complexity </span>
-        </button>
-        <button
-          class="evaluation-legend coherence"
-          class:inactive={!controllers.show_coherence}
-          class:no-interaction={true}
-          onclick={() =>
-            (controllers.show_coherence = !controllers.show_coherence)}
-        >
-          {@render coherence_icon()}
-          <span> Coherence </span>
-        </button>
-        <button
-          class="evaluation-legend importance"
-          class:inactive={!controllers.show_importance}
-          class:no-interaction={true}
-          onclick={() =>
-            (controllers.show_importance = !controllers.show_importance)}
-        >
-          {@render importance_icon()}
-          <span> Importance </span>
-        </button>
+      <div class="evaluation-legends-container absolute left-0 top-0">
+        <ColorScaleLegend
+          {controllers}
+          {complexity_icon}
+          {coherence_icon}
+          {importance_icon}
+        />
       </div>
 
       {#each semantic_tasks_flattened as task, index}
@@ -617,24 +568,12 @@
     @apply scale-100;
     transition: all 0.3s;
   }
-  .evaluation-legend {
-    @apply flex items-center px-2 py-1 rounded bg-white outline-2 outline-slate-700 text-xs text-slate-700 gap-x-1 max-w-[7.5rem];
-  }
-  .evaluation-legend.no-interaction {
-    @apply pointer-events-none outline-none !bg-[unset] px-0;
-  }
   .disabled {
     @apply pointer-events-none opacity-50;
-  }
-  .inactive {
-    @apply opacity-40;
   }
   .best-path-legend:hover,
   .new-node-legend:hover,
   .next-expansion-legend:hover,
-  .evaluation-legend:hover {
-    @apply scale-110 transition-all;
-  }
   .new-node-legend::before {
     content: "";
     position: absolute;
