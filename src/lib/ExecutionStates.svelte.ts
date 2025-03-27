@@ -406,7 +406,8 @@ function collectTargetTaskKeys(evaluators: tExecutionEvaluator[], primitiveTasks
         const target_task = primitiveTasks.find(t => t.id === evaluator.task)
         if(target_task) {
             evaluator.existing_keys = target_task.doc_input_keys?.concat([target_task.state_output_key])
-            evaluator.doc_input_keys = evaluator.doc_input_keys?.filter(key => evaluator.existing_keys?.includes(key))
+            evaluator.doc_input_keys = evaluator.doc_input_keys?.filter(key => evaluator.existing_keys?.includes(key)) || []
+            evaluator.parameters!.prompt_template[1].content = `${evaluator.doc_input_keys.map((key) => `${key}: {${key}}`).join("\n")}`;
         }
     }
     return evaluators

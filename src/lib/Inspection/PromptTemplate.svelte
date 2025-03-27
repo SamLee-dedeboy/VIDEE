@@ -2,11 +2,12 @@
   import { trim } from "lib/trim";
   let { messages, handleUpdatePrompt } = $props();
   function highlight_variables(text: string) {
+    // return text;
     console.log("highlight_variables", text);
     // replace ${var} with <span class="bg-yellow-200">${var}</span>
     return text.replace(
       /\{(.*?)}/g,
-      '<span class="text-yellow-600 italic text-sm" contenteditable=false>{$1}</span>'
+      '<span class="text-yellow-600 italic text-sm" contenteditable=true>{$1}</span>'
     );
   }
 </script>

@@ -274,27 +274,29 @@
           >
             {#if ask_to_check_results && executed_evaluator_name === evaluator.name}
               <div
-                class="absolute bottom-[calc(100%+2px)] left-4 right-4 flex justify-center z-20"
+                class="absolute top-1/2 -translate-y-1/2 right-[calc(100%+2px)] flex justify-center z-20"
               >
                 <div
-                  class="rounded w-[18rem] bg-[#f6fffb] outline-0 outline-gray-200 border-t-6 border-emerald-200 shadow-[0px_0px_1px_1px_lightgray] px-2 py-1 flex flex-col font-mono gap-y-4"
+                  class="rounded w-max bg-[#f6faff] outline-0 outline-gray-200 border-t-6 border-emerald-200 shadow-[0px_0px_1px_1px_lightgray] px-2 py-1 flex flex-col gap-y-2 justify-center items-center font-mono gap-x-8"
                 >
-                  <span class="text-slate-600 text-sm">
-                    Execution Done! <br /> Would you like to see the results?
+                  <span class="text-slate-600 font-semibold italic">
+                    Execution Complete!
                   </span>
-                  <div class="flex justify-between text-sm">
+                  <div
+                    class="flex justify-between w-full text-sm gap-x-2 italic"
+                  >
                     <button
                       class="bg-green-100 outline-2 outline-gray-200 hover:bg-green-200 px-2 py-1 rounded text-slate-600"
                       onclick={() => {
                         ask_to_check_results = false;
                         navigate_to_results(executed_evaluator_name!);
-                      }}>Yes</button
+                      }}>Results</button
                     >
                     <button
                       class="bg-red-100 outline-2 outline-gray-200 hover:bg-red-200 px-2 py-1 rounded text-slate-600"
                       onclick={() => {
                         ask_to_check_results = false;
-                      }}>No</button
+                      }}>Close</button
                     >
                   </div>
                 </div>

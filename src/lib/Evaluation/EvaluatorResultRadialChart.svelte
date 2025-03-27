@@ -8,6 +8,7 @@
   const svgId = "evaluator-result-radial-chart-svg";
   let evaluationChart: RadialEvaluationChart = new RadialEvaluationChart(svgId);
 
+  let show_topic_labels = $state(true);
   $effect(() => {
     fetchDR(result);
   });
@@ -64,6 +65,7 @@
         (reduce_result["score_frequency"][b] || 0)
     );
     evaluationChart.update(dr_result, evaluation_result, undefined);
+    evaluationChart.updateTopicLabels(show_topic_labels);
   }
 
   const navigateToDoc: (doc: tDocument) => void = getContext("navigate_to_doc");
@@ -77,6 +79,38 @@
   });
 </script>
 
-<div class="flex flex-col aspect-square bg-gray-50 px-4">
+<div class="flex flex-col aspect-square bg-gray-50 px-4 relative">
+  <div
+    class="absolute top-0 right-0 font-mono px-1 py-0.5 transition-all flex items-center gap-x-1 text-slate-600"
+  >
+    <button
+      aria-label="Toggle topic labels"
+      onclick={() => {
+        show_topic_labels = !show_topic_labels;
+        evaluationChart.updateTopicLabels(show_topic_labels);
+      }}
+    >
+      <svg class="w-4 h-4" viewBox="0 0 12 12"
+        ><circle
+          cx="6"
+          cy="6"
+          r="5"
+          fill={show_topic_labels ? "#7be9c6" : "none"}
+          stroke="gray"
+        ></circle></svg
+      >
+    </button>
+    Topic Labels
+  </div>
   <svg id={svgId} class="w-full h-full"> </svg>
 </div>
+
+<style lang="postcss">
+  @reference "tailwindcss";
+  .active {
+    @apply text-slate-600 bg-gray-50 hover:bg-gray-300;
+  }
+  .disabled {
+    @apply text-gray-300 bg-gray-100 hover:bg-gray-50 hover:text-slate-600;
+  }
+</style>

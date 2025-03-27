@@ -354,6 +354,14 @@ export class RadialEvaluationChart {
         d3.select(this).raise();
       })
   }
+  updateTopicLabels(show: boolean) {
+    console.log("show", show);
+    const svg = d3.select("#" + this.svgId);
+    const label_groups = svg.select("g.cluster-label-group")
+    .style("visibility", show ? "unset": "hidden")
+    .style("pointer-events", show ? "all" : "none");
+  }
+
 }
 
 function clipLabel(selection, bbox) {
