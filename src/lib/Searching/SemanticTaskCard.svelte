@@ -25,6 +25,7 @@
     handleSelectPath = () => {},
     handleRegenerate = () => {},
     handleAddChild = () => {},
+    handleToggleChildren = () => {},
     complexity_icon,
     coherence_icon,
     importance_icon,
@@ -48,6 +49,7 @@
     handleDeleteTask?: Function;
     handleSelectPath?: Function;
     handleAddChild?: Function;
+    handleToggleChildren?: Function;
     complexity_icon: Snippet;
     coherence_icon: Snippet;
     importance_icon: Snippet;
@@ -291,6 +293,7 @@
               {handleSelectPath}
               {handleRegenerate}
               {handleAddChild}
+              {handleToggleChildren}
             />
           </div>
         {/if}
@@ -335,6 +338,7 @@
         {handleSetAsNextExpansion}
         {handleSelectPath}
         {handleAddChild}
+        {handleToggleChildren}
       />
     </div>
   {/if}

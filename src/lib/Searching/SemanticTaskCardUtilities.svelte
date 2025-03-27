@@ -11,6 +11,7 @@
     handleDeleteSubTasks = () => {},
     handleSelectPath = () => {},
     handleAddChild = () => {},
+    handleToggleChildren = () => {},
   }: {
     task: tSemanticTask;
     handleSetAsNextExpansion: Function;
@@ -20,6 +21,7 @@
     handleDeleteSubTasks: Function;
     handleSelectPath: Function;
     handleAddChild: Function;
+    handleToggleChildren: Function;
   } = $props();
 </script>
 
@@ -41,12 +43,25 @@
   >
     Try Again
   </button>
-  <button
-    class="action-button border-y-2 border-x-1 border-orange-300 bg-orange-100 hover:bg-orange-200 ml-auto right-0"
-    onclick={() => handleAddChild(task)}
-  >
-    Add Child
-  </button>
+  <div class="relative children-container">
+    <div
+      class="action-button flex items-center select-none border-y-2 border-x-1 border-orange-300 bg-orange-100 h-full"
+    >
+      Children
+    </div>
+    <div
+      class="options-children w-full font-mono text-xs hidden absolute flex-col gap-y-0 top-[calc(100%+0px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
+    >
+      <!-- <button
+        class="bg-orange-50 outline-2 w-max outline-orange-200 hover:bg-orange-200 text-sm px-1 py-0.5"
+        onclick={() => handleToggleChildren()}>Show/Hide</button
+      > -->
+      <button
+        class="bg-orange-50 outline-2 outline-orange-200 hover:bg-orange-200 text-sm px-1 py-0.5"
+        onclick={() => handleAddChild(task)}>Add</button
+      >
+    </div>
+  </div>
   <button
     class="action-button border-y-2 border-x-1 border-red-300 bg-red-200 hover:bg-red-300 ml-auto right-0"
     onclick={async () => {
@@ -89,5 +104,8 @@
   }
   .active {
     @apply outline-gray-600 bg-green-200;
+  }
+  .children-container:hover .options-children {
+    @apply !flex;
   }
 </style>

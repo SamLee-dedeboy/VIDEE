@@ -7,7 +7,10 @@
   import SemanticTaskCard from "./SemanticTaskCard.svelte";
   import { fade } from "svelte/transition";
   import AddMctNode from "./AddMCTNode.svelte";
-  import { semanticTaskPlanState } from "lib/ExecutionStates.svelte";
+  import {
+    likert_scale_num,
+    semanticTaskPlanState,
+  } from "lib/ExecutionStates.svelte";
   import ColorScaleLegend from "./ColorScaleLegend.svelte";
   let {
     semantic_tasks = $bindable([]),
@@ -38,12 +41,12 @@
   /**
    * Stores the id of the expanded tasks
    */
-  let semantic_tasks_show_sub_tasks: string[] = $state([]);
+  let semantic_tasks_hide_children: string[] = $state([]);
   /**
    * Stores the flattened semantic tasks
    */
   let semantic_tasks_flattened: tSemanticTask[] = $derived(
-    flatten(semantic_tasks, semantic_tasks_show_sub_tasks)
+    hide_children(semantic_tasks, semantic_tasks_hide_children)
   );
   let max_value_path: string[] = $derived(
     selected_semantic_task_path.map((t) => t[id_key])
@@ -89,29 +92,35 @@
     ".semantic-tasks"
   );
 
-  /**
-   * Flatten the semantic tasks
-   * @param _semantic_tasks
-   */
-  function flatten(
+  function hide_children(
     _semantic_tasks: tSemanticTask[] | undefined,
-    _semantic_tasks_show_sub_tasks: string[]
+    _semantic_tasks_hide_children: string[]
   ) {
-    console.log({ _semantic_tasks, _semantic_tasks_show_sub_tasks });
+    console.log({ _semantic_tasks, _semantic_tasks_hide_children });
     // flatten the semantic tasks with bfs
     if (!_semantic_tasks) return [];
-    const queue = [..._semantic_tasks];
+    // const queue = [..._semantic_tasks];
+    const queue = _semantic_tasks.filter(
+      (t) => t.label !== "END" && t.parentIds.length === 0
+    );
     const flattened: tSemanticTask[] = [];
     while (queue.length) {
       let task = queue.shift()!;
-      // if (task.label === "END") continue;
       flattened.push(task);
-      if (
-        task?.sub_tasks &&
-        _semantic_tasks_show_sub_tasks.includes(task[id_key])
-      ) {
-        queue.push(...task.sub_tasks);
+      if (task[id_key] === "-1") continue;
+      if (_semantic_tasks_hide_children.includes(task[id_key])) continue;
+      if (task?.MCT_children_ids) {
+        const children_nodes = task.MCT_children_ids.map((child_id) =>
+          _semantic_tasks.find((t) => t[id_key] === child_id)
+        ).filter((t) => t !== undefined) as tSemanticTask[];
+        queue.push(...children_nodes);
       }
+      // if (
+      //   task?.sub_tasks &&
+      //   _semantic_tasks_show_sub_tasks.includes(task[id_key])
+      // ) {
+      //   queue.push(...task.sub_tasks);
+      // }
     }
 
     console.log({ flattened });
@@ -145,7 +154,7 @@
           ? 1
           : d3.zoomTransform(d3.select(`#${svgId}`).node()).k;
       return {
-        id: node_data.MCT_id,
+        id: node_data[id_key],
         parentIds: node_data.MCT_parent_id ? [node_data.MCT_parent_id] : [],
         data: node_data,
         bbox: {
@@ -162,11 +171,11 @@
 
   // UI handlers
   function handleToggleShowSubTasks(task_id: string) {
-    semantic_tasks_show_sub_tasks = semantic_tasks_show_sub_tasks.includes(
-      task_id
-    )
-      ? semantic_tasks_show_sub_tasks.filter((id) => id !== task_id)
-      : [...semantic_tasks_show_sub_tasks, task_id];
+    // semantic_tasks_show_sub_tasks = semantic_tasks_show_sub_tasks.includes(
+    //   task_id
+    // )
+    //   ? semantic_tasks_show_sub_tasks.filter((id) => id !== task_id)
+    //   : [...semantic_tasks_show_sub_tasks, task_id];
   }
 
   async function handleToggleExpand(task_id: string) {
@@ -194,17 +203,17 @@
       new_node: false,
       level: +task.level + 1,
       llm_evaluation: {
-        complexity: true,
-        coherence: true,
-        importance: true,
+        complexity: likert_scale_num,
+        coherence: likert_scale_num,
+        importance: likert_scale_num,
         complexity_reason: "",
         coherence_reason: "",
         importance_reason: "",
       },
       user_evaluation: {
-        complexity: true,
-        coherence: true,
-        importance: true,
+        complexity: likert_scale_num,
+        coherence: likert_scale_num,
+        importance: likert_scale_num,
         complexity_reason: "",
         coherence_reason: "",
         importance_reason: "",
@@ -547,6 +556,19 @@
             handleAddChild={() => {
               adding_child = true;
               adding_child_for = task;
+            }}
+            handleToggleChildren={() => {
+              if (semantic_tasks_hide_children.includes(task[id_key])) {
+                semantic_tasks_hide_children =
+                  semantic_tasks_hide_children.filter(
+                    (id) => id !== task[id_key]
+                  );
+              } else {
+                semantic_tasks_hide_children = [
+                  ...semantic_tasks_hide_children,
+                  task[id_key],
+                ];
+              }
             }}
             {handleDeleteTask}
             {handleSelectPath}
