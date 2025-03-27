@@ -6,6 +6,7 @@
   import { trim } from "lib/trim";
   import { likert_scale_num } from "lib/ExecutionStates.svelte";
   import type { tSemanticTask } from "types";
+  import { custom_confirm } from "lib/customConfirm";
   let {
     task,
     value,
@@ -18,8 +19,8 @@
     show_transition = true,
   }: {
     task: tSemanticTask;
-    value: boolean;
-    llm_value: boolean;
+    value: number;
+    llm_value: number;
     llm_reasoning: string;
     label: string;
     streaming?: boolean;
@@ -42,13 +43,15 @@
       class="p-1 relative rounded-full outline-gray-500 hover:outline-2 hover:scale-110 transition-all duration-100"
       title={label}
       class:disabled={streaming}
-      style="background-color: {value
-        ? evaluation_colors.good
-        : evaluation_colors.bad}"
+      style="background-color: {evaluation_colors.path_value_color_scale(
+        value / likert_scale_num
+      )}"
       onclick={() => {
-        console.log(value, llm_value);
-        // TODO: this should be value = (value+1) % likert_scale_num
-        value = !value;
+        if (streaming) {
+          custom_confirm("You cannot change the evaluation while streaming.");
+          return;
+        }
+        value = (value + 1) % (likert_scale_num + 1);
         handleToggle(value);
         if (value !== llm_value) {
           asking_feedback = true;
@@ -65,7 +68,7 @@
       {#each Array.from({ length: likert_scale_num + 1 }, (_, i) => i) as i}
         <div
           class="select-none h-[0.5rem]"
-          style={`background-color: ${3 <= i ? "#aaaaaa" : evaluation_colors.path_value_color_scale(i / (likert_scale_num + 1))}; width: ${5 / (likert_scale_num + 1)}rem`}
+          style={`background-color: ${value + 1 <= i ? "#aaaaaa" : evaluation_colors.path_value_color_scale(i / likert_scale_num)}; width: ${5 / (likert_scale_num + 1)}rem`}
         ></div>
       {/each}
     </div>
@@ -134,6 +137,9 @@
 
 <style lang="postcss">
   @reference "tailwindcss";
+  .disabled {
+    @apply cursor-not-allowed;
+  }
   .input-box:empty:before {
     content: "Why do you think this is good/bad?";
     cursor: text;

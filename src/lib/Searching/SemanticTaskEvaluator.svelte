@@ -3,6 +3,7 @@
   import type { Snippet } from "svelte";
   import type { tSemanticTask } from "types";
   import { evaluation_colors } from "constants";
+  import { likert_scale_num } from "lib/ExecutionStates.svelte";
 
   let {
     title,
@@ -16,8 +17,8 @@
     few_shot_examples: {
       node: tSemanticTask;
       parent_node: tSemanticTask;
-      user_evaluation: boolean;
-      llm_evaluation: boolean;
+      user_evaluation: number;
+      llm_evaluation: number;
       user_reasoning: string | undefined;
     }[];
     icon: Snippet;
@@ -45,7 +46,7 @@
   {#if show}
     <div in:slide class="flex flex-col px-1 gap-y-2 select-none">
       <div class="flex flex-col">
-        <div class="text-gray-400 header-3">Definition</div>
+        <!-- <div class="text-gray-400 header-3">Definition</div> -->
         <div
           contenteditable
           class="px-1 rounded text-slate-600"
@@ -76,12 +77,12 @@
                   cx="5"
                   cy="5"
                   r="4"
-                  fill={example.user_evaluation
-                    ? evaluation_colors.good
-                    : evaluation_colors.bad}
+                  fill={evaluation_colors.path_value_color_scale(
+                    example.user_evaluation / (likert_scale_num + 1)
+                  )}
                 />
               </svg>
-              {example.user_evaluation ? "Good" : "Bad"}
+              {example.user_evaluation + 1}
             </div>
             <div class="table-item text-sm">
               {example.user_reasoning ? example.user_reasoning : "N/A"}

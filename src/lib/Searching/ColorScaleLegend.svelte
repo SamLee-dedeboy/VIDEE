@@ -58,7 +58,7 @@
               cy="5"
               r="5"
               fill={evaluation_colors.path_value_color_scale(
-                i / (likert_scale_num + 1)
+                i / likert_scale_num
               )}
             />
             <text

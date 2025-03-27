@@ -18,9 +18,9 @@ export type tNode = {
 // }
 
 export type tEvaluators = {
-  complexity: boolean;
-  coherence: boolean;
-  importance: boolean;
+  complexity: number;
+  coherence: number;
+  importance: number;
   complexity_reason: string;
   coherence_reason: string;
   importance_reason: string;
