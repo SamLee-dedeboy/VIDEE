@@ -573,7 +573,12 @@
   }
   .best-path-legend:hover,
   .new-node-legend:hover,
-  .next-expansion-legend:hover,
+  .next-expansion-legend:hover {
+    @apply scale-110 transition-all;
+  }
+  .inactive {
+    @apply opacity-40;
+  }
   .new-node-legend::before {
     content: "";
     position: absolute;

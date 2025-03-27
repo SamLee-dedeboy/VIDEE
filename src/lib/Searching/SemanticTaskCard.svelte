@@ -81,7 +81,6 @@
   bind:this={container}
   role="tooltip"
   class="task-card-container flex flex-col w-min gap-y-0.5 rounded bg-gray-50"
-  class:card-disabled={streaming}
   class:next-expansion={next_expansion && controllers.show_next_expansion}
   class:bounce={!regenerating &&
     next_expansion &&
@@ -206,7 +205,6 @@
           <button
             class="shrink-0 ml-auto cursor-pointer hover:bg-orange-300 p-0.5 rounded"
             title="Expand/Hide"
-            style={`visibility: ${streaming ? "hidden" : "visible"}`}
             onclick={() => handleToggleExpand(task[id_key])}
             ><img src="panel_top_open.svg" alt="more" class="w-6 h-6" /></button
           >
