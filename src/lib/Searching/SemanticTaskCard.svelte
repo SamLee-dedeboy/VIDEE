@@ -233,7 +233,7 @@
             />
             <div class="text-sm text-gray-500 italic w-[5rem]">Complexity</div>
             <div class="text-sm">
-              {task.user_evaluation.complexity ? "Good" : "Bad"}
+              {task.user_evaluation.complexity + 1}
             </div>
           </div>
           <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
@@ -251,7 +251,7 @@
             />
             <div class="text-sm text-gray-500 italic w-[5rem]">Coherence</div>
             <div class="text-sm">
-              {task.user_evaluation.coherence ? "Good" : "Bad"}
+              {task.user_evaluation.coherence + 1}
             </div>
           </div>
           <div in:slide class="flex gap-x-1 min-w-[15rem] items-center">
@@ -269,7 +269,7 @@
             />
             <div class="text-sm text-gray-500 italic w-[5rem]">Importance</div>
             <div class="text-sm">
-              {task.user_evaluation.importance ? "Good" : "Bad"}
+              {task.user_evaluation.importance + 1}
             </div>
           </div>
           <div class="flex gap-x-2 my-1">
