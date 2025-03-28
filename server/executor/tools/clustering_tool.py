@@ -263,9 +263,9 @@ def clustering_tool(inputs: List[Dict[str, Any]],
         # For BERTopic, we might need original texts
         if algorithm == 'bertopic':
             # original doc content
-            content_key = kwargs.get('content_key', 'content')
-            if content_key in inputs[0]:
-                kwargs['original_docs'] = [i.get(content_key, "") for i in inputs]
+            feature_key = kwargs.get('feature_key', 'content')
+            if feature_key in inputs[0]:
+                kwargs['original_docs'] = [i.get(feature_key, "") for i in inputs]
 
         # Filter out empty vectors
         valid_indices = [i for i, vec in enumerate(data) if vec]
@@ -277,9 +277,9 @@ def clustering_tool(inputs: List[Dict[str, Any]],
                 or not isinstance(valid_data[0][0], (int, float))
         ):
             # original doc content
-            content_key = kwargs.get('content_key', 'content')
-            if content_key in inputs[0]:
-                kwargs['original_docs'] = [i.get(content_key, "") for i in inputs]
+            feature_key = kwargs.get('feature_key', 'content')
+            if feature_key in inputs[0]:
+                kwargs['original_docs'] = [i.get(feature_key, "") for i in inputs]
             else:
                 kwargs['original_docs'] = [str(obj) for obj in inputs]
             from sentence_transformers import SentenceTransformer

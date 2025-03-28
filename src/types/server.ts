@@ -60,8 +60,14 @@ export type tPrimitiveTaskDescription = {
     children: string[];
     solves: string;
     existing_keys?: string[];
-    recompile_needed_IO?: boolean;
-    recompile_needed_parameters?: boolean;
+    available_states?: {
+        [key: string]: Array<{
+            key: string;
+            schema: string;
+        }>;
+    };
+    recompile_skip_IO?: boolean;
+    recompile_skip_parameters?: boolean;
 }
 
 export type tPrimitiveTaskExecution = {

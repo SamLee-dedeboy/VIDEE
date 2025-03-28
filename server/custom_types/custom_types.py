@@ -1,6 +1,6 @@
-from pydantic import BaseModel
-from typing import TypedDict, Annotated, Any
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import TypedDict, Annotated, Any, Dict, List, Optional
+from typing import NotRequired
 
 
 class SemanticTaskResponse(BaseModel):
@@ -51,7 +51,7 @@ class MCT_Node(Node):
 
 class BaseStateSchema(TypedDict):
     documents: Annotated[list, lambda a, b: b]
-    transformed_data: dict[str, Any] # a global storage on all transformed schema (i.e. aggregated data on all docs)
+    global_store: dict[str, Any] # a global storage for dynamic data (i.e. aggregated data on all docs)
 
 
 class PrimitiveTaskDescription(BaseModel):

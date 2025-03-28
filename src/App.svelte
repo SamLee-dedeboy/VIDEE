@@ -322,7 +322,8 @@
 
   function handleCompile(
     task: tPrimitiveTask | undefined = undefined,
-    skip_IO = false
+    skip_IO = false,
+    skip_parameters = false
   ) {
     console.log("Compiling...", { primitive_tasks, task, session_id });
     controllers.compiling = task?.id;
@@ -336,6 +337,7 @@
         primitive_tasks,
         compile_target: task?.id,
         skip_IO,
+        skip_parameters,
         session_id,
       }),
     })
@@ -343,8 +345,8 @@
       .then((data) => {
         controllers.compiling = false;
         data.primitive_tasks.forEach((t) => {
-          t.recompile_needed_IO = false;
-          t.recompile_needed_parameters = false;
+          t.recompile_skip_IO = false;
+          t.recompile_skip_parameters = false;
         });
         primitiveTaskState.primitiveTasks = data.primitive_tasks;
         primitiveTaskExecutionStates.execution_states = data.execution_state;

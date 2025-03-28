@@ -33,10 +33,9 @@
       <button
         class="bg-[#eff6ff] border-t-2 border-x-2 border-slate-200 hover:bg-gray-200 text-sm px-1 py-0.5"
         class:disabled={!(
-          task.recompile_needed_IO === false &&
-          task.recompile_needed_parameters === true
+          task.recompile_skip_IO === true || task.recompile_skip_parameters === true
         )}
-        onclick={() => handleCompile(task, true)}>Skip I/O</button
+        onclick={() => handleCompile(task, true, task.recompile_skip_parameters)}>Skip I/O</button
       >
       <button
         class="w-max bg-[#eff6ff] border-b-2 border-x-2 border-slate-200 hover:bg-gray-200 text-sm px-1 py-0.5"

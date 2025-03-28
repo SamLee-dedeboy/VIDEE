@@ -98,10 +98,10 @@
             }}>{state_input_key}</button
           >
           <div class="state-content flex flex-col">
-            {#if state_input_key === 'transformed_data' && isDictionaryOfLists(state_value)}
-              <!-- Special handling for transformed_data dictionary -->
+            {#if state_input_key === 'global_store' && isDictionaryOfLists(state_value)}
+              <!-- Special handling for global_store dictionary -->
               {#each Object.entries(state_value) as [dictKey, documents]}
-                <div class="transformed-data-container">
+                <div class="global-store-container">
                   <div class="dict-key border-b border-gray-300 bg-blue-50 px-2 py-1 text-slate-700 font-semibold">
                     {dictKey}
                   </div>
@@ -169,7 +169,7 @@
   .hide-state-content {
     @apply hidden;
   }
-  .transformed-data-container {
+  .global-store-container {
     @apply mb-6 border border-gray-200 rounded shadow-sm;
   }
 </style>

@@ -121,7 +121,7 @@ def register_segmentation_strategy(name: str, strategy: SegmentationStrategy):
 
 def segmentation_tool(doc: Dict[str, Any],
                      strategy: str = 'paragraph',
-                     content_key: str = 'content',
+                     feature_key: str = 'content',
                      output_key: str = 'segments',
                      **kwargs) -> Dict[str, Any]:
     """
@@ -130,7 +130,7 @@ def segmentation_tool(doc: Dict[str, Any],
     Args:
         doc: Input document in json format
         strategy: Segmentation strategy to use (default: "paragraph"), see _SEGMENTATION_STRATEGIES
-        content_key: Key in the input document containing the text to segment
+        feature_key: Key in the input document containing the text to segment
         output_key: Key to store the segments in the result
         **kwargs: Additional parameters to pass to the segmentation strategy
 
@@ -138,9 +138,9 @@ def segmentation_tool(doc: Dict[str, Any],
         Dictionary containing the segments
     """
     try:
-        text = doc[content_key]
-        if content_key not in doc:
-            logging.warning(f"Content key '{content_key}' not found in document, force to use the entire doc for segmentation")
+        text = doc[feature_key]
+        if feature_key not in doc:
+            logging.warning(f"Content key '{feature_key}' not found in document, force to use the entire doc for segmentation")
             text = str(doc)
         if not text or not isinstance(text, str):
             return {output_key: []}

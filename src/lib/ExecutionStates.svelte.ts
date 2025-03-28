@@ -165,8 +165,8 @@ export const primitiveTaskState = {
                 explanation: "N/A",
                 parentIds: [],
                 children: [],
-                recompile_needed_IO: true,
-                recompile_needed_parameters: true,
+                recompile_skip_IO: true,
+                recompile_skip_parameters: true,
             })
         primitiveTasks = [...primitiveTasks]
         this.sortAndCollectInputKeys()
@@ -271,10 +271,11 @@ function update_execution_with_server() {
       .then((data) => {
         console.log("Update primitive tasks success:", data);
         console.log(data);
-        primitiveTasks.forEach(t => {
-            // t.recompile_needed_IO = false
-            // t.recompile_needed_parameters = false
-        })
+// Don't automatically reset recompile flags - they should persist until compilation
+//         primitiveTasks.forEach(t => {
+//             t.recompile_skip_IO = false
+//             t.recompile_skip_parameters = false
+//         })
         // primitiveTaskState.primitiveTasks = data.primitive_tasks;
         // primitiveTaskExecutionStates.execution_states = data.execution_state;
       })

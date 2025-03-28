@@ -102,7 +102,7 @@
             }}
           >
             Input/Output Formats
-            {#if task.recompile_needed_IO}
+            {#if task.recompile_skip_IO}
               <div
                 class="flex items-center gap-x-1 text-slate-700 italic text-sm ml-2"
                 title="Recompile Needed"
@@ -204,7 +204,7 @@
           }}
         >
           Execution Parameter
-          {#if task.recompile_needed_parameters}
+          {#if task.recompile_skip_parameters}
             <div
               class="flex items-center gap-x-1 text-slate-700 italic text-sm ml-2"
               title="Recompile Needed"
