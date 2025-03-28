@@ -78,6 +78,9 @@ def dim_reduction_tool(inputs: List[Dict[str, Any]],
         List of documents with reduced features added
     """
     try:
+        for i in inputs:
+            if isinstance(i.get(feature_key, ''), str):
+                i[feature_key] = i[feature_key].split()
         # Extract feature vectors from inputs
         data = [i.get(feature_key, []) for i in inputs]
         result = [[]] * len(inputs)

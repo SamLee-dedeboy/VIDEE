@@ -321,8 +321,7 @@ async def generate_execution_parameters(
                 )
                 tool_plan = create_data_transform_plan(
                     primitive_task,
-                    tool_config.get("operation", "transform"),
-                    tool_config.get("parameters", {}),
+                    tool_config,
                     input_keys,
                     state_input_key,
                 )
@@ -337,8 +336,7 @@ async def generate_execution_parameters(
                 )
                 tool_plan = create_clustering_plan(
                     primitive_task,
-                    tool_config.get("algorithm", "kmeans"),
-                    tool_config.get("parameters", {}),
+                    tool_config,
                     input_keys,
                     state_input_key,
                 )
@@ -353,8 +351,7 @@ async def generate_execution_parameters(
                 )
                 tool_plan = create_dim_reduction_plan(
                     primitive_task,
-                    tool_config.get("algorithm", "pca"),
-                    tool_config.get("parameters", {}),
+                    tool_config,
                     input_keys,
                     state_input_key,
                 )
@@ -369,8 +366,7 @@ async def generate_execution_parameters(
                 )
                 tool_plan = create_embedding_plan(
                     primitive_task,
-                    tool_config.get("provider", "openai"),
-                    tool_config.get("parameters", {}),
+                    tool_config,
                     input_keys,
                     state_input_key,
                     api_key,
@@ -386,8 +382,7 @@ async def generate_execution_parameters(
                 )
                 tool_plan = create_segmentation_plan(
                     primitive_task,
-                    tool_config.get("strategy", "paragraph"),
-                    tool_config.get("parameters", {}),
+                    tool_config,
                     input_keys,
                     state_input_key,
                 )
@@ -413,7 +408,7 @@ async def generate_execution_parameters(
             plans.append(tool_plan)
             return
         except Exception as e:
-            print(f"Error using segmentation agent: {e}. Using default prompting plan.")
+            print(f"Error creating plan for {primitive_task['label']}: {e}. Using default prompting plan.")
 
     # Default to using prompt_generation_agent for other tasks
     prompt_config = await autogen_utils.run_prompt_generation_agent(
@@ -457,10 +452,10 @@ async def generate_execution_parameters(
         output_schema = primitive_task["execution"]["parameters"]["output_schema"]
 
     # Add to input state
-    update_state_keys(all_states_and_keys, state_input_key, output_key, output_schema)
+    update_state_keys(all_states_and_keys, state_input_key, output_key, str(output_schema))
 
     # If output is a list type, also add it to the global state
-    add_output_list_to_global_state(all_states_and_keys, output_key, output_schema)
+    add_output_list_to_global_state(all_states_and_keys, output_key, str(output_schema))
 
     # replace {} in the JSON format with {{}}
     prompt_structured["JSON_format"] = (
@@ -508,7 +503,7 @@ async def generate_execution_parameters(
                     "format": "json",
                     "prompt_template": prompt_template,
                     "input_key_schemas": input_key_schemas,
-                    "output_schema": output_schema,
+                    "output_schema": str(output_schema),
                 },
             },
         }
@@ -1052,8 +1047,7 @@ def convert_spec_to_chain(spec):
 
 def create_data_transform_plan(
     primitive_task,
-    operation=None,
-    config_params=None,
+    tool_config=None,
     input_keys=None,
     current_state_key="documents",
 ):
@@ -1062,8 +1056,7 @@ def create_data_transform_plan(
 
     Args:
         primitive_task: The primitive task description
-        operation: Optional operation type (map, filter, reduce, chain)
-        config_params: Optional configuration parameters
+        tool_config: configuration parameters
         input_keys: Optional list of input keys with their detailed schemas
         current_state_key: Current langgraph state key
 
@@ -1087,17 +1080,18 @@ def create_data_transform_plan(
 
     parameters = {
         "name": primitive_task["label"],
-        "operation": operation,
+        "operation": tool_config.get("operation", "transform"),
         "input_key_schemas": input_key_schemas
     }
 
     # If config_params is provided, use them
     # also update the state_output_key here
-    if config_params:
-        parameters.update(config_params)
-        if 'output_schema' in config_params:
+    if tool_config:
+        if "parameters" in tool_config:
+            parameters.update(tool_config.get("parameters", {}))
+        if 'output_schema' in tool_config:
             try:
-                key_and_schema = extract_json_content(config_params['output_schema'], True)
+                key_and_schema = extract_json_content(tool_config['output_schema'], True)
                 # ideally output_schema should only have 1 key
                 if key_and_schema:
                     state_output_key, output_schema = next(iter(key_and_schema.items()))
@@ -1119,8 +1113,7 @@ def create_data_transform_plan(
 
 def create_clustering_plan(
     primitive_task,
-    algorithm=None,
-    config_params=None,
+    tool_config,
     input_keys=None,
     current_state_key="documents",
 ):
@@ -1129,8 +1122,7 @@ def create_clustering_plan(
 
     Args:
         primitive_task: The primitive task description
-        algorithm: Optional clustering algorithm (kmeans, dbscan, etc.)
-        config_params: Optional configuration parameters
+        tool_config: configuration parameters
         input_keys: Optional list of input keys with their detailed schemas
         current_state_key: The current state key to use as input (default: "documents")
 
@@ -1148,22 +1140,22 @@ def create_clustering_plan(
 
     output_schema = "list[int]"
     state_output_key = "cluster_labels"
-    default_algorithm = "kmeans"
 
     parameters = {
         "name": primitive_task["label"],
-        "algorithm": algorithm or default_algorithm,
+        "algorithm": tool_config.get("algorithm", "kmeans"),
         "feature_key": input_key_names[0],
         "n_clusters": 3,  # Default number of clusters
         "input_key_schemas": input_key_schemas,
     }
     # If config_params is provided, use them
     # also update the state_output_key here
-    if config_params:
-        parameters.update(config_params)
-        if 'output_schema' in config_params:
+    if tool_config:
+        if "parameters" in tool_config:
+            parameters.update(tool_config.get("parameters", {}))
+        if 'output_schema' in tool_config:
             try:
-                key_and_schema = extract_json_content(config_params['output_schema'], True)
+                key_and_schema = extract_json_content(tool_config['output_schema'], True)
                 # ideally output_schema should only have 1 key
                 if key_and_schema:
                     state_output_key, output_schema = next(iter(key_and_schema.items()))
@@ -1186,8 +1178,7 @@ def create_clustering_plan(
 
 def create_dim_reduction_plan(
     primitive_task,
-    algorithm=None,
-    config_params=None,
+    tool_config,
     input_keys=None,
     current_state_key="documents",
 ):
@@ -1196,8 +1187,7 @@ def create_dim_reduction_plan(
 
     Args:
         primitive_task: The primitive task description
-        algorithm: Optional dimensionality reduction algorithm (pca, tsne, umap)
-        config_params: Optional configuration parameters
+        tool_config: Configuration parameters
         input_keys: Optional list of input keys with their detailed schemas
         current_state_key: The current state key to use as input (default: "documents")
 
@@ -1215,12 +1205,11 @@ def create_dim_reduction_plan(
     output_schema = "list[list[float]]"
 
     state_output_key = "reduced_dimensions"
-    default_algorithm = "pca"  # Default algorithm
 
     # Set up parameters
     parameters = {
         "name": primitive_task["label"],
-        "algorithm": algorithm or default_algorithm,
+        "algorithm": tool_config.get("algorithm", "pca"),
         "feature_key": input_key_names[0],
         "n_components": 2,  # Default number of dimensions to reduce to
         "input_key_schemas": input_key_schemas,
@@ -1228,11 +1217,12 @@ def create_dim_reduction_plan(
 
     # If config_params is provided, use them
     # also update the state_output_key here
-    if config_params:
-        parameters.update(config_params)
-        if 'output_schema' in config_params:
+    if tool_config:
+        if "parameters" in tool_config:
+            parameters.update(tool_config.get("parameters", {}))
+        if 'output_schema' in tool_config:
             try:
-                key_and_schema = extract_json_content(config_params['output_schema'], True)
+                key_and_schema = extract_json_content(tool_config['output_schema'], True)
                 # ideally output_schema should only have 1 key
                 if key_and_schema:
                     state_output_key, output_schema = next(iter(key_and_schema.items()))
@@ -1255,8 +1245,7 @@ def create_dim_reduction_plan(
 
 def create_embedding_plan(
     primitive_task,
-    provider=None,
-    config_params=None,
+    tool_config,
     input_keys=None,
     current_state_key="documents",
     api_key="",
@@ -1266,8 +1255,7 @@ def create_embedding_plan(
 
     Args:
         primitive_task: The primitive task description
-        provider: Optional embedding provider (openai, sentence_transformers)
-        config_params: Optional configuration parameters
+        tool_config: Configuration parameters
         input_keys: Optional list of input keys with their detailed schemas
         current_state_key: The current state key to use as input (default: "documents")
         api_key: api key
@@ -1286,13 +1274,12 @@ def create_embedding_plan(
     output_schema = "list[float]"
 
     state_output_key = "embedding"
-    default_provider = "openai"  # Default provider
     default_model = "text-embedding-ada-002"  # Default model
 
     # Set up parameters
     parameters = {
         "name": primitive_task["label"],
-        "provider": provider or default_provider,
+        "provider": tool_config.get("provider", "openai"),
         "model": default_model,
         "feature_key": input_key_names[0],
         "input_key_schemas": input_key_schemas,
@@ -1301,11 +1288,12 @@ def create_embedding_plan(
 
     # If config_params is provided, use them
     # also update the state_output_key here
-    if config_params:
-        parameters.update(config_params)
-        if 'output_schema' in config_params:
+    if tool_config:
+        if "parameters" in tool_config:
+            parameters.update(tool_config.get("parameters", {}))
+        if 'output_schema' in tool_config:
             try:
-                key_and_schema = extract_json_content(config_params['output_schema'], True)
+                key_and_schema = extract_json_content(tool_config['output_schema'], True)
                 # ideally output_schema should only have 1 key
                 if key_and_schema:
                     state_output_key, output_schema = next(iter(key_and_schema.items()))
@@ -1328,8 +1316,7 @@ def create_embedding_plan(
 
 def create_segmentation_plan(
     primitive_task,
-    strategy=None,
-    config_params=None,
+    tool_config,
     input_keys=None,
     current_state_key="documents",
 ):
@@ -1338,8 +1325,7 @@ def create_segmentation_plan(
 
     Args:
         primitive_task: The primitive task description
-        strategy: Optional segmentation strategy (paragraph, sentence, fixed_length, semantic)
-        config_params: Optional configuration parameters
+        tool_config: Configuration parameters
         input_keys: Optional list of input keys with their detailed schemas
         current_state_key: The current state key to use as input (default: "documents")
 
@@ -1358,22 +1344,22 @@ def create_segmentation_plan(
     output_schema = "list[str]"
 
     state_output_key = "segments"
-    default_strategy = "paragraph"
 
     parameters = {
         "name": primitive_task["label"],
-        "strategy": strategy or default_strategy,
+        "strategy": tool_config.get("strategy", "paragraph"),
         "feature_key": input_key_names[0],
         "input_key_schemas": input_key_schemas,
     }
 
     # If config_params is provided, use them
     # also update the state_output_key here
-    if config_params:
-        parameters.update(config_params)
-        if 'output_schema' in config_params:
+    if tool_config:
+        if "parameters" in tool_config:
+            parameters.update(tool_config.get("parameters", {}))
+        if 'output_schema' in tool_config:
             try:
-                key_and_schema = extract_json_content(config_params['output_schema'], True)
+                key_and_schema = extract_json_content(tool_config['output_schema'], True)
                 # ideally output_schema should only have 1 key
                 if key_and_schema:
                     state_output_key, output_schema = next(iter(key_and_schema.items()))

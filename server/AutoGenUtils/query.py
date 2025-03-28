@@ -627,7 +627,7 @@ async def run_prompt_generation_agent(
                     "Requirements": str
                     "JSON_format": str // Object str with one key
                 }},
-                "output_schema": str or dict  // Using the clearer schema format described above
+                "output_schema": str  // Using the clearer schema format described above
             }}
         """.format(
             existing_keys=input_keys_str,
@@ -1014,12 +1014,12 @@ async def run_data_transform_plan_agent(
         You MUST choose "transform" as the operation - no other operations are supported.
         definition of "transform" operation - Transform the given data to another schema
            - Required parameters: 
-              - "transform_code": Python code that defines a transform function, this function must be executable without any errors
-              - "output_schema": Detailed schema of the output structure, include your selected output key. 
+              - "transform_code": Python code that defines a transform function, this function must be executable without any errors 
            - The function must:
              - Be named "transform"
              - Take a "data" parameter (list of documents, each document is a dictionary with all the given input keys)
              - Return transformed "data", based on user's requirements. The transformed data should be an object.
+           - Also output a "output_schema" field: Detailed schema of the output structure as described before, also include your selected output key in the schema.
            - Example: to transform documents to a complex aggregated result:
 ```
 Input keys and schema:
@@ -1064,9 +1064,9 @@ CORRECTED:
         {
             "operation": "transform",
             "parameters": {
-                "transform_code": str,
-                "output_schema": str
-            }
+                "transform_code": str
+            },
+            "output_schema": str
         }
         """,
     )

@@ -142,6 +142,11 @@ def segmentation_tool(doc: Dict[str, Any],
         if feature_key not in doc:
             logging.warning(f"Content key '{feature_key}' not found in document, force to use the entire doc for segmentation")
             text = str(doc)
+        if isinstance(text, list):
+            text = ' '.join(text)
+        if isinstance(text, dict):
+            text = ' '.join(text.values())
+
         if not text or not isinstance(text, str):
             return {output_key: []}
 
@@ -150,7 +155,7 @@ def segmentation_tool(doc: Dict[str, Any],
             strategy = 'paragraph'
 
         segments = _SEGMENTATION_STRATEGIES[strategy].segment(text, **kwargs)
-        return {output_key: segments}
+        return segments
     except Exception as e:
         logging.error(f"Error in segmentation_tool: {e}")
-        return {output_key: []}
+        return []

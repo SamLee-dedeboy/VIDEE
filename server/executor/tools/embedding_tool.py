@@ -125,6 +125,10 @@ def embedding_tool(doc: Dict[str, Any], api_key: str = None, model: str = "text-
             logging.warning(f"Invalid text in document for key {feature_key}, force to use the input object for embedding")
             # original doc content
             text = str(doc)
+        if isinstance(text, list):
+            text = ' '.join(text)
+        if isinstance(text, dict):
+            text = ' '.join(text.values())
 
         if provider not in _PROVIDERS:
             logging.error(f"Unknown embedding provider: {provider}")

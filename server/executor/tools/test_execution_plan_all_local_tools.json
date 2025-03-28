@@ -1,0 +1,481 @@
+[
+    {
+        "id": "-1",
+        "label": "Root",
+        "description": "Root",
+        "explanation": "N/A",
+        "parentIds": [],
+        "children": [],
+        "sub_tasks": []
+    },
+    {
+        "solves": "0",
+        "label": "Summarization",
+        "id": "Summarization-1",
+        "description": "Create a shorter version of the document, focusing on key information, and present it in bullet points.",
+        "explanation": "Summarization is needed to condense the document into essential points, making it easier to analyze and process further.",
+        "parentIds": [],
+        "children": [
+            "Segmentation-1"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content"
+        ],
+        "state_output_key": "summary",
+        "available_states": {
+            "documents": [
+                {
+                    "key": "content",
+                    "schema": "str"
+                }
+            ]
+        },
+        "input_keys": [
+            {
+                "key": "content",
+                "schema": "str"
+            }
+        ],
+        "execution": {
+            "tool": "prompt_tool",
+            "parameters": {
+                "name": "Summarization",
+                "model": "gpt-4o-mini",
+                "api_key": "",
+                "format": "json",
+                "prompt_template": [
+                    {
+                        "role": "system",
+                        "content": "\n                ** Context **\n                The user wants to create a concise summary of the provided document, highlighting the key information in a bullet point format.\n                ** Task **\n                Analyze the content of the document and extract the most important points to create a shorter version presented as bullet points.\n                ** Requirements **\n                The summary should focus on key information and be formatted as bullet points for clarity.\n                Reply with the following JSON format:\n                {{\"summary\": \"list[str]\"}}\n                "
+                    },
+                    {
+                        "role": "human",
+                        "content": "content: {content}"
+                    }
+                ],
+                "input_key_schemas": {
+                    "content": "str"
+                },
+                "output_schema": "list[str]"
+            }
+        },
+        "existing_keys": [
+            "content"
+        ]
+    },
+    {
+        "solves": "1",
+        "label": "Segmentation",
+        "id": "Segmentation-1",
+        "description": "Split the summarized bullet points into individual words or phrases for further analysis.",
+        "explanation": "Segmentation is necessary to break down the summarized text into manageable parts for embedding creation.",
+        "parentIds": [
+            "Summarization-1"
+        ],
+        "children": [
+            "Embedding Generation-1"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "summary"
+        ],
+        "input_keys": [
+            {
+                "key": "summary",
+                "schema": "list[str]"
+            }
+        ],
+        "state_output_key": "segmented_words",
+        "execution": {
+            "tool": "segmentation_tool",
+            "parameters": {
+                "name": "Segmentation",
+                "strategy": "sentence",
+                "feature_key": "summary",
+                "input_key_schemas": {
+                    "summary": "list[str]"
+                },
+                "output_schema": "list[str]"
+            }
+        },
+        "available_states": {
+            "documents": [
+                {
+                    "key": "content",
+                    "schema": "str"
+                },
+                {
+                    "key": "summary",
+                    "schema": "list[str]"
+                }
+            ],
+            "summary": [
+                {
+                    "key": "item",
+                    "schema": "str"
+                }
+            ]
+        },
+        "existing_keys": [
+            "content",
+            "summary"
+        ]
+    },
+    {
+        "solves": "2",
+        "label": "Embedding Generation",
+        "id": "Embedding Generation-1",
+        "description": "Convert the segmented words into numerical representations (embeddings) for analysis.",
+        "explanation": "Embedding generation is crucial as it transforms text into a format that can be processed by machine learning algorithms.",
+        "parentIds": [
+            "Segmentation-1"
+        ],
+        "children": [
+            "Dimensionality Reduction-1"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "segmented_words"
+        ],
+        "input_keys": [
+            {
+                "key": "segmented_words",
+                "schema": "list[str]"
+            }
+        ],
+        "state_output_key": "embeddings",
+        "execution": {
+            "tool": "embedding_tool",
+            "parameters": {
+                "name": "Embedding Generation",
+                "provider": "sentence_transformers",
+                "model": "all-MiniLM-L6-v2",
+                "feature_key": "segmented_words",
+                "input_key_schemas": {
+                    "segmented_words": "list[str]"
+                },
+                "api_key": "",
+                "output_schema": "list[float]"
+            }
+        },
+        "available_states": {
+            "documents": [
+                {
+                    "key": "content",
+                    "schema": "str"
+                },
+                {
+                    "key": "summary",
+                    "schema": "list[str]"
+                },
+                {
+                    "key": "segmented_words",
+                    "schema": "list[str]"
+                }
+            ],
+            "summary": [
+                {
+                    "key": "item",
+                    "schema": "str"
+                }
+            ],
+            "segmented_words": [
+                {
+                    "key": "item",
+                    "schema": "str"
+                }
+            ]
+        },
+        "existing_keys": [
+            "content",
+            "summary",
+            "segmented_words"
+        ]
+    },
+    {
+        "solves": "3",
+        "label": "Dimensionality Reduction",
+        "id": "Dimensionality Reduction-1",
+        "description": "Reduce the number of features in the embedding data while preserving important patterns.",
+        "explanation": "Dimensionality reduction helps in simplifying the data, making it easier to visualize and analyze without losing significant information.",
+        "parentIds": [
+            "Embedding Generation-1"
+        ],
+        "children": [
+            "Clustering Analysis-1"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "embeddings"
+        ],
+        "input_keys": [
+            {
+                "key": "embeddings",
+                "schema": "list[float]"
+            }
+        ],
+        "state_output_key": "reduced_embeddings",
+        "execution": {
+            "tool": "dim_reduction_tool",
+            "parameters": {
+                "name": "Dimensionality Reduction",
+                "algorithm": "umap",
+                "feature_key": "embeddings",
+                "n_components": 2,
+                "input_key_schemas": {
+                    "embeddings": "list[float]"
+                },
+                "n_neighbors": 15,
+                "min_dist": 0.1,
+                "metric": "euclidean",
+                "output_schema": "list[list[float]]"
+            }
+        },
+        "available_states": {
+            "documents": [
+                {
+                    "key": "content",
+                    "schema": "str"
+                },
+                {
+                    "key": "summary",
+                    "schema": "list[str]"
+                },
+                {
+                    "key": "segmented_words",
+                    "schema": "list[str]"
+                },
+                {
+                    "key": "embeddings",
+                    "schema": "list[float]"
+                }
+            ],
+            "summary": [
+                {
+                    "key": "item",
+                    "schema": "str"
+                }
+            ],
+            "segmented_words": [
+                {
+                    "key": "item",
+                    "schema": "str"
+                }
+            ],
+            "embeddings": [
+                {
+                    "key": "item",
+                    "schema": "float"
+                }
+            ]
+        },
+        "existing_keys": [
+            "content",
+            "summary",
+            "segmented_words",
+            "embeddings"
+        ]
+    },
+    {
+        "solves": "4",
+        "label": "Clustering Analysis",
+        "id": "Clustering Analysis-1",
+        "description": "Group similar texts together based on the reduced dimensionality input to identify distinct labels.",
+        "explanation": "Clustering is needed to categorize the data into meaningful groups, which can help in understanding the underlying structure of the data.",
+        "parentIds": [
+            "Dimensionality Reduction-1"
+        ],
+        "children": [
+            "Data Transformation-1"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "reduced_embeddings"
+        ],
+        "input_keys": [
+            {
+                "key": "reduced_embeddings",
+                "schema": "list[list[float]]"
+            }
+        ],
+        "state_output_key": "cluster_labels",
+        "execution": {
+            "tool": "clustering_tool",
+            "parameters": {
+                "name": "Clustering Analysis",
+                "algorithm": "bertopic",
+                "feature_key": "reduced_embeddings",
+                "n_clusters": 3,
+                "input_key_schemas": {
+                    "reduced_embeddings": "list[list[float]]"
+                },
+                "min_topic_size": 5,
+                "n_neighbors": 10,
+                "low_memory": true,
+                "output_schema": "list[int]"
+            }
+        },
+        "available_states": {
+            "documents": [
+                {
+                    "key": "content",
+                    "schema": "str"
+                },
+                {
+                    "key": "summary",
+                    "schema": "list[str]"
+                },
+                {
+                    "key": "segmented_words",
+                    "schema": "list[str]"
+                },
+                {
+                    "key": "embeddings",
+                    "schema": "list[float]"
+                },
+                {
+                    "key": "reduced_embeddings",
+                    "schema": "list[list[float]]"
+                }
+            ],
+            "summary": [
+                {
+                    "key": "item",
+                    "schema": "str"
+                }
+            ],
+            "segmented_words": [
+                {
+                    "key": "item",
+                    "schema": "str"
+                }
+            ],
+            "embeddings": [
+                {
+                    "key": "item",
+                    "schema": "float"
+                }
+            ],
+            "reduced_embeddings": [
+                {
+                    "key": "item",
+                    "schema": "list[float]"
+                }
+            ]
+        },
+        "existing_keys": [
+            "content",
+            "summary",
+            "segmented_words",
+            "embeddings",
+            "reduced_embeddings"
+        ]
+    },
+    {
+        "solves": "5",
+        "label": "Data Transformation",
+        "id": "Data Transformation-1",
+        "description": "Transform the clustered data to extract all distinct labels from the clusters.",
+        "explanation": "Data transformation is essential to ensure that the output is in a usable format, allowing for the identification of unique labels from the clustering results.",
+        "parentIds": [
+            "Clustering Analysis-1"
+        ],
+        "children": [],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "cluster_labels"
+        ],
+        "input_keys": [
+            {
+                "key": "cluster_labels",
+                "schema": "list[int]"
+            }
+        ],
+        "state_output_key": "unique_labels",
+        "execution": {
+            "tool": "data_transform_tool",
+            "parameters": {
+                "name": "Data Transformation",
+                "operation": "transform",
+                "input_key_schemas": {
+                    "cluster_labels": "list[int]"
+                },
+                "transform_code": "def transform(data):\n    distinct_labels = set()\n    for doc in data:\n        distinct_labels.add(doc['cluster_labels'])\n    return {'unique_labels': list(distinct_labels)}",
+                "output_schema": "list[int]"
+            }
+        },
+        "available_states": {
+            "documents": [
+                {
+                    "key": "content",
+                    "schema": "str"
+                },
+                {
+                    "key": "summary",
+                    "schema": "list[str]"
+                },
+                {
+                    "key": "segmented_words",
+                    "schema": "list[str]"
+                },
+                {
+                    "key": "embeddings",
+                    "schema": "list[float]"
+                },
+                {
+                    "key": "reduced_embeddings",
+                    "schema": "list[list[float]]"
+                },
+                {
+                    "key": "cluster_labels",
+                    "schema": "list[int]"
+                }
+            ],
+            "summary": [
+                {
+                    "key": "item",
+                    "schema": "str"
+                }
+            ],
+            "segmented_words": [
+                {
+                    "key": "item",
+                    "schema": "str"
+                }
+            ],
+            "embeddings": [
+                {
+                    "key": "item",
+                    "schema": "float"
+                }
+            ],
+            "reduced_embeddings": [
+                {
+                    "key": "item",
+                    "schema": "list[float]"
+                }
+            ],
+            "cluster_labels": [
+                {
+                    "key": "item",
+                    "schema": "int"
+                }
+            ]
+        },
+        "existing_keys": [
+            "content",
+            "summary",
+            "segmented_words",
+            "embeddings",
+            "reduced_embeddings",
+            "text_clusters"
+        ]
+    }
+]
