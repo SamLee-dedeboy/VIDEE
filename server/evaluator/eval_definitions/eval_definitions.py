@@ -9,6 +9,7 @@ coherence_definition = (
 )
 importance_definition = (
     "A subtask is considered important if it is critical, essential, "
-    "or significantly beneficial to achieving the final goal. If it is tangential, "
-    "optional, or has minimal impact, then it is not important."
+    "or significantly beneficial to achieving the final goal from the perspective of text analytics. "
+    "If it is about social aspects or communication, or other "
+    "optional tasks, then it is not important."
 )

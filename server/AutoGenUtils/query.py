@@ -138,9 +138,10 @@ async def run_goal_decomposition_agent_stepped(
         ** Task **
         Your task is to provide a single next step, but with {n} possible alternatives for user to choose.
         Focus on the conceptual next step in terms of text analytics. If no further steps are needed, label the next step with "END".
-        DO NOT output steps like data collection, implementation, any kind of validation or visualization, or reporting.
+        DO NOT output steps like data collection, implementation, validation or any steps related to communication such as visualization or reporting.
         ** Requirements **
         The name of the step should be one concise noun-phrase.
+        The abstraction level of the step should be appropriate for high-level planning and communication with non-technical people.
         For the parentIds, provide the ids of the steps that this step **directly** depends on in terms of input-output data.
         The alternatives should have varying complexity, coherence with previous steps, and importance.
         Reply with this JSON format. Do not wrap the json codes in JSON markers. Do not include any comments.
@@ -1704,19 +1705,19 @@ def get_existing_keys_and_schema(existing_keys):
         if isinstance(key, dict):
             if "key" in key and "schema" in key:
                 # Convert any JSON Schema format to the clearer format if needed, in case LLM returns a JSON Schema
-                schema = key['schema']
+                schema = key["schema"]
                 if isinstance(schema, dict):
-                    if 'items' in schema:
-                        if isinstance(schema['items'], dict):
+                    if "items" in schema:
+                        if isinstance(schema["items"], dict):
                             # Convert {"items": {"field1": "str", ...}} to "list[{'field1': 'str', ...}]"
-                            items_dict = str(schema['items']).replace('"', "'")
+                            items_dict = str(schema["items"]).replace('"', "'")
                             schema = f"list[{items_dict}]"
                         else:
                             # Convert {"items": "str"} to "list[str]"
                             schema = f"list[{schema['items']}]"
-                    elif 'properties' in schema:
+                    elif "properties" in schema:
                         # Convert {"properties": {"field1": "str", ...}} to "{'field1': 'str', ...}"
-                        props_dict = str(schema['properties']).replace('"', "'")
+                        props_dict = str(schema["properties"]).replace('"', "'")
                         schema = props_dict
 
                 formatted_keys.append(f"{key['key']} (schema: {schema})")
