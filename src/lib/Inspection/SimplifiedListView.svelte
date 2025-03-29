@@ -65,7 +65,7 @@
               {formatValue(item)}
             </div>
             <button
-              class="doc-content-close absolute right-0 bottom-[100%] p-0.5 rounded-full z-10"
+              class="doc-content-close absolute right-0 top-0 p-0.5 rounded-full z-10"
               title="close"
               onclick={() => toggleExpand(index)}
             >
