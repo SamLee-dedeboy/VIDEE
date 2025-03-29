@@ -46,6 +46,174 @@
   onMount(() => {
     console.log({ task });
   });
+  
+  function handleDeleteDocInputKey(doc_input_key) {
+    if (!task) return;
+    // Deleting the clicked input key..
+    const new_task = JSON.parse(JSON.stringify(task));
+    new_task.doc_input_keys = task.doc_input_keys!.filter(
+      (key) => key !== doc_input_key
+    );
+    new_task.input_keys = new_task.input_keys?.filter(
+      (obj) => obj.key !== doc_input_key
+    );
+    if (new_task.execution?.parameters?.feature_key && new_task.execution.parameters.feature_key === doc_input_key) {
+      new_task.execution.parameters.feature_key = null;
+    }                         
+    // Update schema if using code tool
+    if (new_task.execution?.parameters?.input_key_schemas) {
+      const schemas = {...new_task.execution.parameters.input_key_schemas};
+      delete schemas[doc_input_key];
+      new_task.execution.parameters.input_key_schemas = schemas;
+    }
+    
+    if (new_task.execution.tool === "prompt_tool") {
+      new_task.execution.parameters.prompt_template[1].content = `${new_task.doc_input_keys.map((key) => `${key}: {${key}}`).join("\n")}`;
+      new_task.recompile_skip_IO = true;
+    } else {
+      new_task.recompile_skip_IO = true;
+      new_task.recompile_skip_parameters = false;
+    }
+    primitiveTaskState.updatePrimitiveTask(
+      task.id,
+      new_task,
+      true
+    );
+  }
+  
+  function handleAddDocInputKey(existing_key) {
+    if (!task) return;
+    // Add the new key to doc_input_keys..
+    const new_task = JSON.parse(JSON.stringify(task));
+    new_task.doc_input_keys = [
+      ...task.doc_input_keys!,
+      existing_key,
+    ];
+    
+    // Find the schema for this key from available_states
+    let keySchema = null;
+    if (new_task.state_input_key && new_task.available_states && 
+        new_task.available_states[new_task.state_input_key]) {
+      const keyInfo = new_task.available_states[new_task.state_input_key]
+        .find(k => k.key === existing_key);
+      if (keyInfo) {
+        keySchema = keyInfo.schema;
+      }
+    }
+
+    new_task.input_keys = [...(new_task.input_keys || []), {key: existing_key, schema: keySchema}];
+    
+    // Update schema in execution parameters
+    if (new_task.execution?.parameters) {
+      if (!new_task.execution.parameters.input_key_schemas) {
+        new_task.execution.parameters.input_key_schemas = {};
+      }
+      new_task.execution.parameters.input_key_schemas[existing_key] = keySchema;
+    }
+    // Update feature key if using code tool
+    if (new_task.execution?.parameters?.feature_key) {
+      new_task.execution.parameters.feature_key = existing_key;
+    }
+    
+    if (new_task.execution.tool === "prompt_tool") {
+      new_task.execution.parameters.prompt_template[1].content = `${new_task.doc_input_keys.map((key) => `${key}: {${key}}`).join("\n")}`;
+      new_task.recompile_skip_IO = true;
+    } else {
+      new_task.recompile_skip_IO = true;
+      new_task.recompile_skip_parameters = false;
+    }
+    primitiveTaskState.updatePrimitiveTask(
+      task.id,
+      new_task,
+      true
+    );
+  }
+  
+  function handleDeleteStateInputKey() {
+    if (!task) return;
+    const new_task = JSON.parse(JSON.stringify(task));
+    const old_state_input_key = new_task.state_input_key;
+    new_task.state_input_key = "";
+    
+    // Clear doc_input_keys related to the old state
+    if (old_state_input_key && new_task.available_states && new_task.available_states[old_state_input_key]) {
+      const old_state_keys = new_task.available_states[old_state_input_key].map(k => k.key);
+      if (new_task.doc_input_keys) {
+        new_task.doc_input_keys = new_task.doc_input_keys.filter(k => !old_state_keys.includes(k));
+      }
+    }
+    
+    if (new_task.execution?.tool === "prompt_tool") {
+      new_task.recompile_skip_IO = true;
+    } else {
+      new_task.recompile_skip_IO = true;
+    }
+    primitiveTaskState.updatePrimitiveTask(
+      task.id,
+      new_task,
+      true
+    );
+  }
+  
+  function handleAddStateInputKey(state_key) {
+    if (!task) return;
+    const new_task = JSON.parse(JSON.stringify(task));
+    const old_state_input_key = new_task.state_input_key;
+    new_task.state_input_key = state_key;
+    
+    // Update doc_input_keys based on the available keys in the selected state
+    if (new_task.available_states && new_task.available_states[state_key]) {
+      // Get available keys for the selected state
+      const available_keys = new_task.available_states[state_key].map(k => k.key);
+      
+      // Reset doc_input_keys
+      if (!new_task.doc_input_keys) {
+        new_task.doc_input_keys = [];
+      } else {
+        // Filter out keys that were from the old state
+        if (old_state_input_key && new_task.available_states[old_state_input_key]) {
+          const old_state_keys = new_task.available_states[old_state_input_key].map(k => k.key);
+          new_task.doc_input_keys = new_task.doc_input_keys.filter(k => !old_state_keys.includes(k));
+          new_task.existing_keys = new_task.existing_keys?.filter(k => !old_state_keys.includes(k));
+          new_task.input_keys = new_task.input_keys?.filter(obj => !old_state_keys.includes(obj.key));
+        }
+      }
+      
+      // Add the first available key from the new state
+      if (available_keys.length > 0 && !new_task.doc_input_keys.includes(available_keys[0])) {
+        new_task.doc_input_keys.push(available_keys[0]);
+        new_task.existing_keys = [...(new_task.existing_keys || []), available_keys[0]];
+        new_task.input_keys = [...(new_task.input_keys || []), {
+          key: available_keys[0], 
+          schema: new_task.available_states[state_key].find(k => k.key === available_keys[0])?.schema
+        }];
+        
+        if (!new_task.execution.parameters.input_key_schemas) {
+          new_task.execution.parameters.input_key_schemas = {};
+        }
+        
+        new_task.execution.parameters.input_key_schemas = new_task.input_keys?.reduce((acc, obj) => {
+          acc[obj.key] = obj.schema;
+          return acc;
+        }, {});
+      }
+    }
+    
+    if (new_task.execution?.tool === "prompt_tool") {
+      // Update prompt template content with new doc_input_keys from the new state
+      new_task.execution.parameters.prompt_template[1].content = `${new_task.doc_input_keys.map((key) => `${key}: {${key}}`).join("\n")}`;
+      new_task.recompile_skip_IO = true;
+    } else {
+      new_task.recompile_skip_IO = true;
+      new_task.recompile_skip_parameters = false;
+    }
+    
+    primitiveTaskState.updatePrimitiveTask(
+      task.id,
+      new_task,
+      true
+    );
+  }
 </script>
 
 <div class="flex flex-col px-1 gap-y-2">
@@ -133,36 +301,19 @@
           </button>
           {#if task.doc_input_keys}
             {#if show_formats}
-              {@const input_key_options =
-                task.existing_keys?.filter(
-                  (k) => !task.doc_input_keys?.includes(k)
-                ) || []}
+              {@const input_key_options = task.state_input_key && task.available_states && task.available_states[task.state_input_key] 
+                ? task.available_states[task.state_input_key].map(k => k.key).filter(k => !task.doc_input_keys?.includes(k))
+                : []}
               <IOInspection
-                {input_key_options}
-                state_input_key={task.state_input_key}
+                input_key_options={input_key_options}
+                state_input_key={task.state_input_key || ""}
                 doc_input_keys={task.doc_input_keys}
                 state_output_key={task.state_output_key}
-                handleDeleteDocInputKey={(doc_input_key) => {
-                  const new_doc_input_keys = task.doc_input_keys!.filter(
-                    (key) => key !== doc_input_key
-                  );
-                  primitiveTaskState.updateDocInputKeys(
-                    task.id,
-                    new_doc_input_keys,
-                    true
-                  );
-                }}
-                handleAddDocInputKey={(doc_input_key) => {
-                  const new_doc_input_keys = [
-                    ...task.doc_input_keys!,
-                    doc_input_key,
-                  ];
-                  primitiveTaskState.updateDocInputKeys(
-                    task.id,
-                    new_doc_input_keys,
-                    true
-                  );
-                }}
+                available_states={task.available_states}
+                handleDeleteDocInputKey={handleDeleteDocInputKey}
+                handleAddDocInputKey={handleAddDocInputKey}
+                handleDeleteStateInputKey={handleDeleteStateInputKey}
+                handleAddStateInputKey={handleAddStateInputKey}
                 handleEditStateOutputKey={(state_output_key) => {
                   primitiveTaskState.updateOutputKey(task.id, state_output_key);
                 }}

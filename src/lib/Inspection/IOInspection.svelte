@@ -9,17 +9,61 @@
     handleDeleteDocInputKey,
     handleAddDocInputKey,
     handleEditStateOutputKey,
+    available_states,
+    handleDeleteStateInputKey,
+    handleAddStateInputKey,
   } = $props();
+  
+  let unselected_state_keys = $derived(
+    available_states ? Object.keys(available_states).filter(k => k !== state_input_key) : []
+  );
 </script>
 
 <div in:slide class="format-container flex justify-around divide-x">
   <div class="key-section">
     <div class="option-label">State Input Key</div>
-    <div class="option-value">
+    <div class="option-value relative">
       {state_input_key}
+      <button
+        class="option-value-delete-icon hidden justify-center items-center absolute top-0 bottom-0 left-0 right-0 bg-gray-200"
+        onclick={() => handleDeleteStateInputKey()}
+        ><img
+          src="minus.svg"
+          class="w-4 h-4"
+          alt="delete"
+        /></button
+      >
     </div>
-    <div class="plus-button">
-      <img src="plus_gray.svg" alt="add" class="w-5 h-5" />
+    
+    <div class="relative flex flex-wrap gap-1 px-1">
+      {#if unselected_state_keys.length === 0}
+        <div
+          class="w-max px-1 text-gray-600 text-sm italic select-none"
+        >
+          {available_states ? "All keys are added" : "No available states"}
+        </div>
+      {:else}
+        <div class="text-gray-600 text-sm italic select-none">
+          Available Options:
+        </div>
+        {#each unselected_state_keys as state_key}
+          <div
+            class="add-key relative text-xs outline-1 outline-gray-300 px-1 font-mono rounded"
+          >
+            {state_key}
+            <button
+              class="plus-button absolute left-0 top-0 bottom-0 right-0 bg-gray-50"
+              onclick={() => handleAddStateInputKey(state_key)}
+            >
+              <img
+                src="plus_gray.svg"
+                alt="add"
+                class="w-5 h-5 pointer-events-none"
+              />
+            </button>
+          </div>
+        {/each}
+      {/if}
     </div>
   </div>
   <div class="key-section">
