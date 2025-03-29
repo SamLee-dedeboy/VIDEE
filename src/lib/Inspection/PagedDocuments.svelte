@@ -68,7 +68,7 @@
           />
         {/each} -->
 </div>
-<div class="pagination flex justify-between gap-x-2 text-slate-600 pr-3">
+<div class="pagination flex justify-between gap-x-2 text-slate-600 pr-3 mt-2">
   <button
     class="w-[2rem] shrink-0 hover:bg-gray-100 flex justify-center items-center py-1 rounded outline-2 outline-gray-200 text-sm"
     title="previous"
@@ -103,3 +103,10 @@
     <img src="arrow-right.svg" alt="next" class="w-4 h-4" />
   </button>
 </div>
+
+<style lang="postcss">
+  @reference "tailwindcss";
+  .active {
+    @apply bg-gray-200;
+  }
+</style>
