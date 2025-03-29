@@ -134,7 +134,14 @@ async def execution_plan(
 
             # Track the key with its appropriate state
             state_input_key = primitive_task.get("state_input_key", "documents")
-            update_state_keys(all_states_and_keys, state_input_key, output_key, output_schema)
+            # Add the output key to **original** input state, unless it's a data transformation plan.
+            # NOTE: for data transformation plan, we always add to global store, not the original input state
+            if primitive_task["label"] != "Data Transformation":
+                update_state_keys(all_states_and_keys, state_input_key, output_key, output_schema)
+
+            # If output is a list type, also add it to the global state
+            add_output_list_to_global_state(all_states_and_keys, output_key, output_schema)
+
             plan.append({**primitive_task})
             continue
 
