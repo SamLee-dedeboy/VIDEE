@@ -12,6 +12,7 @@
     semanticTaskPlanState,
     evaluatorState,
     session_id,
+    likert_scale_num,
   } from "lib/ExecutionStates.svelte";
   import GoalInput from "lib/Searching/GoalInput.svelte";
   import SemanticTaskTreeInspection from "lib/Inspection/SemanticTaskTreeInspection.svelte";
@@ -68,9 +69,12 @@
   /**
    * updates the few shot examples every time semantic tasks are updated
    */
-  $effect(() => {
+  function updateFewShotExamples() {
     const evaluations = ["complexity", "coherence", "importance"];
-    console.log({ semantic_tasks });
+    console.log(
+      "few shot examples for semantic tasks: ",
+      $state.snapshot(semantic_tasks)
+    );
     semantic_tasks.forEach((task) => {
       evaluations.forEach((evaluation) => {
         if (
@@ -78,11 +82,10 @@
         ) {
           if (!few_shot_examples_semantic_tasks[evaluation])
             few_shot_examples_semantic_tasks[evaluation] = [];
-          if (
-            !few_shot_examples_semantic_tasks[evaluation].find(
-              (t) => t.node.label === task.label
-            )
-          ) {
+          const example_index = few_shot_examples_semantic_tasks[
+            evaluation
+          ].findIndex((t) => t.node.label === task.label);
+          if (example_index === -1) {
             few_shot_examples_semantic_tasks[evaluation].push({
               node: task,
               parent_node: semantic_tasks.find(
@@ -92,6 +95,30 @@
               llm_evaluation: task.llm_evaluation[evaluation],
               user_reasoning: undefined,
             });
+          } else {
+            few_shot_examples_semantic_tasks[evaluation][example_index] = {
+              node: task,
+              parent_node: semantic_tasks.find(
+                (t) => t.MCT_id === task.MCT_parent_id
+              ),
+              user_evaluation: task.user_evaluation[evaluation],
+              llm_evaluation: task.llm_evaluation[evaluation],
+              user_reasoning:
+                few_shot_examples_semantic_tasks[evaluation][example_index]
+                  .user_reasoning,
+            };
+          }
+        } else {
+          if (few_shot_examples_semantic_tasks[evaluation]) {
+            const example_index = few_shot_examples_semantic_tasks[
+              evaluation
+            ].findIndex((t) => t.node.label === task.label);
+            if (example_index !== -1) {
+              few_shot_examples_semantic_tasks[evaluation].splice(
+                example_index,
+                1
+              );
+            }
           }
         }
       });
@@ -100,7 +127,8 @@
       "few shot examples: ",
       $state.snapshot(few_shot_examples_semantic_tasks)
     );
-  });
+    few_shot_examples_semantic_tasks = { ...few_shot_examples_semantic_tasks };
+  }
 
   function setFewShotExampleExplanation(
     task: tSemanticTask,
@@ -365,7 +393,7 @@
   function handleUserFeedback(
     task_id: string,
     evaluation: string,
-    value: boolean
+    value: number
   ) {
     const target_task_index = semantic_tasks
       .map((t) => t.MCT_id)
@@ -377,8 +405,9 @@
         (+target_task.user_evaluation.complexity +
           +target_task.user_evaluation.coherence +
           +target_task.user_evaluation.importance) /
-        3;
+        (3 * likert_scale_num);
 
+      semantic_tasks[target_task_index] = target_task;
       // update the path value
       const parent_task_index = semantic_tasks
         .map((t) => t.MCT_id)
@@ -404,6 +433,7 @@
         });
       }
     }
+    updateFewShotExamples();
   }
   setContext("handleUserFeedback", handleUserFeedback);
 
