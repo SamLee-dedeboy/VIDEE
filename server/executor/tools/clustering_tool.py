@@ -239,89 +239,199 @@ def clustering_tool(inputs: List[Dict[str, Any]],
                    feature_key: str = "embedding",
                    algorithm: str = "kmeans",
                    return_metrics: bool = False,
-                   **kwargs) -> Union[List[int], Dict[str, Any]]:
+                   **kwargs) -> List[List[int]]:
     """
     Performs clustering on feature vectors extracted from inputs.
 
     Args:
-        inputs: Input documents in json format
+        inputs: Input documents in json format, where each document may contain arrays of embeddings or text
         n_clusters: Number of clusters (default: 3)
-        feature_key: Key in each input doc containing the feature vector (default: "embedding")
+        feature_key: Key in each input doc containing the feature vector or text (default: "embedding")
         algorithm: Clustering algorithm to use (default: "kmeans")
                    Options: kmeans, dbscan, agglomerative, gaussian_mixture, hdbscan, bertopic
         return_metrics: Whether to return evaluation metrics (default: False)
         **kwargs: Additional parameters to pass to the clustering algorithm
-                  For BERTopic: `content` can be passed to provide text documents
 
     Returns:
-        List of cluster labels or dictionary with results and metrics
+        List of lists containing cluster labels for each document's elements
     """
+    '''
+    possible input format
+    // this means do clustering for each str inside each document's embedding
+    inputs: [
+    // each document / global state object
+        {
+            'embeddings': [
+                [0,1, 0.03...],
+                [0,1, 0.03...],
+            ]
+        }
+    ]
+    // this means do clustering for each str inside each document, need to use bertopic 
+    inputs: [
+        {
+            'content': "str"
+        }
+    ]
+    // this means do clustering for each str inside each document's feature key, using bertopic
+    inputs: [
+        {
+            'summary': [
+                'str1',
+                'str2',
+            ]
+        }
+    ]
+    '''
+    # Initialize result structure matching input structure
+    result = [[] for _ in range(len(inputs))]
+
+    if not inputs or len(inputs) == 0:
+        return result
     try:
-        # Extract feature vectors from inputs
-        # data = [i.get(feature_key, []) for i in inputs]
-        data = inputs
+        # Prepare for processing
+        all_elements = []          # Will hold all elements to cluster
+        doc_indices = []           # Will track which document each element came from
+        embedding_indices = []     # Will track the position of each element within its document
+        is_text_data = False       # Flag to determine if we're processing text data
+        original_texts = []        # Will hold original text data if processing strings
 
-        # For BERTopic, we might need original texts
-        if algorithm == 'bertopic':
-            # original doc content
-            feature_key = kwargs.get('feature_key', 'content')
-            if feature_key in inputs[0]:
-                kwargs['original_docs'] = [i.get(feature_key, "") for i in inputs]
+        # Process each document
+        for doc_idx, doc in enumerate(inputs):
+            if feature_key not in doc:
+                continue
 
-        # Filter out empty vectors
-        valid_indices = [i for i, vec in enumerate(data) if vec]
-        valid_data = [data[i] for i in valid_indices]
+            content = doc[feature_key]
 
-        # there's no valid embedding, generate it!
-        if (len(valid_data) == 0
-                or not (isinstance(valid_data[0], list) and len(valid_data[0]) > 0)
-                or not isinstance(valid_data[0][0], (int, float))
-        ):
-            # original doc content
-            feature_key = kwargs.get('feature_key', 'content')
-            if feature_key in inputs[0]:
-                kwargs['original_docs'] = [i.get(feature_key, "") for i in inputs]
-            else:
-                kwargs['original_docs'] = [str(obj) for obj in inputs]
+            if isinstance(content, list) and content:
+                # Case 1: If content is an array of numeric arrays (embeddings)
+                if all(isinstance(item, list) for item in content) and all(item and all(isinstance(x, (int, float)) for x in item) for item in content if item):
+                    for emb_idx, embedding in enumerate(content):
+                        if not embedding:
+                            continue
+                        all_elements.append(embedding)
+                        doc_indices.append(doc_idx)
+                        embedding_indices.append(emb_idx)
+                # Case 2: If content is an array of strings
+                elif all(isinstance(item, str) for item in content if item):
+                    is_text_data = True
+                    algorithm = 'bertopic'  # Force BERTopic for text data
+                    for str_idx, text_item in enumerate(content):
+                        if not text_item:
+                            continue
+                        original_texts.append(text_item)
+                        doc_indices.append(doc_idx)
+                        embedding_indices.append(str_idx)
+
+            # Case 3: If content is a single string
+            elif isinstance(content, str) and content:
+                is_text_data = True
+                algorithm = 'bertopic'  # Force BERTopic for text data
+                original_texts.append(content)
+                doc_indices.append(doc_idx)
+                embedding_indices.append(0)  # Single item at position 0
+
+            # Case 4: If content is a dict with a single key containing a list
+            elif isinstance(content, dict) and len(content) == 1:
+                single_value = list(content.values())[0]
+                if isinstance(single_value, list):
+                    if all(isinstance(item, list) and all(isinstance(x, (int, float)) for x in item) for item in single_value if item):
+                        # Numeric embeddings in dict
+                        for emb_idx, embedding in enumerate(single_value):
+                            if not embedding:
+                                continue
+                            all_elements.append(embedding)
+                            doc_indices.append(doc_idx)
+                            embedding_indices.append(emb_idx)
+                    elif all(isinstance(item, str) for item in single_value if item):
+                        # String items in dict
+                        is_text_data = True
+                        algorithm = 'bertopic'
+                        for str_idx, text_item in enumerate(single_value):
+                            if not text_item:
+                                continue
+                            original_texts.append(text_item)
+                            doc_indices.append(doc_idx)
+                            embedding_indices.append(str_idx)
+                else:
+                    # Single non-list value in dict
+                    if isinstance(single_value, str) and single_value:
+                        is_text_data = True
+                        algorithm = 'bertopic'
+                        original_texts.append(single_value)
+                        doc_indices.append(doc_idx)
+                        embedding_indices.append(0)
+
+        # Convert text data to embeddings if necessary
+        if is_text_data:
+            if not original_texts:
+                logging.warning(f"No valid text data found with key: {feature_key}")
+                return result
+
+            # Generate embeddings for text data
             from sentence_transformers import SentenceTransformer
             embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-            valid_data = [embedding_model.encode(doc) for doc in kwargs['original_docs']]
-            valid_indices = [i for i in range(len(valid_data))]
+            all_elements = [embedding_model.encode(text) for text in original_texts]
+            kwargs['original_docs'] = original_texts
 
-        if not valid_data:
-            logging.warning(f"No valid feature vectors found with key: {feature_key}")
-            return [0] * len(inputs)  # Default to cluster 0
+        # If no valid data found at all, return empty result
+        if not all_elements:
+            logging.warning(f"No valid data found with key: {feature_key}")
+            return result
 
-        data_array = np.array(valid_data)
+        # Convert to numpy array for processing
+        data_array = np.array(all_elements)
 
-        # Check if algorithm exists, if not let's default to kmeans..
+        # Check if algorithm exists, fallback to appropriate default
         if algorithm not in _CLUSTERING_MODELS:
-            logging.warning(f"Unknown clustering algorithm: {algorithm}, falling back to kmeans")
-            algorithm = "kmeans"
+            if is_text_data:
+                logging.warning(f"Unknown algorithm: {algorithm} for text data, falling back to bertopic")
+                algorithm = "bertopic"
+            else:
+                logging.warning(f"Unknown algorithm: {algorithm}, falling back to kmeans")
+                algorithm = "kmeans"
 
-        # Create clustering model
+        # Configure clustering model
         kwargs['n_clusters'] = n_clusters
         model = _CLUSTERING_MODELS[algorithm](**kwargs)
 
-        # Perform clustering
-        valid_labels = model.fit_predict(data_array)
+        try:
+            # Perform clustering
+            cluster_labels = model.fit_predict(data_array)
 
-        # Create result array with same length as inputs
-        result = [0] * len(inputs)  # Default to cluster 0
-        for idx, valid_idx in enumerate(valid_indices):
-            result[valid_idx] = int(valid_labels[idx])
+            # Put cluster labels back in their original document structure
+            for i, label in enumerate(cluster_labels):
+                doc_idx = doc_indices[i]
+                emb_idx = embedding_indices[i]
 
-        # If only labels are requested
-        if not return_metrics:
+                # Extend result list for this document if needed
+                while len(result[doc_idx]) <= emb_idx:
+                    result[doc_idx].append(0)  # Default to cluster 0
+
+                # Insert the cluster label
+                result[doc_idx][emb_idx] = int(label)
+
+            if not return_metrics:
+                return result
+
+            # Build extended result with metrics if requested
+            metrics = evaluate_clustering(data_array, cluster_labels)
+
+            # Format results with metrics
+            output = []
+            for doc_idx, labels in enumerate(result):
+                doc_result = {
+                    'labels': labels,
+                    'metrics': metrics
+                }
+                output.append(doc_result)
+
+            return output
+
+        except Exception as e:
+            logging.error(f"Error in clustering model: {e}")
             return result
 
-        # Build extended result if requested, for example, evaluation metrics..
-        output = {'labels': result}
-
-        if return_metrics:
-            output['metrics'] = evaluate_clustering(data_array, valid_labels)
-
-        return output
     except Exception as e:
         logging.error(f"Error in clustering_tool: {e}")
-        return [0] * len(inputs)  # Default to cluster 0
+        return [[] for _ in range(len(inputs))]

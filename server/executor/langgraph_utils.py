@@ -131,17 +131,16 @@ async def execution_plan(
             # Add the output key to existing keys
             output_key = primitive_task["state_output_key"]
             output_schema = primitive_task["execution"]["parameters"]["output_schema"]
+            states_in_this_step = copy.deepcopy(all_states_and_keys)
 
             # Track the key with its appropriate state
             state_input_key = primitive_task.get("state_input_key", "documents")
-            # Add the output key to **original** input state, unless it's a data transformation plan.
-            # NOTE: for data transformation plan, we always add to global store, not the original input state
-            if primitive_task["label"] != "Data Transformation":
-                update_state_keys(all_states_and_keys, state_input_key, output_key, output_schema)
+            # Add the output key to **original** input state
+            update_state_keys(all_states_and_keys, state_input_key, output_key, output_schema)
 
             # If output is a list type, also add it to the global state
             add_output_list_to_global_state(all_states_and_keys, output_key, output_schema)
-
+            primitive_task["available_states"] = states_in_this_step
             plan.append({**primitive_task})
             continue
 
@@ -403,10 +402,8 @@ async def generate_execution_parameters(
             else:
                 output_key = tool_plan["state_output_key"]
 
-            # Add the output key to original input state, unless it's a data transformation plan.
-            # NOTE: for data transformation plan, we always add to global store
-            if primitive_task["label"] != "Data Transformation":
-                update_state_keys(all_states_and_keys, state_input_key, output_key, output_schema)
+            # Add the output key to original input state
+            update_state_keys(all_states_and_keys, state_input_key, output_key, output_schema)
 
             # If output is a list type, also add it to the global state
             add_output_list_to_global_state(all_states_and_keys, output_key, output_schema)
@@ -529,7 +526,7 @@ def add_output_list_to_global_state(all_states_and_keys, output_key, output_sche
             all_states_and_keys[output_key] = []
         # Extract the inner schema from list[...]
         inner_schema = output_schema[5:-1]  # Remove "list[" and "]"
-        all_states_and_keys[output_key].append({"key": "item", "schema": inner_schema})
+        all_states_and_keys[output_key].append({"key": output_key, "schema": inner_schema})
 
 def create_nodes(steps: list[PrimitiveTaskExecution]):
     return [create_node(step) for step in steps]
@@ -683,20 +680,23 @@ def create_node(step, custom_get_input_func=None, custom_reduce_func=None):
     # how to produce output
     if custom_reduce_func is None:
         # Special tools that need their own reduce function
-        if step["execution"]["tool"] in [
-            "clustering_tool",
-            "embedding_tool",
-            "dim_reduction_tool",
-            "segmentation_tool",
-            "data_transform_tool",
-        ]:
-            reduce = lambda combined: tools_reduce_func(
-                combined, state_input_key, state_output_key, state_output_key
-            )
-        else:
-            reduce = lambda combined: reduce_func(
-                combined, state_input_key, state_output_key
-            )
+        # if step["execution"]["tool"] in [
+        #     "clustering_tool",
+        #     "embedding_tool",
+        #     "dim_reduction_tool",
+        #     "segmentation_tool",
+        #     "data_transform_tool",
+        # ]:
+        #     reduce = lambda combined: tools_reduce_func(
+        #         combined, state_input_key, state_output_key, state_output_key
+        #     )
+        # else:
+        #     reduce = lambda combined: reduce_func(
+        #         combined, state_input_key, state_output_key
+        #     )
+        reduce = lambda combined: tools_reduce_func(
+            combined, state_input_key, state_output_key, state_output_key
+        )
     else:
         reduce = custom_reduce_func
 
@@ -710,6 +710,11 @@ def create_node(step, custom_get_input_func=None, custom_reduce_func=None):
     ]:
         map = RunnableAssign({state_output_key: get_input | execution_chain})
     else:
+        """
+        embedding_tool
+        segmentation_tool
+        prompt_tool
+        """
         map = RunnableAssign(
             {
                 state_output_key: get_input
@@ -786,19 +791,48 @@ def get_input_func(
             data = state["global_store"][state_input_key]
             if isinstance(data, list):
                 for d in data:
-                    result.append({feature_key: d})
+                    if isinstance(d, dict):
+                        # Extract all requested fields from each dictionary in the list.
+                        # This is the most common case.
+                        doc_data = {}
+                        for key in doc_input_keys:
+                            if key in d:
+                                doc_data[key] = d[key]
+                        # If no fields were found, use the item as is, and use feature_key as the key.
+                        if not doc_data:
+                            result.append({feature_key: d})
+                        else:
+                            result.append(doc_data)
+                    else:
+                        # For non-dict items, use feature_key
+                        # for example, [1, 2, 1] -> [{label_key: 1}, {label_key: 2}, {label_key: 1}]
+                        result.append({feature_key: d})
+            elif isinstance(data, dict):
+                # NOTE: This should really not happen, but we do it anyway to avoid/recover from errors at best.
+                # Try to extract all requested fields from the dictionary
+                doc_data = {}
+                for key in doc_input_keys:
+                    if key in data:
+                        doc_data[key] = data[key]
+                # If no fields were found, ensure at least feature_key exists in input..
+                if not doc_data:
+                    doc_data[feature_key] = data
+                result.append(doc_data)
             else:
+                # For primitive values, use feature_key
                 result.append({feature_key: data})
         else:
             # Otherwise, try to find all requested keys in the state
+            # For each doc_input_key, look for a matching key in documents or global_store
+            # NOTE: This should really not happen, but we do it anyway to avoid/recover from errors at best.
             for key in doc_input_keys:
-                if key in state["global_store"]:
+                if isinstance(state['documents'], list) and len(state['documents']) > 0 and key in state['documents'][0]:
+                    result.extend([{key: doc[key]} for doc in state['documents']])
+                elif key in state["global_store"]:
                     data = state["global_store"][key]
                     if isinstance(data, list):
-                        for d in data:
-                            result.append({feature_key: d})
-                    else:
-                        result.append({feature_key: data})
+                        result.extend([{key: d} for d in data])
+
 
     return result
 
@@ -816,14 +850,14 @@ def reduce_func(combined: dict, state_input_key: str, state_output_key: str):
                 for doc, output in zip(original_data, outputs)
             ]
         }
-    # Add outputs as a separate key if they are dictionaries containing lists
-    # this happens when we choose / change to non-documents states.
-    if outputs and isinstance(outputs, list) and len(outputs) > 0:
-        # Merge with the existing global_store keys
-        result['global_store'] = combined.get('global_store', {})
-        merged_global_result = merge_results_to_global_list(outputs)
-        if len(merged_global_result) > 0:
-            result["global_store"][state_output_key] = merged_global_result
+    # # Add outputs as a separate key if they are dictionaries containing lists
+    # # this happens when we choose / change to non-documents states.
+    # if outputs and isinstance(outputs, list) and len(outputs) > 0:
+    #     # Merge with the existing global_store keys
+    #     result['global_store'] = combined.get('global_store', {})
+    #     merged_global_result = merge_list_results_to_global_list(outputs)
+    #     if len(merged_global_result) > 0:
+    #         result["global_store"][state_output_key] = merged_global_result
 
     return result
 
@@ -831,7 +865,7 @@ def tools_reduce_func(
     combined: dict,
     state_input_key: str,
     state_output_key: str,
-    label_key: str = "output",
+    label_key: str = "item",
 ):
     """
     Updates the state with output data directly in the state object.
@@ -852,45 +886,66 @@ def tools_reduce_func(
 
     # Handle operations based on input and output types
 
-    # CASE 1: Documents as input, updating documents
-    if state_input_key == "documents" and isinstance(output_data, list) and isinstance(combined.get("documents"), list) and len(output_data) == len(combined.get("documents", [])):
-        # For lists matching document length, apply outputs to each document
-        updated_docs = []
-        for doc, output in zip(combined.get("documents", []), output_data):
-            if isinstance(output, dict):
-                updated_docs.append({**doc, **output})
-            else:
-                updated_docs.append({**doc, label_key: output})
-        result["documents"] = updated_docs
+    # CASE 1: State key with matching list lengths, merging back with the input state key
+    # This includes `documents` and `global_store` states
+    merge_back_to_original_state(state_input_key, combined, output_data, result, label_key)
 
-    # # CASE 2: Other state key with matching list lengths
-    # elif state_input_key in combined and isinstance(output_data, list) and isinstance(combined.get(state_input_key), list) and len(output_data) == len(combined.get(state_input_key, [])):
-    #     # For lists matching source length, apply outputs to each item
-    #     updated_items = []
-    #     for item, output in zip(combined.get(state_input_key, []), output_data):
-    #         if isinstance(item, dict) and isinstance(output, dict):
-    #             updated_items.append({**item, **output})
-    #         elif isinstance(output, dict):
-    #             updated_items.append({**{label_key: item}, **output})
-    #         else:
-    #             updated_items.append({label_key: output})
-    #     result[state_input_key] = updated_items
-
-    # ALWAYS DO: store directly in state under output key
-    # Merge with the existing global_store keys
-    result['global_store'] = combined.get('global_store', {})
-    if isinstance(output_data, list):
-        result["global_store"][state_output_key] = output_data
+    # ALWAYS DO: store directly in state output key
+    # Subcase 1: state input is documents, get results from each document, merge them, the output with the existing global_store keys
+    if state_input_key == "documents":
+        if should_merge_sublist_to_global(output_data, label_key):
+            # Merge with the existing global_store keys
+            result['global_store'] = combined.get('global_store', {})
+            merged_global_result = merge_list_results_to_global_list(output_data, label_key)
+            if len(merged_global_result) > 0:
+                result["global_store"][state_output_key] = merged_global_result
+    # Subcase 2: state input is not documents, but the output is a list
+    elif isinstance(output_data, list):
+        result["global_store"][state_output_key] = [{label_key: v} for v in output_data]
+    # Subcase 3: state input is not documents, but the output is a dictionary
+    # Note, this should not happen, but we do it anyway to avoid/recover from errors at best, it handles LLM responses like {"summary": {"summary": ["str1", "str2", ...]}}
     elif isinstance(output_data, dict):
-        if state_output_key in output_data:
-            result["global_store"][state_output_key] = output_data[state_output_key]
+        if state_output_key in output_data and isinstance(output_data[state_output_key], list):
+            result["global_store"][state_output_key] = [{label_key: v} for v in output_data[state_output_key]]
         else:
             logging.warn("No expected output key found in the result, using the first key by default.")
             _, res = next(iter(output_data.items()))
             result["global_store"][state_output_key] = res
     return result
 
-def merge_results_to_global_list(outputs: list):
+def merge_back_to_original_state(state_input_key, combined, output_data, result, label_key):
+    if state_input_key != 'documents' and 'global_store' in combined and state_input_key not in combined['global_store']:
+        return
+    input_data = combined.get(state_input_key) if state_input_key == 'documents' else combined.get('global_store').get(state_input_key)
+    if isinstance(input_data, list) and isinstance(output_data, list) and len(input_data) == len(output_data):
+        # For lists matching source length, apply outputs to each item
+        updated_items = []
+        for item, output in zip(input_data, output_data):
+            if isinstance(item, dict) and isinstance(output, dict):
+                updated_items.append({**item, **output})
+            elif isinstance(item, dict):
+                updated_items.append({**item, label_key: output})
+            else:
+                updated_items.append({label_key: output})
+        if state_input_key == 'documents':
+            result[state_input_key] = updated_items
+        else:
+            result['global_store'][state_input_key] = updated_items
+
+
+
+def should_merge_sublist_to_global(outputs, label_key ='item'):
+    if not isinstance(outputs, list) or len(outputs) == 0:
+        return False
+    if isinstance(outputs[0], dict):
+        keys = outputs[0].keys()
+        if label_key in keys and isinstance(outputs[0][label_key], list):
+            return True
+    if isinstance(outputs[0], list):
+        return True
+    return False
+
+def merge_list_results_to_global_list(outputs: list, label_key ='item'):
     """
     if outputs are lists like:
     [
@@ -903,19 +958,21 @@ def merge_results_to_global_list(outputs: list):
       ['str1', 'str2', ...]
     ]
     We will merge the outputs to one global array
+    [{'summary': 'str1'}, {'summary': 'str2'}, ... {'summary': 'strn'}]
     """
     # Add outputs as a separate key if they are dictionaries containing lists
     merged_results = []
-    if outputs and isinstance(outputs, list) and len(outputs) > 0:
-        # Check if the first output is a dictionary containing a list as its first value
-        for row in outputs:
-            if isinstance(row, dict):
+    for row in outputs:
+        if isinstance(row, dict):
+            if label_key in row and isinstance(row[label_key], list):
+                merged_results.extend([{label_key: v} for v in row[label_key]])
+            else:
                 values = list(row.values())
                 # there should only be one key for merging
                 if values and isinstance(values[0], list):
-                    merged_results.extend(values[0])
-            elif isinstance(row, list):
-                merged_results.extend(outputs)
+                    merged_results.extend([{label_key: v} for v in values[0]])
+        elif isinstance(row, list):
+            merged_results.extend([{label_key: v} for v in row])
     return merged_results
 
 def convert_spec_to_chain(spec):

@@ -123,7 +123,7 @@ def segmentation_tool(doc: Dict[str, Any],
                      strategy: str = 'paragraph',
                      feature_key: str = 'content',
                      output_key: str = 'segments',
-                     **kwargs) -> Dict[str, Any]:
+                     **kwargs) -> List[str]:
     """
     Segments text into parts using the specified strategy, see _SEGMENTATION_STRATEGIES
 
@@ -135,27 +135,78 @@ def segmentation_tool(doc: Dict[str, Any],
         **kwargs: Additional parameters to pass to the segmentation strategy
 
     Returns:
-        Dictionary containing the segments
+        List of text segments
     """
     try:
-        text = doc[feature_key]
-        if feature_key not in doc:
-            logging.warning(f"Content key '{feature_key}' not found in document, force to use the entire doc for segmentation")
-            text = str(doc)
-        if isinstance(text, list):
-            text = ' '.join(text)
-        if isinstance(text, dict):
-            text = ' '.join(text.values())
-
-        if not text or not isinstance(text, str):
-            return {output_key: []}
-
+        # Check if strategy exists
         if strategy not in _SEGMENTATION_STRATEGIES:
             logging.warning(f"Unknown segmentation strategy: {strategy}, falling back to paragraph")
             strategy = 'paragraph'
-
-        segments = _SEGMENTATION_STRATEGIES[strategy].segment(text, **kwargs)
-        return segments
+            
+        # Process based on type of doc[feature_key]
+        if feature_key not in doc:
+            logging.warning(f"Content key '{feature_key}' not found in document, force to use the entire doc for segmentation")
+            text = str(doc)
+            segments = _SEGMENTATION_STRATEGIES[strategy].segment(text, **kwargs)
+            return segments
+            
+        content = doc[feature_key]
+        
+        # Case 1: If content is an array, segment each element separately
+        if isinstance(content, list):
+            # Process each item in the list separately and merge results
+            all_segments = []
+            for item in content:
+                item_text = str(item)
+                if item_text:
+                    item_segments = _SEGMENTATION_STRATEGIES[strategy].segment(item_text, **kwargs)
+                    all_segments.extend(item_segments)
+            return all_segments
+            
+        elif isinstance(content, dict) and len(content) == 1:
+            single_value = list(content.values())[0]
+            # Case 2: If content is a dict with a single key containing a list
+            if isinstance(single_value, list):
+                # Process each item in the list separately and merge results
+                all_segments = []
+                for item in single_value:
+                    item_text = str(item)
+                    if item_text:
+                        item_segments = _SEGMENTATION_STRATEGIES[strategy].segment(item_text, **kwargs)
+                        all_segments.extend(item_segments)
+                return all_segments
+            else:
+                # Case 3: Single key with non-list value
+                text = str(single_value)
+                if not text:
+                    return []
+                segments = _SEGMENTATION_STRATEGIES[strategy].segment(text, **kwargs)
+                return segments
+        
+        # Case 4: MOST COMMON CASE: If content is a string, segment it
+        elif isinstance(content, str):
+            if not content:
+                return []
+            segments = _SEGMENTATION_STRATEGIES[strategy].segment(content, **kwargs)
+            return segments
+            
+        # Other dict cases
+        elif isinstance(content, dict):
+            # Join all values
+            text = ' '.join([str(v) for v in content.values()])
+            if not text:
+                return []
+            segments = _SEGMENTATION_STRATEGIES[strategy].segment(text, **kwargs)
+            return segments
+            
+        # Fallback case
+        else:
+            logging.warning(f"Invalid text in document for key {feature_key}, force to use the input object for segmentation")
+            text = str(doc)
+            if not text:
+                return []
+            segments = _SEGMENTATION_STRATEGIES[strategy].segment(text, **kwargs)
+            return segments
     except Exception as e:
         logging.error(f"Error in segmentation_tool: {e}")
         return []

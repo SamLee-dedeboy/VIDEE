@@ -105,9 +105,9 @@ def register_embedding_provider(name: str, provider_class: type):
 
 
 def embedding_tool(doc: Dict[str, Any], api_key: str = None, model: str = "text-embedding-ada-002",
-                   feature_key: str = "content", provider: str = "openai") -> List[float]:
+                   feature_key: str = "content", provider: str = "openai") -> List[List[float]]:
     """
-    Generates an embedding for the given text using the specified embedding provider.
+    Generates embeddings for the given text using the specified embedding provider.
 
     Args:
         doc: dictionary as single input documents
@@ -117,19 +117,20 @@ def embedding_tool(doc: Dict[str, Any], api_key: str = None, model: str = "text-
         provider: Name of the embedding provider, see `_PROVIDERS`.
 
     Returns:
-        List[float]: The embedding vector or empty list on error
+        List[List[float]]: A list of embedding vectors or empty list on error
     """
     try:
-        text = doc[feature_key]
-        if not text or not isinstance(text, str):
-            logging.warning(f"Invalid text in document for key {feature_key}, force to use the input object for embedding")
-            # original doc content
-            text = str(doc)
-        if isinstance(text, list):
-            text = ' '.join(text)
-        if isinstance(text, dict):
-            text = ' '.join(text.values())
+        '''
+        input can be 
+        list[str]: e.g. for a list of bullet points
+        str: e.g. for document content
+        
+        We can recover from:
+        {single_key: list[str]}
+        {single_key: str} 
+        '''
 
+        # Check if provider exists
         if provider not in _PROVIDERS:
             logging.error(f"Unknown embedding provider: {provider}")
             return []
@@ -142,7 +143,56 @@ def embedding_tool(doc: Dict[str, Any], api_key: str = None, model: str = "text-
         else:
             provider_instance = _PROVIDERS[provider](api_key)
 
-        return provider_instance.get_embedding(text, model)
+        # Process based on type of doc[feature_key]
+        content = doc[feature_key]
+
+        # Case 1: If content is an array, embed each element separately
+        if isinstance(content, list):
+            # Force each element to be a string
+            text_list = [str(item) for item in content]
+            if not text_list:
+                return []
+            return provider_instance.get_batch_embeddings(text_list, model)
+            
+        elif isinstance(content, dict) and len(content) == 1:
+            single_value = list(content.values())[0]
+            # Case 2: If content is a dict with a single key containing a list
+            if isinstance(single_value, list):
+                # Force each element to be a string
+                text_list = [str(item) for item in single_value]
+                if not text_list:
+                    return []
+                return provider_instance.get_batch_embeddings(text_list, model)
+            else:
+                # Case 3: Single key with non-list value
+                text = str(single_value)
+                if not text:
+                    return []
+                # Return as a list with a single embedding
+                return [provider_instance.get_embedding(text, model)]
+        
+        # Case 4: MOST COMMON CASE: If content is a string, embed it
+        elif isinstance(content, str):
+            if not content:
+                return []
+            # Return as a list with a single embedding
+            return [provider_instance.get_embedding(content, model)]
+            
+        # Other dict cases
+        elif isinstance(content, dict):
+            # Join all values
+            text = ' '.join([str(v) for v in content.values()])
+            if not text:
+                return []
+            return [provider_instance.get_embedding(text, model)]
+            
+        # Fallback case
+        else:
+            logging.warning(f"Invalid text in document for key {feature_key}, force to use the input object for embedding")
+            text = str(doc)
+            if not text:
+                return []
+            return [provider_instance.get_embedding(text, model)]
     except Exception as e:
         logging.error(f"Error in embedding_tool: {e}")
         return []

@@ -1185,7 +1185,7 @@ async def run_clustering_plan_agent(
         You need to carefully select the parameters for clustering based on the input data schema provided by the user.
 
         Also, you also need to determine the key for "output_schema" to define the clustering output. 
-        The "output_schema" should be a JSON-serializable object string with exactly one key you selected, ensure that the value of the key is ALWAYS "list[int]"
+        The "output_schema" should be a JSON-serializable object string with exactly one key you selected, ensure that the value of the key is ALWAYS "list[list[int]]"
         IMPORTANT: When you choose the key name in output_schema, make sure it is DISTINCT from any existing keys in the user's input keys.  
         ** Note **
         The input data needs to contain embeddings (vector representations) for effective clustering.
@@ -1193,7 +1193,7 @@ async def run_clustering_plan_agent(
         ** IMPORTANT: Available Clustering Algorithms **
         Choose ONE of these algorithms based on the task requirements:
 
-        1. kmeans - K-means clustering (requires number of clusters)
+        1. kmeans - K-means clustering (preferred, requires number of clusters)
            - Good for: Simple clustering with roughly equal-sized, well-separated clusters
            - Parameters:
              - n_clusters: Number of clusters (required, integer)
@@ -1242,7 +1242,7 @@ async def run_clustering_plan_agent(
             "parameters": {
                 // Parameters specific to the chosen algorithm
             },
-            "output_schema": "{ '<your generated output key>': 'list[int]'}"
+            "output_schema": "{ '<your generated output key>': 'list[list[int]]'}"
         }
         """,
     )
@@ -1452,7 +1452,7 @@ async def run_embedding_plan_agent(
         You need to carefully select the parameters for embedding based on the input data schema provided by the user.
 
         Also, you also need to determine the key for "output_schema" to define the embedding output. 
-        The "output_schema" should be a JSON-serializable object string with exactly one key you selected, ensure that the value of the key is ALWAYS "list[float]"
+        The "output_schema" should be a JSON-serializable object string with exactly one key you selected, ensure that the value of the key is ALWAYS "list[list[float]]"
         IMPORTANT: When you choose the key name in output_schema, make sure it is DISTINCT from any existing keys in the user's input keys.
           
         ** Note **
@@ -1482,7 +1482,7 @@ async def run_embedding_plan_agent(
                 "model": str,  // Embedding model to use
                 // Any additional parameters specific to the provider
             },
-            "output_schema": "{ '<your generated output key>': 'list[float]'}"
+            "output_schema": "{ '<your generated output key>': 'list[list[float]]'}"
         }
         """,
     )
