@@ -258,7 +258,8 @@ def clustering_tool(inputs: List[Dict[str, Any]],
     """
     try:
         # Extract feature vectors from inputs
-        data = [i.get(feature_key, []) for i in inputs]
+        # data = [i.get(feature_key, []) for i in inputs]
+        data = inputs
 
         # For BERTopic, we might need original texts
         if algorithm == 'bertopic':
