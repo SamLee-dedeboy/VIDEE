@@ -71,10 +71,13 @@
   <!-- parameters -->
   {#each Object.keys(tool_method.parameters) as key}
     <div class="flex gap-x-2 items-center shadow py-1 px-2">
-      <div class="param-label">{key}</div>
+      <div class="param-label" title={tool_method.parameters[key].description}>
+        {key}
+      </div>
       <CodeToolOption
         value={task.execution.parameters[key] || "default value"}
         type_info={tool_method.parameters[key]}
+        handleUpdate={(new_value) => updateTaskParameter(key, new_value)}
       ></CodeToolOption>
     </div>
   {/each}
