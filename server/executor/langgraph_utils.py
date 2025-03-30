@@ -606,7 +606,10 @@ def get_node_config(app, thread_config, node_id, execution_version=None):
         reversed([step for step in app.get_state_history(thread_config)])
     )
     node_configs = [
-        step.config for step in state_history if step.next[0] == f"{node_id}_evaluation"
+        # step.config for step in state_history if step.next[0] == f"{node_id}_evaluation"
+        step.config
+        for step in state_history
+        if step.next[0] == f"{node_id}"
     ]
     if len(node_configs) == 0:
         return None
