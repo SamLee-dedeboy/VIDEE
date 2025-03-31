@@ -212,6 +212,13 @@
                       bg_color="oklch(0.97 0.014 254.604)"
                       bg_hover_color="oklch(0.882 0.059 254.128)"
                     />
+                  {:else if ["embeddings", "embedding"].includes(state_input_key)}
+                    <SimplifiedListView
+                      items={state_value.slice(0, 10)}
+                      bg_color="oklch(0.97 0.014 254.604)"
+                      bg_hover_color="oklch(0.882 0.059 254.128)"
+                    />
+                    ...
                   {:else}
                     <SimplifiedListView
                       items={state_value}

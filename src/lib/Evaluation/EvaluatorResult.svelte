@@ -1,14 +1,20 @@
 <script lang="ts">
   import type { tExecutionEvaluatorResult } from "types";
   import * as d3 from "d3";
-  let { result }: { result: tExecutionEvaluatorResult } = $props();
+  let {
+    result,
+    state_input_key,
+  }: { result: tExecutionEvaluatorResult; state_input_key: string } = $props();
   const svgId = "evaluator-result-svg";
 
   let barChartData: Record<string, number> = $derived.by(() => {
     // console.log($state.snapshot(result));
     const evaluator_name = result.name;
     const evaluator_output_key = evaluator_name + "_output";
-    const documents = result.result.documents;
+    const documents =
+      state_input_key === "documents"
+        ? result.result.documents
+        : result.result["global_store"][state_input_key];
     // const scores = documents.map((d) => d[evaluator_output_key]);
     const scores_count = documents.reduce(
       (acc, doc) => {

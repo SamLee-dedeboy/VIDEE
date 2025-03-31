@@ -139,9 +139,9 @@
               ) || []}
             <IoInspection
               {input_key_options}
-              state_input_key={evaluator.state_input_key}
+              state_input_key={evaluator.state_input_key!}
               doc_input_keys={evaluator.doc_input_keys}
-              state_output_key={evaluator.state_output_key}
+              state_output_key={evaluator.state_output_key!}
               handleDeleteDocInputKey={(doc_input_key) => {
                 console.log("Deleting", doc_input_key);
                 const new_evaluator = JSON.parse(JSON.stringify(evaluator));
@@ -303,7 +303,10 @@
               >
             </div>
             {#if viz_mode === "bar"}
-              <EvaluatorResult {result}></EvaluatorResult>
+              <EvaluatorResult
+                {result}
+                state_input_key={evaluator.state_input_key!}
+              ></EvaluatorResult>
             {:else if viz_mode === "radial"}
               <EvaluatorResultRadialChart {result}></EvaluatorResultRadialChart>
             {/if}

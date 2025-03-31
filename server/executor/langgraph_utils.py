@@ -629,9 +629,14 @@ def add_output_list_to_global_state(all_states_and_keys, output_key, output_sche
             all_states_and_keys[output_key] = []
         # Extract the inner schema from list[...]
         inner_schema = output_schema[5:-1]  # Remove "list[" and "]"
-        all_states_and_keys[output_key].append(
-            {"key": output_key, "schema": inner_schema}
-        )
+        if inner_schema[0] == "{" and inner_schema[-1] == "}":
+            schema_obj = extract_json_content(inner_schema, True)
+            for key, schema in schema_obj.items():
+                all_states_and_keys[output_key].append({"key": key, "schema": schema})
+        else:
+            all_states_and_keys[output_key].append(
+                {"key": output_key, "schema": inner_schema}
+            )
 
 
 def create_nodes(steps: list[PrimitiveTaskExecution]):
@@ -950,6 +955,7 @@ def get_input_func(
 # a common reduce function
 def reduce_func(combined: dict, state_input_key: str, state_output_key: str):
     outputs = combined[state_output_key]  # "summaries"
+
     result = {}
     if state_input_key == "documents":
         original_data = combined[state_input_key]  # i.e. "documents"
@@ -959,6 +965,17 @@ def reduce_func(combined: dict, state_input_key: str, state_output_key: str):
                 {**doc, **{k: v for k, v in output.items()}}
                 for doc, output in zip(original_data, outputs)
             ]
+        }
+    else:
+        original_data = combined["global_store"][state_input_key]
+        # Create the base result with modified global_store key
+        result = {
+            "global_store": {
+                state_input_key: [
+                    {**doc, **{k: v for k, v in output.items()}}
+                    for doc, output in zip(original_data, outputs)
+                ]
+            }
         }
     # # Add outputs as a separate key if they are dictionaries containing lists
     # # this happens when we choose / change to non-documents states.

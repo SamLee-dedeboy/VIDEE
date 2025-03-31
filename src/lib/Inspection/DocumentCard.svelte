@@ -53,9 +53,15 @@
         <div class="font-mono text-sm min-w-[4rem]">
           {doc_input_key}
         </div>
-        <div class="max-h-[15rem] overflow-hidden text-sm">
-          {JSON.stringify(document[doc_input_key]).replace(/['"]+/g, "")}
-        </div>
+        {#if ["embedding", "embeddings"].includes(doc_input_key)}
+          <div class="max-h-[15rem] overflow-hidden text-sm">
+            {document[doc_input_key].slice(0, 10).join(", ") + "..."}
+          </div>
+        {:else}
+          <div class="max-h-[15rem] overflow-hidden text-sm">
+            {JSON.stringify(document[doc_input_key]).replace(/['"]+/g, "")}
+          </div>
+        {/if}
       </div>
     {/if}
   {/each}

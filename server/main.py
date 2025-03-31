@@ -657,6 +657,8 @@ async def recommend_evaluators(request: Request):
     assert session_id in user_sessions
 
     tasks = request["tasks"]
+    # only prompt_tool tasks are recommended
+    tasks = list(filter(lambda x: x["execution"]["tool"] == "prompt_tool", tasks))
     goal = request["goal"]
     evaluator_task_description_pairs = await executor.generate_evaluator_descriptions(
         goal, tasks, model=default_model, api_key=api_key
@@ -700,6 +702,7 @@ async def run_evaluators(request: Request):
     evaluator_exec = await executor.create_evaluator_exec(evaluator_spec)
     task_id = evaluator_spec["task"]
     execution_result = user_sessions[session_id]["execution_results"][task_id]
+    save_json(execution_result, relative_path("dev_data/test_execution_result.json"))
 
     evaluation_result = evaluator_exec.invoke(
         execution_result, config={"configurable": {"thread_id": session_id}}

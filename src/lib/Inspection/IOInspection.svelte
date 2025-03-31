@@ -12,6 +12,17 @@
     available_states,
     handleDeleteStateInputKey,
     handleAddStateInputKey,
+  }: {
+    input_key_options: string[];
+    state_input_key: string;
+    doc_input_keys: string[];
+    state_output_key: string;
+    handleDeleteDocInputKey: (key: string) => void;
+    handleAddDocInputKey: (key: string) => void;
+    handleEditStateOutputKey?: (key: string) => void;
+    available_states?: Record<string, any> | undefined;
+    handleDeleteStateInputKey?: () => void;
+    handleAddStateInputKey?: (key: string) => void;
   } = $props();
 
   let unselected_state_keys = $derived(
