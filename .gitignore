@@ -148,3 +148,5 @@ server/case_study_data_processing/**/*.csv
 evaluation_experiments/data/**/*.json
 evaluation_experiments/data/**/*.jsonl
 ideation_experiments/**/*.json
+.DS_Store
+server/dev_data/**/*.json
