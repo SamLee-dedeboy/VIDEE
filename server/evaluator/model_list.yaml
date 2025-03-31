@@ -1,5 +1,6 @@
 eval-models:
   - gpt-4o-mini-2024-07-18
   - claude-3-5-sonnet-latest
+  - gemini-2.0-flash-lite
 reason-model: gpt-4o
 summarization-model: gpt-4o

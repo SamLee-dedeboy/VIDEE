@@ -212,18 +212,18 @@ async def run_all_evaluations(
 
 
 def distribute_few_shot_examples(
-    few_shot_examples: list[dict], num_of_evaluators: int
+    few_shot_examples: list[dict], num_of_agents: int
 ) -> list[dict]:
-    """Distribute the few shot examples among the evaluators.
+    """Distribute the few shot examples among the agents.
 
     Args:
         few_shot_examples: List of examples, each containing 'user_evaluation' (0 or 1)
         num_of_evaluators: Number of evaluators
     """
-    distributed_examples = [[] for _ in range(num_of_evaluators)]
+    distributed_examples = [[] for _ in range(num_of_agents)]
     for example in few_shot_examples:
         score = example["user_evaluation"]
-        eval_scores = [0] * score + [1] * (num_of_evaluators - score)
+        eval_scores = [0] * score + [1] * (num_of_agents - score)
         random.shuffle(eval_scores)
         for i, eval_score in enumerate(eval_scores):
             copied_example = copy.deepcopy(example)
