@@ -1005,17 +1005,18 @@ def tools_reduce_func(
 
     # ALWAYS DO: store directly in state output key
     # Subcase 1: state input is documents, get results from each document, merge them, the output with the existing global_store keys
-    if state_input_key == "documents":
-        if should_merge_sublist_to_global(output_data, label_key):
-            # Merge with the existing global_store keys
-            result["global_store"] = combined.get("global_store", {})
-            merged_global_result = merge_list_results_to_global_list(
-                output_data, label_key
-            )
-            if len(merged_global_result) > 0:
-                result["global_store"][state_output_key] = merged_global_result
+    # if state_input_key == "documents":
+    #     if should_merge_sublist_to_global(output_data, label_key):
+    #         # Merge with the existing global_store keys
+    #         result["global_store"] = combined.get("global_store", {})
+    #         merged_global_result = merge_list_results_to_global_list(
+    #             output_data, label_key
+    #         )
+    #         if len(merged_global_result) > 0:
+    #             result["global_store"][state_output_key] = merged_global_result
     # Subcase 2: state input is not documents, but the output is a list
-    elif isinstance(output_data, list):
+    # elif isinstance(output_data, list):
+    if isinstance(output_data, list):
         # TODO: make this more graceful by using labels to decide if we should flatten
         # print(len(output_data), isinstance(output_data[0], list), len(output_data[0]))
         if (
