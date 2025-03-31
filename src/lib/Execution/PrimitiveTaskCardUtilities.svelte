@@ -14,6 +14,9 @@
   } = $props();
   let adding_parent = $state(false);
   let removing_parent = $state(false);
+  let skip_IO_enabled = $derived(
+    task.recompile_needed_parameters && !task.recompile_needed_IO
+  );
 </script>
 
 <div class="flex gap-x-2">
@@ -32,10 +35,10 @@
     >
       <button
         class="bg-[#eff6ff] border-t-2 border-x-2 border-slate-200 hover:bg-gray-200 text-sm px-1 py-0.5"
-        class:disabled={!(
-          task.recompile_skip_IO === true || task.recompile_skip_parameters === true
-        )}
-        onclick={() => handleCompile(task, true, task.recompile_skip_parameters)}>Skip I/O</button
+        class:disabled={!skip_IO_enabled}
+        onclick={() =>
+          handleCompile(task, true, task.recompile_skip_parameters)}
+        >Skip I/O</button
       >
       <button
         class="w-max bg-[#eff6ff] border-b-2 border-x-2 border-slate-200 hover:bg-gray-200 text-sm px-1 py-0.5"

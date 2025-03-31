@@ -42,17 +42,17 @@ export const semanticTaskPlanState = {
             visits: 0,
             path_value: 0,
             llm_evaluation: {
-                complexity: true,
-                coherence: true,
-                importance: true,
+                complexity: likert_scale_num,
+                coherence: likert_scale_num,
+                importance: likert_scale_num,
                 complexity_reason: "",
                 coherence_reason: "",
                 importance_reason: "",
               },
               user_evaluation: {
-                complexity: true,
-                coherence: true,
-                importance: true,
+                complexity: likert_scale_num,
+                coherence: likert_scale_num,
+                importance: likert_scale_num,
                 complexity_reason: "",
                 coherence_reason: "",
                 importance_reason: "",
@@ -77,17 +77,17 @@ export const semanticTaskPlanState = {
             visits: 0,
             path_value: 0,
             llm_evaluation: {
-                complexity: true,
-                coherence: true,
-                importance: true,
+                complexity: likert_scale_num,
+                coherence: likert_scale_num,
+                importance: likert_scale_num,
                 complexity_reason: "",
                 coherence_reason: "",
                 importance_reason: "",
               },
               user_evaluation: {
-                complexity: true,
-                coherence: true,
-                importance: true,
+                complexity: likert_scale_num,
+                coherence: likert_scale_num,
+                importance: likert_scale_num,
                 complexity_reason: "",
                 coherence_reason: "",
                 importance_reason: "",
@@ -138,7 +138,8 @@ export const primitiveTaskState = {
         return primitiveTasks
     },
     set primitiveTasks(value) {
-        primitiveTasks = collectInputKeys(value)
+        // primitiveTasks = collectInputKeys(value)
+        primitiveTasks = value
     },
     get inspected_primitive_task() {
         return inspected_primitive_task
@@ -165,11 +166,11 @@ export const primitiveTaskState = {
                 explanation: "N/A",
                 parentIds: [],
                 children: [],
-                recompile_skip_IO: true,
-                recompile_skip_parameters: true,
+                recompile_needed_IO: false,
+                recompile_needed_parameters: false,
             })
         primitiveTasks = [...primitiveTasks]
-        this.sortAndCollectInputKeys()
+        // this.sortAndCollectInputKeys()
     },
     delete(task_id) {
         primitiveTasks = primitiveTasks.filter((_task) => _task.id !== task_id);
@@ -183,46 +184,58 @@ export const primitiveTaskState = {
             this.updateInspectedPrimitiveTask(undefined)
         }
         update_execution_with_server();
-        this.sortAndCollectInputKeys()
+        // this.sortAndCollectInputKeys()
     },
     addParent(task: tPrimitiveTask, parent_id: string) {
         const parent_task = primitiveTasks.find(t => t.id === parent_id)
         if(parent_task) {
             task.parentIds = [...task.parentIds, parent_id]
-            this.updatePrimitiveTask(task.id, task, true)
+            // primitiveTasks = sortNodesByHierarchy(primitiveTasks)
+            // this.updatePrimitiveTask(task.id, task, false)
             parent_task.children = [...parent_task.children, task.id]
-            this.updatePrimitiveTask(parent_task.id, parent_task, true)
-            primitiveTasks = this.sortAndCollectInputKeys()
-            this.sortAndCollectInputKeys()
+            primitiveTasks = sortNodesByHierarchy(primitiveTasks)
+            this.updatePrimitiveTasks(primitiveTasks, true)
+            // this.updatePrimitiveTask(parent_task.id, parent_task, true)
+            // primitiveTasks = this.sortAndCollectInputKeys()
+            // this.sortAndCollectInputKeys()
         }
     },
     removeParent(task: tPrimitiveTask, parent_id: string) {
         const parent_task = primitiveTasks.find(t => t.id === parent_id)
         if(parent_task) {
             task.parentIds = task.parentIds.filter(id => id !== parent_id)
-            this.updatePrimitiveTask(task.id, task, true)
+            // primitiveTasks = sortNodesByHierarchy(primitiveTasks)
+            // this.updatePrimitiveTask(task.id, task, false)
             parent_task.children = parent_task.children.filter(id => id !== task.id)
-            this.updatePrimitiveTask(parent_task.id, parent_task, true)
-            this.sortAndCollectInputKeys()
+            primitiveTasks = sortNodesByHierarchy(primitiveTasks)
+            this.updatePrimitiveTasks(primitiveTasks, true)
+            // this.updatePrimitiveTask(parent_task.id, parent_task, true)
+            // this.sortAndCollectInputKeys()
         }
     },
-    updatePrimitiveTask(task_id: string, primitiveTask: tPrimitiveTask, needs_update=false) {
+    updatePrimitiveTask(task_id: string, primitiveTask: tPrimitiveTask, needs_update=false, callback=() =>{}) {
         const index = primitiveTasks.map(t => t.id).indexOf(task_id)
         if(index !== -1) {
             primitiveTasks[index] = primitiveTask
             primitiveTasks = [...primitiveTasks]
             if(needs_update){
-                update_execution_with_server();
+                update_execution_with_server(callback);
             }
         }
     },
-    sortAndCollectInputKeys() {
-        // sort the tasks by the parent-child relationships
-        primitiveTasks = sortNodesByHierarchy(primitiveTasks)
-        console.log("sorted tasks", primitiveTasks)
-        primitiveTasks = collectInputKeys(primitiveTasks)
-        return primitiveTasks
+    updatePrimitiveTasks(tasks: tPrimitiveTask[], needs_update=false) {
+        primitiveTasks = [...tasks]
+        if(needs_update){
+            update_execution_with_server();
+        }
     },
+    // sortAndCollectInputKeys() {
+    //     // sort the tasks by the parent-child relationships
+    //     primitiveTasks = sortNodesByHierarchy(primitiveTasks)
+    //     console.log("sorted tasks", primitiveTasks)
+    //     // primitiveTasks = collectInputKeys(primitiveTasks)
+    //     return primitiveTasks
+    // },
 
     updateInspectedPrimitiveTask(task_id: string | undefined) {
         inspected_primitive_task_id = task_id
@@ -236,30 +249,39 @@ export const primitiveTaskState = {
             new_task.recompile_needed_IO = false;
             new_task.recompile_needed_parameters = true;
         }
-        this.updatePrimitiveTask(task_id, new_task, needs_update)
-        evaluators = collectTargetTaskKeys(evaluators, primitiveTasks)
+        this.updatePrimitiveTask(task_id, new_task, needs_update, () => {
+            evaluators = collectTargetTaskKeys(evaluators, primitiveTasks)
+        })
+        // evaluators = collectTargetTaskKeys(evaluators, primitiveTasks)
     },
     updateOutputKey(task_id: string, output_key: string) {
         console.log("update output key", task_id, output_key)
         const index = primitiveTasks.map(t => t.id).indexOf(task_id)
         if(index !== -1) {
-            const original_output_key = primitiveTasks[index].state_output_key
+            const new_task = JSON.parse(JSON.stringify(primitiveTasks[index]))
+            new_task.state_output_key = output_key
             // update the output key of the task
             primitiveTasks[index].state_output_key = output_key
             // update the input keys of the children
-            for(let primitive_task of primitiveTasks) {
-                if(primitive_task.doc_input_keys?.includes(original_output_key)) {
-                    primitive_task.doc_input_keys = primitive_task.doc_input_keys?.map(key => key === original_output_key? output_key: key)
-                }
-            }
-            primitiveTasks = collectInputKeys(primitiveTasks)
-            evaluators = collectTargetTaskKeys(evaluators, primitiveTasks)
-            update_execution_with_server();
+            // for(let primitive_task of primitiveTasks) {
+            //     if(primitive_task.doc_input_keys?.includes(original_output_key)) {
+            //         primitive_task.doc_input_keys = primitive_task.doc_input_keys?.map(key => key === original_output_key? output_key: key)
+            //     }
+            // }
+            this.updatePrimitiveTask(task_id, new_task, true, () => {
+                evaluators = collectTargetTaskKeys(evaluators, primitiveTasks)
+            })
+            // primitiveTasks = collectInputKeys(primitiveTasks)
+            // update_execution_with_server(() => {
+            // evaluators = collectTargetTaskKeys(evaluators, primitiveTasks)
+
+            // });
         }
     }
 }
 
-function update_execution_with_server() {
+function update_execution_with_server(callback=() => {}
+) {
     fetch(`${server_address}/primitive_task/update/`, {
       method: "POST",
       headers: {
@@ -271,12 +293,13 @@ function update_execution_with_server() {
       .then((data) => {
         console.log("Update primitive tasks success:", data);
         console.log(data);
+        callback();
 // Don't automatically reset recompile flags - they should persist until compilation
 //         primitiveTasks.forEach(t => {
 //             t.recompile_skip_IO = false
 //             t.recompile_skip_parameters = false
 //         })
-        // primitiveTaskState.primitiveTasks = data.primitive_tasks;
+        primitiveTaskState.primitiveTasks = data.primitive_tasks;
         // primitiveTaskExecutionStates.execution_states = data.execution_state;
       })
       .catch((error) => {

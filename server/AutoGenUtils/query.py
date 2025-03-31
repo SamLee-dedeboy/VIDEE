@@ -547,7 +547,12 @@ async def _run_decomposition_to_primitive_task_agent(
 
 
 async def run_prompt_generation_agent(
-    task: Node, input_keys: list, state_input_key: str, all_states_and_keys: dict, model: str, api_key: str
+    task: Node,
+    input_keys: list,
+    state_input_key: str,
+    all_states_and_keys: dict,
+    model: str,
+    api_key: str,
 ):
     # Convert existing_keys to keys_by_state format
     keys_by_state = {state_input_key: input_keys}
@@ -631,8 +636,7 @@ async def run_prompt_generation_agent(
                 "output_schema": str  // Using the clearer schema format described above
             }}
         """.format(
-            existing_keys=input_keys_str,
-            all_keys_str=all_keys_str
+            existing_keys=input_keys_str, all_keys_str=all_keys_str
         ),
     )
     task_message = f"""
@@ -901,7 +905,12 @@ async def run_evaluator_generation_agent(
 
 
 async def run_data_transform_plan_agent(
-    task: Node, input_keys: list, state_input_key: str, all_states_and_keys: dict, model: str, api_key: str
+    task: Node,
+    input_keys: list,
+    state_input_key: str,
+    all_states_and_keys: dict,
+    model: str,
+    api_key: str,
 ):
     """
     Generate a data transformation plan for a task using an agent.
@@ -1148,7 +1157,12 @@ CORRECTED:
 
 
 async def run_clustering_plan_agent(
-    task: Node, input_keys: list, state_input_key: str, all_states_and_keys: dict, model: str, api_key: str
+    task: Node,
+    input_keys: list,
+    state_input_key: str,
+    all_states_and_keys: dict,
+    model: str,
+    api_key: str,
 ):
     """
     Generate a clustering plan for a task using an agent.
@@ -1185,7 +1199,7 @@ async def run_clustering_plan_agent(
         You need to carefully select the parameters for clustering based on the input data schema provided by the user.
 
         Also, you also need to determine the key for "output_schema" to define the clustering output. 
-        The "output_schema" should be a JSON-serializable object string with exactly one key you selected, ensure that the value of the key is ALWAYS "list[list[int]]"
+        The "output_schema" should be a JSON-serializable object string with exactly one key you selected, ensure that the value of the key is ALWAYS "int"
         IMPORTANT: When you choose the key name in output_schema, make sure it is DISTINCT from any existing keys in the user's input keys.  
         ** Note **
         The input data needs to contain embeddings (vector representations) for effective clustering.
@@ -1242,7 +1256,7 @@ async def run_clustering_plan_agent(
             "parameters": {
                 // Parameters specific to the chosen algorithm
             },
-            "output_schema": "{ '<your generated output key>': 'list[list[int]]'}"
+            "output_schema": "{ '<your generated output key>': 'int'}"
         }
         """,
     )
@@ -1288,7 +1302,12 @@ async def run_clustering_plan_agent(
 
 
 async def run_dim_reduction_plan_agent(
-    task: Node, input_keys: list, state_input_key: str, all_states_and_keys: dict, model: str, api_key: str
+    task: Node,
+    input_keys: list,
+    state_input_key: str,
+    all_states_and_keys: dict,
+    model: str,
+    api_key: str,
 ):
     """
     Generate a dimensionality reduction plan for a task using an agent.
@@ -1326,7 +1345,7 @@ async def run_dim_reduction_plan_agent(
         You need to carefully select the parameters for dimensionality reduction based on the input data schema provided by the user.
 
         Also, you also need to determine the key for "output_schema" to define the dimensionality reduction output. 
-        The "output_schema" should be a JSON-serializable object string with exactly one key you selected, ensure that the value of the key is ALWAYS "list[list[float]]"
+        The "output_schema" should be a JSON-serializable object string with exactly one key you selected, ensure that the value of the key is ALWAYS "list[float]"
         IMPORTANT: When you choose the key name in output_schema, make sure it is DISTINCT from any existing keys in the user's input keys.
           
         ** Note **
@@ -1368,7 +1387,7 @@ async def run_dim_reduction_plan_agent(
                 "n_components": int,  // Number of dimensions to reduce to (typically 2 or 3 for visualization)
                 // Additional algorithm-specific parameters
             },
-            "output_schema": "{ '<your generated output key>': 'list[list[float]]'}"
+            "output_schema": "{ '<your generated output key>': 'list[float]'}"
         }
         """,
     )
@@ -1415,7 +1434,12 @@ async def run_dim_reduction_plan_agent(
 
 
 async def run_embedding_plan_agent(
-    task: Node, input_keys: list, state_input_key: str, all_states_and_keys: dict, model: str, api_key: str
+    task: Node,
+    input_keys: list,
+    state_input_key: str,
+    all_states_and_keys: dict,
+    model: str,
+    api_key: str,
 ):
     """
     Generate an embedding plan for a task using an agent.
@@ -1452,7 +1476,7 @@ async def run_embedding_plan_agent(
         You need to carefully select the parameters for embedding based on the input data schema provided by the user.
 
         Also, you also need to determine the key for "output_schema" to define the embedding output. 
-        The "output_schema" should be a JSON-serializable object string with exactly one key you selected, ensure that the value of the key is ALWAYS "list[list[float]]"
+        The "output_schema" should be a JSON-serializable object string with exactly one key you selected, ensure that the value of the key is ALWAYS "list[float]"
         IMPORTANT: When you choose the key name in output_schema, make sure it is DISTINCT from any existing keys in the user's input keys.
           
         ** Note **
@@ -1482,7 +1506,7 @@ async def run_embedding_plan_agent(
                 "model": str,  // Embedding model to use
                 // Any additional parameters specific to the provider
             },
-            "output_schema": "{ '<your generated output key>': 'list[list[float]]'}"
+            "output_schema": "{ '<your generated output key>': 'list[float]'}"
         }
         """,
     )
@@ -1529,7 +1553,12 @@ async def run_embedding_plan_agent(
 
 
 async def run_segmentation_plan_agent(
-    task: Node, input_keys: list, state_input_key: str, all_states_and_keys: dict, model: str, api_key: str
+    task: Node,
+    input_keys: list,
+    state_input_key: str,
+    all_states_and_keys: dict,
+    model: str,
+    api_key: str,
 ):
     """
     Generate a segmentation plan for a task using an agent.
@@ -1666,9 +1695,10 @@ def get_existing_keys_by_state(keys_by_state):
     states_info = []
     for state_name, keys in keys_by_state.items():
         keys_str = get_existing_keys_and_schema(keys)
-        states_info.append(f"<state name=\"{state_name}\">\n{keys_str}\n</state>")
+        states_info.append(f'<state name="{state_name}">\n{keys_str}\n</state>')
 
     return "\n".join(states_info) if states_info else "No states available."
+
 
 def get_all_keys_in_states(keys_by_state):
     """
@@ -1690,13 +1720,14 @@ def get_all_keys_in_states(keys_by_state):
     for state_name, keys in keys_by_state.items():
         for key_obj in keys:
             # Keys can be strings or dictionaries with a 'key' field
-            if isinstance(key_obj, dict) and 'key' in key_obj:
-                all_keys.append(key_obj['key'])
+            if isinstance(key_obj, dict) and "key" in key_obj:
+                all_keys.append(key_obj["key"])
             elif isinstance(key_obj, str):
                 all_keys.append(key_obj)
 
     # Convert the list of keys to a comma-separated string
     return ",".join(all_keys)
+
 
 def get_existing_keys_and_schema(existing_keys):
     # Format the existing keys to include detailed schema information

@@ -41,6 +41,9 @@
   let card_compiling = $derived(
     compiling !== false && (compiling === undefined || compiling === task.id)
   );
+  let skip_IO_enabled = $derived(
+    task.recompile_needed_parameters && !task.recompile_needed_IO
+  );
 </script>
 
 {#if isRoot}
@@ -55,7 +58,7 @@
   <div
     class="container task-card text-slate-600 w-min min-w-[18rem] pb-1 transition-all outline-2 outline-blue-100 bg-[#F2F8FD] shadow rounded relative flex gap-y-1 gap-x-2"
   >
-    {#if task.recompile_skip_IO  && !card_compiling}
+    {#if (task.recompile_needed_IO || task.recompile_needed_parameters) && !card_compiling}
       <div
         class="absolute bottom-[calc(100%+3px)] left-0 flex items-end gap-x-1 animate-bounce bg-gray-50"
       >
@@ -66,7 +69,7 @@
           title="needs compilation"
         />
         <span class="text-sm italic text-gray-500">
-          Needs Compilation {!task.recompile_skip_IO
+          Needs Compilation {!skip_IO_enabled
             ? "From Scratch"
             : "(Skip I/O enabled)"}
         </span>

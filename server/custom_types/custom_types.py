@@ -52,7 +52,9 @@ class MCT_Node(Node):
 
 class BaseStateSchema(TypedDict):
     documents: Annotated[list, lambda a, b: b]
-    global_store: dict[str, Any] # a global storage for dynamic data (i.e. aggregated data on all docs)
+    global_store: Annotated[
+        dict[str, Any], lambda x, y: y
+    ]  # a global storage for dynamic data (i.e. aggregated data on all docs)
 
 
 class PrimitiveTaskDescription(BaseModel):

@@ -66,8 +66,8 @@ export type tPrimitiveTaskDescription = {
             schema: string;
         }>;
     };
-    recompile_skip_IO?: boolean;
-    recompile_skip_parameters?: boolean;
+    recompile_needed_IO?: boolean;
+    recompile_needed_parameters?: boolean;
 }
 
 export type tPrimitiveTaskExecution = {

@@ -47,8 +47,9 @@ LOCAL_TOOL_TASKS = [
     "Clustering Analysis",
     "Dimensionality Reduction",
     "Embedding Generation",
-    "Segmentation"
+    "Segmentation",
 ]
+
 
 def init_user_execution_state(
     execution_graph, execution_plan
@@ -110,13 +111,46 @@ def find_last_state(graph, execute_node, thread_config):
     return past_states[-1]
 
 
+def collect_keys(
+    primitive_tasks,
+):
+    all_states_and_keys = {
+        "documents": [{"key": "content", "schema": "str"}],
+    }
+    # if there's key changed, we need to always update the subsequent tasks until there's no key changes
+    plan = []
+    for primitive_task in primitive_tasks:
+        if "state_output_key" not in primitive_task:
+            plan.append({**primitive_task})
+            continue
+        # if skipping parameter, we just add the user's defined task parameters to plan, we won't change keys neither
+        # Add the output key to existing keys
+        output_key = primitive_task["state_output_key"]
+        output_schema = primitive_task["execution"]["parameters"]["output_schema"]
+        states_in_this_step = copy.deepcopy(all_states_and_keys)
+
+        # Track the key with its appropriate state
+        state_input_key = primitive_task.get("state_input_key", "documents")
+        # Add the output key to **original** input state
+        update_state_keys(
+            all_states_and_keys, state_input_key, output_key, output_schema
+        )
+
+        # If output is a list type, also add it to the global state
+        add_output_list_to_global_state(all_states_and_keys, output_key, output_schema)
+        primitive_task["available_states"] = states_in_this_step
+        plan.append({**primitive_task})
+        continue
+    return plan
+
+
 async def execution_plan(
     primitive_tasks: list[PrimitiveTaskDescription],
     model: str,
     api_key: str,
     compile_target: str | None = None,
     skip_IO: bool = False,
-    skip_parameters: bool = False
+    skip_parameters: bool = False,
 ) -> list[PrimitiveTaskExecution]:
     plan = []
     # Track all states and their keys in a dictionary
@@ -127,7 +161,11 @@ async def execution_plan(
     last_key_changed = False
     for primitive_task in primitive_tasks:
         # if skipping parameter, we just add the user's defined task parameters to plan, we won't change keys neither
-        if (compile_target is not None and compile_target != primitive_task["id"] and not last_key_changed) or skip_parameters:
+        if (
+            compile_target is not None
+            and compile_target != primitive_task["id"]
+            and not last_key_changed
+        ) or skip_parameters:
             # Add the output key to existing keys
             output_key = primitive_task["state_output_key"]
             output_schema = primitive_task["execution"]["parameters"]["output_schema"]
@@ -136,10 +174,14 @@ async def execution_plan(
             # Track the key with its appropriate state
             state_input_key = primitive_task.get("state_input_key", "documents")
             # Add the output key to **original** input state
-            update_state_keys(all_states_and_keys, state_input_key, output_key, output_schema)
+            update_state_keys(
+                all_states_and_keys, state_input_key, output_key, output_schema
+            )
 
             # If output is a list type, also add it to the global state
-            add_output_list_to_global_state(all_states_and_keys, output_key, output_schema)
+            add_output_list_to_global_state(
+                all_states_and_keys, output_key, output_schema
+            )
             primitive_task["available_states"] = states_in_this_step
             plan.append({**primitive_task})
             continue
@@ -154,7 +196,13 @@ async def execution_plan(
         else:
             # Generate input keys and input state
             single_key = False
-            if primitive_task['label'] in ['Embedding Generation', 'Clustering Analysis', 'Dimensionality Reduction', 'Data Transformation', 'Segmentation']:
+            if primitive_task["label"] in [
+                "Embedding Generation",
+                "Clustering Analysis",
+                "Dimensionality Reduction",
+                "Data Transformation",
+                "Segmentation",
+            ]:
                 single_key = True
 
             # generate input keys and the corresponding input state for this primitive task
@@ -163,7 +211,7 @@ async def execution_plan(
                 model,
                 api_key,
                 single_key_only=single_key,
-                all_states_and_keys=all_states_and_keys  # Pass all states and keys for LLM to decide which to use.
+                all_states_and_keys=all_states_and_keys,  # Pass all states and keys for LLM to decide which to use.
             )
 
         # plan will be added within this function
@@ -177,20 +225,19 @@ async def execution_plan(
             model,
             api_key,
             skip_IO,
-            skip_parameters
+            skip_parameters,
         )
 
-        last_key_changed = "state_output_key" in primitive_task and primitive_task["state_output_key"] != plan[-1]["state_output_key"]
+        last_key_changed = (
+            "state_output_key" in primitive_task
+            and primitive_task["state_output_key"] != plan[-1]["state_output_key"]
+        )
 
     return plan
 
 
 async def generate_input_keys(
-    primitive_task,
-    model,
-    api_key,
-    single_key_only=False,
-    all_states_and_keys=None
+    primitive_task, model, api_key, single_key_only=False, all_states_and_keys=None
 ):
     """
     Generate input keys and the corresponding state key for a primitive task by querying the LLM.
@@ -236,14 +283,18 @@ async def generate_input_keys(
             model=model,
             api_key=api_key,
             single_key_only=single_key_only,
-            keys_by_state=keys_by_state  # Pass grouped keys for state-aware prompting
+            keys_by_state=keys_by_state,  # Pass grouped keys for state-aware prompting
         )
 
         # Extract input keys and the selected state
         input_keys = response
 
         # If the response includes a selected_state, use it directly
-        if isinstance(response, dict) and "required_keys" in response and "selected_state" in response:
+        if (
+            isinstance(response, dict)
+            and "required_keys" in response
+            and "selected_state" in response
+        ):
             state_input_key = response["selected_state"]
             input_keys = response["required_keys"]
 
@@ -263,15 +314,16 @@ async def generate_input_keys(
             # Fall back to use only keys from the first state mentioned
             first_state = key_states[0]
             filtered_input_keys = [
-                key for i, key in enumerate(input_keys)
-                if key_states[i] == first_state
+                key for i, key in enumerate(input_keys) if key_states[i] == first_state
             ]
             if not filtered_input_keys:
                 # If somehow we filtered out all keys, default to the first key
                 filtered_input_keys = [input_keys[0]]
 
             input_keys = filtered_input_keys
-            input_key_names = [k["key"] if isinstance(k, dict) else k for k in input_keys]
+            input_key_names = [
+                k["key"] if isinstance(k, dict) else k for k in input_keys
+            ]
             state_input_key = key_to_state_map.get(input_key_names[0], "documents")
         else:
             # All keys are from the same state, use that state
@@ -285,7 +337,7 @@ async def generate_input_keys(
             primitive_task,
             model=model,
             api_key=api_key,
-            single_key_only=single_key_only
+            single_key_only=single_key_only,
         )
 
         # Handle new response format
@@ -307,8 +359,8 @@ async def generate_execution_parameters(
     all_states_and_keys,
     model,
     api_key,
-    skip_io = False,
-    skip_parameters = False
+    skip_io=False,
+    skip_parameters=False,
 ):
     states_in_this_step = copy.deepcopy(all_states_and_keys)
     # Handle local tools tasks differently
@@ -331,14 +383,21 @@ async def generate_execution_parameters(
                     input_keys,
                     state_input_key,
                 )
-                output_schema = tool_plan["execution"]["parameters"].get("output_schema", "list[str]")
+                output_schema = tool_plan["execution"]["parameters"].get(
+                    "output_schema", "list[str]"
+                )
 
             elif primitive_task["label"] == "Clustering Analysis":
                 if len(input_keys) > 1:
                     input_keys = input_keys[:1]
                 # Use the clustering agent to generate a plan
                 tool_config = await autogen_utils.run_clustering_plan_agent(
-                    primitive_task, input_keys, state_input_key, all_states_and_keys, model=model, api_key=api_key
+                    primitive_task,
+                    input_keys,
+                    state_input_key,
+                    all_states_and_keys,
+                    model=model,
+                    api_key=api_key,
                 )
                 tool_plan = create_clustering_plan(
                     primitive_task,
@@ -346,14 +405,21 @@ async def generate_execution_parameters(
                     input_keys,
                     state_input_key,
                 )
-                output_schema = tool_plan["execution"]["parameters"].get("output_schema", "list[int]")
+                output_schema = tool_plan["execution"]["parameters"].get(
+                    "output_schema", "list[int]"
+                )
 
             elif primitive_task["label"] == "Dimensionality Reduction":
                 if len(input_keys) > 1:
                     input_keys = input_keys[:1]
                 # Use the dimension reduction agent to generate a plan
                 tool_config = await autogen_utils.run_dim_reduction_plan_agent(
-                    primitive_task, input_keys, state_input_key, all_states_and_keys, model=model, api_key=api_key
+                    primitive_task,
+                    input_keys,
+                    state_input_key,
+                    all_states_and_keys,
+                    model=model,
+                    api_key=api_key,
                 )
                 tool_plan = create_dim_reduction_plan(
                     primitive_task,
@@ -361,14 +427,21 @@ async def generate_execution_parameters(
                     input_keys,
                     state_input_key,
                 )
-                output_schema = tool_plan["execution"]["parameters"].get("output_schema", "list[list[float]]")
+                output_schema = tool_plan["execution"]["parameters"].get(
+                    "output_schema", "list[list[float]]"
+                )
 
             elif primitive_task["label"] == "Embedding Generation":
                 if len(input_keys) > 1:
                     input_keys = input_keys[:1]
                 # Use the embedding agent to generate a plan
                 tool_config = await autogen_utils.run_embedding_plan_agent(
-                    primitive_task, input_keys, state_input_key, all_states_and_keys, model=model, api_key=api_key
+                    primitive_task,
+                    input_keys,
+                    state_input_key,
+                    all_states_and_keys,
+                    model=model,
+                    api_key=api_key,
                 )
                 tool_plan = create_embedding_plan(
                     primitive_task,
@@ -377,14 +450,21 @@ async def generate_execution_parameters(
                     state_input_key,
                     api_key,
                 )
-                output_schema = tool_plan["execution"]["parameters"].get("output_schema", "list[float]")
+                output_schema = tool_plan["execution"]["parameters"].get(
+                    "output_schema", "list[float]"
+                )
 
             elif primitive_task["label"] == "Segmentation":
                 if len(input_keys) > 1:
                     input_keys = input_keys[:1]
                 # Use the segmentation agent to generate a plan
                 tool_config = await autogen_utils.run_segmentation_plan_agent(
-                    primitive_task, input_keys, state_input_key, all_states_and_keys, model=model, api_key=api_key
+                    primitive_task,
+                    input_keys,
+                    state_input_key,
+                    all_states_and_keys,
+                    model=model,
+                    api_key=api_key,
                 )
                 tool_plan = create_segmentation_plan(
                     primitive_task,
@@ -392,31 +472,46 @@ async def generate_execution_parameters(
                     input_keys,
                     state_input_key,
                 )
-                output_schema = tool_plan["execution"]["parameters"].get("output_schema", "list[str]")
+                output_schema = tool_plan["execution"]["parameters"].get(
+                    "output_schema", "list[str]"
+                )
 
             if skip_io:
                 output_key = primitive_task["state_output_key"]
-                output_schema = primitive_task["execution"]["parameters"]["output_schema"]
+                output_schema = primitive_task["execution"]["parameters"][
+                    "output_schema"
+                ]
                 tool_plan["execution"]["parameters"]["output_schema"] = output_schema
                 tool_plan["state_output_key"] = output_key
             else:
                 output_key = tool_plan["state_output_key"]
 
             # Add the output key to original input state
-            update_state_keys(all_states_and_keys, state_input_key, output_key, output_schema)
+            update_state_keys(
+                all_states_and_keys, state_input_key, output_key, output_schema
+            )
 
             # If output is a list type, also add it to the global state
-            add_output_list_to_global_state(all_states_and_keys, output_key, output_schema)
+            add_output_list_to_global_state(
+                all_states_and_keys, output_key, output_schema
+            )
 
             tool_plan["available_states"] = states_in_this_step
             plans.append(tool_plan)
             return
         except Exception as e:
-            print(f"Error creating plan for {primitive_task['label']}: {e}. Using default prompting plan.")
+            print(
+                f"Error creating plan for {primitive_task['label']}: {e}. Using default prompting plan."
+            )
 
     # Default to using prompt_generation_agent for other tasks
     prompt_config = await autogen_utils.run_prompt_generation_agent(
-        primitive_task, input_keys, state_input_key, all_states_and_keys, model=model, api_key=api_key
+        primitive_task,
+        input_keys,
+        state_input_key,
+        all_states_and_keys,
+        model=model,
+        api_key=api_key,
     )
     prompt_structured = prompt_config.get("prompt")
     output_schema = prompt_config.get("output_schema")
@@ -451,12 +546,16 @@ async def generate_execution_parameters(
         output_schema = "str"
 
     if skip_io:
-        prompt_structured["JSON_format"].replace(output_key, primitive_task["state_output_key"])
+        prompt_structured["JSON_format"].replace(
+            output_key, primitive_task["state_output_key"]
+        )
         output_key = primitive_task["state_output_key"]
         output_schema = primitive_task["execution"]["parameters"]["output_schema"]
 
     # Add to input state
-    update_state_keys(all_states_and_keys, state_input_key, output_key, str(output_schema))
+    update_state_keys(
+        all_states_and_keys, state_input_key, output_key, str(output_schema)
+    )
 
     # If output is a list type, also add it to the global state
     add_output_list_to_global_state(all_states_and_keys, output_key, str(output_schema))
@@ -514,10 +613,14 @@ async def generate_execution_parameters(
     )
     return
 
+
 def update_state_keys(all_states_and_keys, state_input_key, output_key, output_schema):
     if state_input_key not in all_states_and_keys:
         all_states_and_keys[state_input_key] = []
-    all_states_and_keys[state_input_key].append({"key": output_key, "schema": output_schema})
+    all_states_and_keys[state_input_key].append(
+        {"key": output_key, "schema": output_schema}
+    )
+
 
 def add_output_list_to_global_state(all_states_and_keys, output_key, output_schema):
     if output_schema.startswith("list["):
@@ -526,7 +629,10 @@ def add_output_list_to_global_state(all_states_and_keys, output_key, output_sche
             all_states_and_keys[output_key] = []
         # Extract the inner schema from list[...]
         inner_schema = output_schema[5:-1]  # Remove "list[" and "]"
-        all_states_and_keys[output_key].append({"key": output_key, "schema": inner_schema})
+        all_states_and_keys[output_key].append(
+            {"key": output_key, "schema": inner_schema}
+        )
+
 
 def create_nodes(steps: list[PrimitiveTaskExecution]):
     return [create_node(step) for step in steps]
@@ -726,6 +832,7 @@ def create_node(step, custom_get_input_func=None, custom_reduce_func=None):
     map_reduce_chain = map | reduce
     return map_reduce_chain
 
+
 # an empty node that is the root of the graph
 def create_root():
     return RunnableLambda(func=lambda x: x)
@@ -785,7 +892,7 @@ def get_input_func(
     else:
         # For other state keys, retrieve directly from state
         if "global_store" not in state:
-            state['global_store'] = {}
+            state["global_store"] = {}
         if state_input_key in state["global_store"]:
             # If the state_input_key exists directly, use it
             data = state["global_store"][state_input_key]
@@ -826,13 +933,16 @@ def get_input_func(
             # For each doc_input_key, look for a matching key in documents or global_store
             # NOTE: This should really not happen, but we do it anyway to avoid/recover from errors at best.
             for key in doc_input_keys:
-                if isinstance(state['documents'], list) and len(state['documents']) > 0 and key in state['documents'][0]:
-                    result.extend([{key: doc[key]} for doc in state['documents']])
+                if (
+                    isinstance(state["documents"], list)
+                    and len(state["documents"]) > 0
+                    and key in state["documents"][0]
+                ):
+                    result.extend([{key: doc[key]} for doc in state["documents"]])
                 elif key in state["global_store"]:
                     data = state["global_store"][key]
                     if isinstance(data, list):
                         result.extend([{key: d} for d in data])
-
 
     return result
 
@@ -845,7 +955,7 @@ def reduce_func(combined: dict, state_input_key: str, state_output_key: str):
         original_data = combined[state_input_key]  # i.e. "documents"
         # Create the base result with modified documents (original behavior)
         result = {
-            'documents': [
+            "documents": [
                 {**doc, **{k: v for k, v in output.items()}}
                 for doc, output in zip(original_data, outputs)
             ]
@@ -860,6 +970,7 @@ def reduce_func(combined: dict, state_input_key: str, state_output_key: str):
     #         result["global_store"][state_output_key] = merged_global_result
 
     return result
+
 
 def tools_reduce_func(
     combined: dict,
@@ -888,36 +999,80 @@ def tools_reduce_func(
 
     # CASE 1: State key with matching list lengths, merging back with the input state key
     # This includes `documents` and `global_store` states
-    merge_back_to_original_state(state_input_key, combined, output_data, result, label_key)
+    merge_back_to_original_state(
+        state_input_key, combined, output_data, result, label_key
+    )
 
     # ALWAYS DO: store directly in state output key
     # Subcase 1: state input is documents, get results from each document, merge them, the output with the existing global_store keys
     if state_input_key == "documents":
         if should_merge_sublist_to_global(output_data, label_key):
             # Merge with the existing global_store keys
-            result['global_store'] = combined.get('global_store', {})
-            merged_global_result = merge_list_results_to_global_list(output_data, label_key)
+            result["global_store"] = combined.get("global_store", {})
+            merged_global_result = merge_list_results_to_global_list(
+                output_data, label_key
+            )
             if len(merged_global_result) > 0:
                 result["global_store"][state_output_key] = merged_global_result
     # Subcase 2: state input is not documents, but the output is a list
     elif isinstance(output_data, list):
-        result["global_store"][state_output_key] = [{label_key: v} for v in output_data]
+        # TODO: make this more graceful by using labels to decide if we should flatten
+        # print(len(output_data), isinstance(output_data[0], list), len(output_data[0]))
+        if (
+            len(output_data) > 0
+            and isinstance(output_data[0], dict)
+            and label_key in output_data[0]
+            and isinstance(output_data[0][label_key], list)
+            and len(output_data[0][label_key]) < 100
+        ):
+            # Flatten the list of lists to a single lis
+            result["global_store"][state_output_key] = [
+                {label_key: item}
+                for sublist in output_data
+                for item in sublist[label_key]
+            ]
+        else:
+            # only embeddings should reach here
+            result["global_store"][state_output_key] = [
+                {label_key: v} for v in output_data
+            ]
     # Subcase 3: state input is not documents, but the output is a dictionary
     # Note, this should not happen, but we do it anyway to avoid/recover from errors at best, it handles LLM responses like {"summary": {"summary": ["str1", "str2", ...]}}
     elif isinstance(output_data, dict):
-        if state_output_key in output_data and isinstance(output_data[state_output_key], list):
-            result["global_store"][state_output_key] = [{label_key: v} for v in output_data[state_output_key]]
+        if state_output_key in output_data and isinstance(
+            output_data[state_output_key], list
+        ):
+            result["global_store"][state_output_key] = [
+                {label_key: v} for v in output_data[state_output_key]
+            ]
         else:
-            logging.warn("No expected output key found in the result, using the first key by default.")
+            logging.warn(
+                "No expected output key found in the result, using the first key by default."
+            )
             _, res = next(iter(output_data.items()))
             result["global_store"][state_output_key] = res
     return result
 
-def merge_back_to_original_state(state_input_key, combined, output_data, result, label_key):
-    if state_input_key != 'documents' and 'global_store' in combined and state_input_key not in combined['global_store']:
+
+def merge_back_to_original_state(
+    state_input_key, combined, output_data, result, label_key
+):
+    if (
+        state_input_key != "documents"
+        and "global_store" in combined
+        and state_input_key not in combined["global_store"]
+    ):
         return
-    input_data = combined.get(state_input_key) if state_input_key == 'documents' else combined.get('global_store').get(state_input_key)
-    if isinstance(input_data, list) and isinstance(output_data, list) and len(input_data) == len(output_data):
+    input_data = (
+        combined.get(state_input_key)
+        if state_input_key == "documents"
+        else combined.get("global_store").get(state_input_key)
+    )
+    if (
+        isinstance(input_data, list)
+        and isinstance(output_data, list)
+        and len(input_data) == len(output_data)
+    ):
         # For lists matching source length, apply outputs to each item
         updated_items = []
         for item, output in zip(input_data, output_data):
@@ -927,14 +1082,13 @@ def merge_back_to_original_state(state_input_key, combined, output_data, result,
                 updated_items.append({**item, label_key: output})
             else:
                 updated_items.append({label_key: output})
-        if state_input_key == 'documents':
+        if state_input_key == "documents":
             result[state_input_key] = updated_items
         else:
-            result['global_store'][state_input_key] = updated_items
+            result["global_store"][state_input_key] = updated_items
 
 
-
-def should_merge_sublist_to_global(outputs, label_key ='item'):
+def should_merge_sublist_to_global(outputs, label_key="item"):
     if not isinstance(outputs, list) or len(outputs) == 0:
         return False
     if isinstance(outputs[0], dict):
@@ -945,7 +1099,8 @@ def should_merge_sublist_to_global(outputs, label_key ='item'):
         return True
     return False
 
-def merge_list_results_to_global_list(outputs: list, label_key ='item'):
+
+def merge_list_results_to_global_list(outputs: list, label_key="item"):
     """
     if outputs are lists like:
     [
@@ -974,6 +1129,7 @@ def merge_list_results_to_global_list(outputs: list, label_key ='item'):
         elif isinstance(row, list):
             merged_results.extend([{label_key: v} for v in row])
     return merged_results
+
 
 def convert_spec_to_chain(spec):
     if spec["tool"] == "prompt_tool":
@@ -1148,7 +1304,7 @@ def create_data_transform_plan(
     parameters = {
         "name": primitive_task["label"],
         "operation": tool_config.get("operation", "transform"),
-        "input_key_schemas": input_key_schemas
+        "input_key_schemas": input_key_schemas,
     }
 
     # If config_params is provided, use them
@@ -1156,15 +1312,18 @@ def create_data_transform_plan(
     if tool_config:
         if "parameters" in tool_config:
             parameters.update(tool_config.get("parameters", {}))
-        if 'output_schema' in tool_config:
+        if "output_schema" in tool_config:
             try:
-                key_and_schema = extract_json_content(tool_config['output_schema'], True)
+                key_and_schema = extract_json_content(
+                    tool_config["output_schema"], True
+                )
+                print("key and schema: ", key_and_schema)
                 # ideally output_schema should only have 1 key
                 if key_and_schema:
                     state_output_key, output_schema = next(iter(key_and_schema.items()))
             except Exception:
                 pass
-        parameters['output_schema'] = output_schema
+        parameters["output_schema"] = output_schema
     return {
         **primitive_task,
         "state_input_key": current_state_key,
@@ -1220,15 +1379,17 @@ def create_clustering_plan(
     if tool_config:
         if "parameters" in tool_config:
             parameters.update(tool_config.get("parameters", {}))
-        if 'output_schema' in tool_config:
+        if "output_schema" in tool_config:
             try:
-                key_and_schema = extract_json_content(tool_config['output_schema'], True)
+                key_and_schema = extract_json_content(
+                    tool_config["output_schema"], True
+                )
                 # ideally output_schema should only have 1 key
                 if key_and_schema:
                     state_output_key, output_schema = next(iter(key_and_schema.items()))
             except Exception:
                 pass
-        parameters['output_schema'] = output_schema
+        parameters["output_schema"] = output_schema
 
     return {
         **primitive_task,
@@ -1287,15 +1448,17 @@ def create_dim_reduction_plan(
     if tool_config:
         if "parameters" in tool_config:
             parameters.update(tool_config.get("parameters", {}))
-        if 'output_schema' in tool_config:
+        if "output_schema" in tool_config:
             try:
-                key_and_schema = extract_json_content(tool_config['output_schema'], True)
+                key_and_schema = extract_json_content(
+                    tool_config["output_schema"], True
+                )
                 # ideally output_schema should only have 1 key
                 if key_and_schema:
                     state_output_key, output_schema = next(iter(key_and_schema.items()))
             except Exception:
                 pass
-        parameters['output_schema'] = output_schema
+        parameters["output_schema"] = output_schema
 
     return {
         **primitive_task,
@@ -1358,15 +1521,17 @@ def create_embedding_plan(
     if tool_config:
         if "parameters" in tool_config:
             parameters.update(tool_config.get("parameters", {}))
-        if 'output_schema' in tool_config:
+        if "output_schema" in tool_config:
             try:
-                key_and_schema = extract_json_content(tool_config['output_schema'], True)
+                key_and_schema = extract_json_content(
+                    tool_config["output_schema"], True
+                )
                 # ideally output_schema should only have 1 key
                 if key_and_schema:
                     state_output_key, output_schema = next(iter(key_and_schema.items()))
             except Exception:
                 pass
-        parameters['output_schema'] = output_schema
+        parameters["output_schema"] = output_schema
 
     return {
         **primitive_task,
@@ -1424,15 +1589,17 @@ def create_segmentation_plan(
     if tool_config:
         if "parameters" in tool_config:
             parameters.update(tool_config.get("parameters", {}))
-        if 'output_schema' in tool_config:
+        if "output_schema" in tool_config:
             try:
-                key_and_schema = extract_json_content(tool_config['output_schema'], True)
+                key_and_schema = extract_json_content(
+                    tool_config["output_schema"], True
+                )
                 # ideally output_schema should only have 1 key
                 if key_and_schema:
                     state_output_key, output_schema = next(iter(key_and_schema.items()))
             except Exception:
                 pass
-        parameters['output_schema'] = output_schema
+        parameters["output_schema"] = output_schema
 
     return {
         **primitive_task,

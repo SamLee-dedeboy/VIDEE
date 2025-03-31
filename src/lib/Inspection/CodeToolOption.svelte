@@ -39,8 +39,11 @@
     </div>
   </div>
 {:else if type_info.type === "string"}
+  <!-- <div class="param-value whitespace-pre-wrap overflow-x-auto w-max">
+    {value}
+  </div> -->
   <div
-    class="param-value"
+    class="param-value whitespace-pre-wrap"
     contenteditable
     onblur={(e: any) => {
       const new_value = e.target.innerText;

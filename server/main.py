@@ -1,6 +1,7 @@
 from typing import Union
 from fastapi import FastAPI, Request
 import json
+import copy
 import os
 from collections import defaultdict
 from typing import Callable
@@ -35,8 +36,8 @@ relative_path = lambda filename: os.path.join(dirname, filename)
 api_key = open(relative_path("api_key")).read()
 default_model = "gpt-4o-mini"
 user_sessions = {}
-dataset_path = relative_path("executor/docs.json")
-# dataset_path = relative_path("data/papers.json")
+# dataset_path = relative_path("executor/docs.json")
+dataset_path = relative_path("data/UIST/papers_small.json")
 
 dev = True
 
@@ -436,7 +437,9 @@ async def compile_primitive_tasks(request: Request) -> dict:
     primitive_task_descriptions = request["primitive_tasks"]
     compile_target = request["compile_target"] if "compile_target" in request else None
     skip_IO = request["skip_IO"] if "skip_IO" in request else False
-    skip_parameters = request["skip_parameters"] if "skip_parameters" in request else False
+    skip_parameters = (
+        request["skip_parameters"] if "skip_parameters" in request else False
+    )
     root_description = next(
         (x for x in primitive_task_descriptions if x["id"] == "-1"), None
     )
@@ -444,7 +447,7 @@ async def compile_primitive_tasks(request: Request) -> dict:
     primitive_task_descriptions = list(
         filter(lambda x: x["id"] != "-1", primitive_task_descriptions)
     )
-    if dev:
+    if False:
         primitive_task_execution_plan = json.load(
             open(relative_path("dev_data/test_execution_plan.json"))
         )
@@ -459,19 +462,29 @@ async def compile_primitive_tasks(request: Request) -> dict:
             api_key=api_key,
         )
     # retain execution history if we are compiling a task target
-    should_preserve_history = compile_target and (skip_IO or skip_parameters)
-    old_checkpointer = user_sessions[session_id]['checkpointer'] if should_preserve_history else None
-    execution_graph, checkpointer = executor.create_graph(
-        primitive_task_execution_plan, checkpointer=old_checkpointer
+    should_preserve_history = compile_target is not None
+    old_checkpointer = (
+        user_sessions[session_id]["checkpointer"] if should_preserve_history else None
     )
-    user_sessions[session_id]["execution_graph"] = execution_graph
-    user_sessions[session_id]["checkpointer"] = checkpointer
-    execution_state = executor.init_user_execution_state(
-        execution_graph,
-        primitive_task_execution_plan,
-    )
+    if should_preserve_history:
+        execution_graph, _ = executor.create_graph(
+            primitive_task_execution_plan, checkpointer=old_checkpointer
+        )
+        execution_state = user_sessions[session_id].get("execution_state", {})
+    else:
+        execution_graph, checkpointer = executor.create_graph(
+            primitive_task_execution_plan,
+            checkpointer=None,
+        )
+        user_sessions[session_id]["checkpointer"] = checkpointer
+        execution_state = executor.init_user_execution_state(
+            execution_graph,
+            primitive_task_execution_plan,
+        )
 
-    if should_preserve_history and session_id in user_sessions:
+    user_sessions[session_id]["execution_graph"] = execution_graph
+
+    if False and should_preserve_history and session_id in user_sessions:
         old_execution_state = user_sessions[session_id]["execution_state"]
         old_execution_results = user_sessions[session_id]["execution_results"]
 
@@ -480,10 +493,15 @@ async def compile_primitive_tasks(request: Request) -> dict:
             if node_id == stop_at_id:
                 return
 
-            if node_id in old_execution_state and old_execution_state[node_id].get("executed", False) == True:
+            if (
+                node_id in old_execution_state
+                and old_execution_state[node_id].get("executed", False) == True
+            ):
                 # Copy execution state
                 execution_state[node_id]["executed"] = True
-                execution_state[node_id]["executable"] = old_execution_state[node_id].get("executable", True)
+                execution_state[node_id]["executable"] = old_execution_state[
+                    node_id
+                ].get("executable", True)
 
                 # Make children executable if they exist in the new graph
                 for child_id in execution_state[node_id].get("childrenIds", []):
@@ -492,15 +510,20 @@ async def compile_primitive_tasks(request: Request) -> dict:
 
                 # Copy execution results
                 if node_id in old_execution_results:
-                    user_sessions[session_id]["execution_results"][node_id] = old_execution_results[node_id]
+                    user_sessions[session_id]["execution_results"][node_id] = (
+                        old_execution_results[node_id]
+                    )
 
                 # Process children recursively
                 for child_id in execution_state[node_id].get("childrenIds", []):
                     copy_executed_history(child_id, stop_at_id)
 
         # Find root nodes (nodes with no parents) and start copying
-        root_nodes = [node_id for node_id, node in execution_state.items()
-                     if not node.get("parentIds") or len(node.get("parentIds", [])) == 0]
+        root_nodes = [
+            node_id
+            for node_id, node in execution_state.items()
+            if not node.get("parentIds") or len(node.get("parentIds", [])) == 0
+        ]
         # ideally there should be only one root node
         copy_executed_history(root_nodes[0], compile_target)
 
@@ -523,25 +546,52 @@ async def update_primitive_tasks(request: Request):
     session_id = request["session_id"]
     assert session_id in user_sessions
     primitive_task_execution_plan = request["primitive_tasks"]
+    # remove root node
     root_task = next(
         (x for x in primitive_task_execution_plan if x["id"] == "-1"), None
     )
     primitive_task_execution_plan = list(
         filter(lambda x: x["id"] != "-1", primitive_task_execution_plan)
     )
+    original_execution_plan = copy.deepcopy(primitive_task_execution_plan)
+    # remove nodes not compiled
+    not_compiled_node_indices = [
+        index
+        for index, node in enumerate(original_execution_plan)
+        if "execution" not in node
+    ]
+    # filter out nodes that are not compiled
+    primitive_task_execution_plan = [
+        node
+        for index, node in enumerate(primitive_task_execution_plan)
+        if index not in not_compiled_node_indices
+    ]
+    primitive_task_execution_plan = executor.collect_keys(primitive_task_execution_plan)
     save_json(
         primitive_task_execution_plan,
         relative_path("dev_data/test_execution_plan_updated.json"),
     )
+
     checkpointer = user_sessions[session_id]["checkpointer"]
     execution_graph, _ = executor.create_graph(
         primitive_task_execution_plan,
         checkpointer=checkpointer,
     )
+    new_primitive_task_execution_plan = []
+    for index in range(
+        len(primitive_task_execution_plan) + len(not_compiled_node_indices)
+    ):
+        if index in not_compiled_node_indices:
+            new_primitive_task_execution_plan.append(original_execution_plan[index])
+        else:
+            new_primitive_task_execution_plan.append(
+                primitive_task_execution_plan.pop(0)
+            )
+
     user_sessions[session_id]["execution_graph"] = execution_graph
-    primitive_task_execution_plan.insert(0, root_task)
+    new_primitive_task_execution_plan.insert(0, root_task)
     return {
-        "primitive_tasks": primitive_task_execution_plan,
+        "primitive_tasks": new_primitive_task_execution_plan,
     }
 
 

@@ -10,6 +10,7 @@ import logging
 # Set up logging
 logger = logging.getLogger(__name__)
 
+
 async def retry_llm_json_extraction(
     llm_call_func: Callable[..., Awaitable],
     llm_call_args: Tuple = (),
@@ -18,7 +19,7 @@ async def retry_llm_json_extraction(
     max_retries: int = 3,
     retry_delay: float = 1.0,
     backoff_factor: float = 2.0,
-    escape_JSON_format: bool = False
+    escape_JSON_format: bool = False,
 ) -> Any:
     """
     Retry pattern for LLM calls that need to return valid JSON.
@@ -48,18 +49,25 @@ async def retry_llm_json_extraction(
             response = await llm_call_func(*llm_call_args, **llm_call_kwargs)
 
             # Extract the content from the response
-            content = response.chat_message.content if hasattr(response, 'chat_message') else response
+            content = (
+                response.chat_message.content
+                if hasattr(response, "chat_message")
+                else response
+            )
 
             # Try to extract JSON
             json_result = extract_json_content(content, escape_JSON_format)
-
             # Check if we got a valid result
             if json_result is None:
-                raise ValueError(f"Failed to extract JSON from LLM response. content:{content}")
+                raise ValueError(
+                    f"Failed to extract JSON from LLM response. content:{content}"
+                )
 
             # If an expected key is specified, check that it exists
             if expected_key and expected_key not in json_result:
-                raise KeyError(f"Expected key '{expected_key}' not found in JSON result")
+                raise KeyError(
+                    f"Expected key '{expected_key}' not found in JSON result"
+                )
 
             # Return either the whole JSON or just the expected key's value
             return json_result[expected_key] if expected_key else json_result
@@ -70,14 +78,16 @@ async def retry_llm_json_extraction(
                     f"Retry attempt {attempt + 1}/{max_retries} - "
                     f"Error in LLM JSON extraction: {str(e)}"
                 )
-                if hasattr(response, 'chat_message'):
+                if hasattr(response, "chat_message"):
                     logger.debug(f"Response content: {response.chat_message.content}")
 
                 # Wait before retrying
                 await asyncio.sleep(delay)
                 delay *= backoff_factor
             else:
-                logger.error(f"All {max_retries} retries failed for LLM JSON extraction")
+                logger.error(
+                    f"All {max_retries} retries failed for LLM JSON extraction"
+                )
                 return None
 
     return None
@@ -106,6 +116,7 @@ def escape_json_format(json_string: str) -> str:
     else:
         print("No match found.")
         return json_string
+
 
 def escape_output_schema(json_string: str) -> str:
     """

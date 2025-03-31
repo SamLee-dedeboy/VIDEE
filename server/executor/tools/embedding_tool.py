@@ -20,7 +20,9 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         self.client = OpenAI(api_key=api_key)
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10))
-    def get_embedding(self, text: str, model: str = "text-embedding-ada-002") -> List[float]:
+    def get_embedding(
+        self, text: str, model: str = "text-embedding-ada-002"
+    ) -> List[float]:
         try:
             response = self.client.embeddings.create(input=text, model=model)
             return response.data[0].embedding
@@ -30,7 +32,9 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
             # raise
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10))
-    def get_batch_embeddings(self, texts: List[str], model: str = "text-embedding-ada-002") -> List[List[float]]:
+    def get_batch_embeddings(
+        self, texts: List[str], model: str = "text-embedding-ada-002"
+    ) -> List[List[float]]:
         try:
             response = self.client.embeddings.create(input=texts, model=model)
             return [item.embedding for item in response.data]
@@ -49,8 +53,9 @@ class SentenceTransformersEmbeddingProvider(EmbeddingProvider):
             model_name_or_path: Model name or path to load. If None, using the default model all-MiniLM-L6-v2
         """
         from sentence_transformers import SentenceTransformer
+
         if model_name_or_path is None:
-            model_name_or_path = 'all-MiniLM-L6-v2'
+            model_name_or_path = "all-MiniLM-L6-v2"
         self.model = SentenceTransformer(model_name_or_path)
 
     def get_embedding(self, text: str, model: str = None) -> List[float]:
@@ -72,7 +77,9 @@ class SentenceTransformersEmbeddingProvider(EmbeddingProvider):
             logging.error(f"Error generating embedding with SentenceTransformers: {e}")
             return []
 
-    def get_batch_embeddings(self, texts: List[str], model: str = None) -> List[List[float]]:
+    def get_batch_embeddings(
+        self, texts: List[str], model: str = None
+    ) -> List[List[float]]:
         """
         Generate embeddings for multiple texts in batch.
 
@@ -88,14 +95,16 @@ class SentenceTransformersEmbeddingProvider(EmbeddingProvider):
             embeddings = self.model.encode(texts)
             return [embedding.tolist() for embedding in embeddings]
         except Exception as e:
-            logging.error(f"Error generating batch embeddings with SentenceTransformers: {e}")
+            logging.error(
+                f"Error generating batch embeddings with SentenceTransformers: {e}"
+            )
             return [[] for _ in texts]
 
 
 # Singleton registry of providers
 _PROVIDERS = {
     "openai": OpenAIEmbeddingProvider,
-    "sentence_transformers": SentenceTransformersEmbeddingProvider  # Add the new provider
+    "sentence_transformers": SentenceTransformersEmbeddingProvider,  # Add the new provider
 }
 
 
@@ -104,8 +113,13 @@ def register_embedding_provider(name: str, provider_class: type):
     _PROVIDERS[name] = provider_class
 
 
-def embedding_tool(doc: Dict[str, Any], api_key: str = None, model: str = "text-embedding-ada-002",
-                   feature_key: str = "content", provider: str = "openai") -> List[List[float]]:
+def embedding_tool(
+    doc: Dict[str, Any],
+    api_key: str = None,
+    model: str = "text-embedding-ada-002",
+    feature_key: str = "content",
+    provider: str = "openai",
+) -> List[List[float]]:
     """
     Generates embeddings for the given text using the specified embedding provider.
 
@@ -120,15 +134,15 @@ def embedding_tool(doc: Dict[str, Any], api_key: str = None, model: str = "text-
         List[List[float]]: A list of embedding vectors or empty list on error
     """
     try:
-        '''
-        input can be 
+        """
+        input can be
         list[str]: e.g. for a list of bullet points
         str: e.g. for document content
-        
+
         We can recover from:
         {single_key: list[str]}
-        {single_key: str} 
-        '''
+        {single_key: str}
+        """
 
         # Check if provider exists
         if provider not in _PROVIDERS:
@@ -153,7 +167,7 @@ def embedding_tool(doc: Dict[str, Any], api_key: str = None, model: str = "text-
             if not text_list:
                 return []
             return provider_instance.get_batch_embeddings(text_list, model)
-            
+
         elif isinstance(content, dict) and len(content) == 1:
             single_value = list(content.values())[0]
             # Case 2: If content is a dict with a single key containing a list
@@ -170,25 +184,27 @@ def embedding_tool(doc: Dict[str, Any], api_key: str = None, model: str = "text-
                     return []
                 # Return as a list with a single embedding
                 return [provider_instance.get_embedding(text, model)]
-        
+
         # Case 4: MOST COMMON CASE: If content is a string, embed it
         elif isinstance(content, str):
             if not content:
                 return []
             # Return as a list with a single embedding
-            return [provider_instance.get_embedding(content, model)]
-            
+            return provider_instance.get_embedding(content, model)
+
         # Other dict cases
         elif isinstance(content, dict):
             # Join all values
-            text = ' '.join([str(v) for v in content.values()])
+            text = " ".join([str(v) for v in content.values()])
             if not text:
                 return []
             return [provider_instance.get_embedding(text, model)]
-            
+
         # Fallback case
         else:
-            logging.warning(f"Invalid text in document for key {feature_key}, force to use the input object for embedding")
+            logging.warning(
+                f"Invalid text in document for key {feature_key}, force to use the input object for embedding"
+            )
             text = str(doc)
             if not text:
                 return []
@@ -198,8 +214,13 @@ def embedding_tool(doc: Dict[str, Any], api_key: str = None, model: str = "text-
         return []
 
 
-def batch_embedding_tool(docs: List[Dict[str, Any]], api_key: str = None, model: str = "text-embedding-ada-002",
-                         feature_key: str = "content", provider: str = "openai") -> List[List[float]]:
+def batch_embedding_tool(
+    docs: List[Dict[str, Any]],
+    api_key: str = None,
+    model: str = "text-embedding-ada-002",
+    feature_key: str = "content",
+    provider: str = "openai",
+) -> List[List[float]]:
     """
     Generates embeddings for multiple docs in batch.
 
@@ -219,7 +240,8 @@ def batch_embedding_tool(docs: List[Dict[str, Any]], api_key: str = None, model:
 
         if not texts:
             logging.warning(
-                f"Invalid text in document for key {feature_key}, force to use the input object for embedding")
+                f"Invalid text in document for key {feature_key}, force to use the input object for embedding"
+            )
             # original doc content
             texts = [str(doc) for doc in docs]
 
@@ -241,7 +263,11 @@ def batch_embedding_tool(docs: List[Dict[str, Any]], api_key: str = None, model:
         result = []
         embedding_idx = 0
         for doc in docs:
-            if feature_key in doc and doc[feature_key] and isinstance(doc[feature_key], str):
+            if (
+                feature_key in doc
+                and doc[feature_key]
+                and isinstance(doc[feature_key], str)
+            ):
                 result.append(embeddings[embedding_idx])
                 embedding_idx += 1
             else:
