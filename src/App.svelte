@@ -205,8 +205,8 @@
   }
 
   async function handleDecomposeGoalStepped_MCTS(goal: string) {
-    dev_handleDecomposeGoalStepped_MCTS(goal);
-    return;
+    // dev_handleDecomposeGoalStepped_MCTS(goal);
+    // return;
     user_goal = goal;
     streaming_states.started = true;
     streaming_states.paused = false;
@@ -325,16 +325,17 @@
 
   function handleConvert() {
     controllers.converting = true;
-    fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
-      // fetch(
-      //   `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`,
-      //   {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
-    })
+    // fetch(`${server_address}/semantic_task/decomposition_to_primitive_tasks/`, {
+    fetch(
+      `${server_address}/semantic_task/decomposition_to_primitive_tasks/dev/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ semantic_tasks: selected_semantic_task_path }),
+      }
+    )
       .then((response) => response.json())
       .then((data) => {
         console.log("decomposition to primitive tasks: ", { data });
@@ -355,8 +356,8 @@
   ) {
     console.log("Compiling...", { primitive_tasks, task, session_id });
     controllers.compiling = task?.id;
-    fetch(`${server_address}/primitive_task/compile/`, {
-      // fetch(`${server_address}/primitive_task/compile/dev/`, {
+    // fetch(`${server_address}/primitive_task/compile/`, {
+    fetch(`${server_address}/primitive_task/compile/dev/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -373,8 +374,8 @@
       .then((data) => {
         controllers.compiling = false;
         data.primitive_tasks.forEach((t) => {
-          t.recompile_skip_IO = false;
-          t.recompile_skip_parameters = false;
+          t.recompile_needed_IO = false;
+          t.recompile_needed_parameters = false;
         });
         primitiveTaskState.primitiveTasks = data.primitive_tasks;
         primitiveTaskExecutionStates.execution_states = data.execution_state;

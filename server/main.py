@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 
+import time
 import random
 import asyncio
 
@@ -612,6 +613,7 @@ async def execute_primitive_tasks(request: Request):
 
     last_state = executor.find_last_state(execution_graph, parent_node, thread_config)
     last_state = last_state if last_state is not None else initial_state
+    save_json(last_state, relative_path("dev_data/test_last_state.json"))
     state = executor.execute_node(
         execution_graph,
         thread_config,
@@ -742,37 +744,73 @@ def get_dev_plan():
 
 @app.post("/semantic_task/decomposition_to_primitive_tasks/dev/")
 def dev_convert():
-    return json.load(open(relative_path("dev_data/test_execution_plan.json")))
+    return json.load(open(relative_path("dev_data/user_study_plan_w_traps.json")))
+    # return json.load(open(relative_path("dev_data/test_execution_plan.json")))
 
 
 @app.post("/primitive_task/compile/dev/")
-async def compile_primitive_tasks(request: Request) -> dict:
+async def compile_primitive_tasks_dev(request: Request) -> dict:
     request = await request.body()
     request = json.loads(request)
     session_id = request["session_id"]
     assert session_id in user_sessions
+    primitive_task_descriptions = request["primitive_tasks"]
     compile_target = request["compile_target"] if "compile_target" in request else None
-    primitive_task_execution_plan = json.load(
-        open(relative_path("dev_data/test_execution_plan.json"))
+    skip_IO = request["skip_IO"] if "skip_IO" in request else False
+    skip_parameters = (
+        request["skip_parameters"] if "skip_parameters" in request else False
     )
     root_description = next(
-        (x for x in primitive_task_execution_plan if x["id"] == "-1"), None
+        (x for x in primitive_task_descriptions if x["id"] == "-1"), None
     )
 
-    primitive_task_execution_plan = list(
-        filter(lambda x: x["id"] != "-1", primitive_task_execution_plan)
+    primitive_task_descriptions = list(
+        filter(lambda x: x["id"] != "-1", primitive_task_descriptions)
     )
-    execution_graph, checkpointer = executor.create_graph(
-        primitive_task_execution_plan, checkpointer=None
+    if compile_target:
+        primitive_task_execution_plan = await executor.execution_plan(
+            primitive_task_descriptions,
+            compile_target=compile_target,
+            skip_IO=skip_IO,
+            skip_parameters=skip_parameters,
+            model=default_model,
+            api_key=api_key,
+        )
+    else:
+        primitive_task_execution_plan = json.load(
+            open(relative_path("dev_data/user_study_plan_w_traps.json"))
+        )
+        primitive_task_execution_plan = list(
+            filter(lambda x: x["id"] != "-1", primitive_task_execution_plan)
+        )
+        time.sleep(5)
+    should_preserve_history = compile_target is not None
+    old_checkpointer = (
+        user_sessions[session_id]["checkpointer"] if should_preserve_history else None
     )
+    if should_preserve_history:
+        execution_graph, _ = executor.create_graph(
+            primitive_task_execution_plan, checkpointer=old_checkpointer
+        )
+        execution_state = user_sessions[session_id].get("execution_state", {})
+    else:
+        execution_graph, checkpointer = executor.create_graph(
+            primitive_task_execution_plan,
+            checkpointer=None,
+        )
+        user_sessions[session_id]["checkpointer"] = checkpointer
+        execution_state = executor.init_user_execution_state(
+            execution_graph,
+            primitive_task_execution_plan,
+        )
+
     user_sessions[session_id]["execution_graph"] = execution_graph
-    user_sessions[session_id]["checkpointer"] = checkpointer
-    execution_state = executor.init_user_execution_state(
-        execution_graph,
-        primitive_task_execution_plan,
-    )
     user_sessions[session_id]["execution_state"] = execution_state
     primitive_task_execution_plan.insert(0, root_description)
+    # save_json(
+    #     primitive_task_execution_plan,
+    #     relative_path("dev_data/test_execution_plan.json"),
+    # )
     return {
         "primitive_tasks": primitive_task_execution_plan,
         "execution_state": execution_state,

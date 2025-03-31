@@ -1,0 +1,286 @@
+[
+    {
+        "id": "-1",
+        "label": "Root",
+        "description": "Root",
+        "explanation": "N/A",
+        "parentIds": [],
+        "children": [],
+        "recompile_needed_IO": false,
+        "recompile_needed_parameters": false
+    },
+    {
+        "solves": "",
+        "id": "0.7674486994999428",
+        "label": "Embedding Generation",
+        "description": "Converts the content into embeddings for further analysis.",
+        "explanation": "N/A",
+        "parentIds": [],
+        "children": [
+            "0.19142034688688014"
+        ],
+        "recompile_needed_IO": false,
+        "recompile_needed_parameters": false,
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content"
+        ],
+        "input_keys": [
+            {
+                "key": "content",
+                "schema": "str"
+            }
+        ],
+        "state_output_key": "embeddings",
+        "execution": {
+            "tool": "embedding_tool",
+            "parameters": {
+                "name": "Embedding Generation",
+                "provider": "openai",
+                "model": "text-embedding-ada-002",
+                "feature_key": "content",
+                "input_key_schemas": {
+                    "content": "str"
+                },
+                "api_key": "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",
+                "output_schema": "list[float]"
+            }
+        },
+        "available_states": {
+            "documents": [
+                {
+                    "key": "content",
+                    "schema": "str"
+                }
+            ]
+        }
+    },
+    {
+        "solves": "",
+        "id": "0.19142034688688014",
+        "label": "Clustering Analysis",
+        "description": "Cluster the embeddings.",
+        "explanation": "N/A",
+        "parentIds": [
+            "0.7674486994999428"
+        ],
+        "children": [
+            "0.7507854916663534"
+        ],
+        "recompile_needed_IO": false,
+        "recompile_needed_parameters": false,
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content"
+        ],
+        "input_keys": [
+            {
+                "key": "content",
+                "schema": "str"
+            }
+        ],
+        "state_output_key": "cluster_id",
+        "execution": {
+            "tool": "clustering_tool",
+            "parameters": {
+                "name": "Clustering Analysis",
+                "algorithm": "kmeans",
+                "feature_key": "embeddings",
+                "n_clusters": 5,
+                "input_key_schemas": {
+                    "content": "str"
+                },
+                "init": "k-means++",
+                "n_init": 10,
+                "max_iter": 300,
+                "output_schema": "int"
+            }
+        },
+        "available_states": {
+            "documents": [
+                {
+                    "key": "content",
+                    "schema": "str"
+                },
+                {
+                    "key": "embeddings",
+                    "schema": "list[float]"
+                }
+            ],
+            "embeddings": [
+                {
+                    "key": "embeddings",
+                    "schema": "float"
+                }
+            ]
+        },
+        "existing_keys": [
+            "content",
+            "content",
+            "content",
+            "content",
+            "content",
+            "content",
+            "content",
+            "content",
+            "content",
+            "content",
+            "content",
+            "content",
+            "content"
+        ],
+        "recompile_skip_parameters": false
+    },
+    {
+        "solves": "",
+        "id": "0.7507854916663534",
+        "label": "Data Transformation",
+        "description": "Groups the document content by cluster labels.",
+        "explanation": "N/A",
+        "parentIds": [
+            "0.19142034688688014"
+        ],
+        "children": [
+            "0.8027180816763358"
+        ],
+        "recompile_needed_IO": false,
+        "recompile_needed_parameters": false,
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content"
+        ],
+        "input_keys": [
+            {
+                "key": "content",
+                "schema": "str"
+            }
+        ],
+        "state_output_key": "grouped_documents",
+        "execution": {
+            "tool": "data_transform_tool",
+            "parameters": {
+                "name": "Data Transformation",
+                "operation": "transform",
+                "input_key_schemas": {
+                    "content": "str"
+                },
+                "transform_code": "def transform(data):\n    grouped_content = {}\n    for doc in data:\n        cluster_label = doc.get('cluster_id')\n        if cluster_label not in grouped_content:\n            grouped_content[cluster_label] = []\n        grouped_content[cluster_label].append(doc['content'])\n    return {'grouped_documents': [{'cluster_id': cluster_id, 'contents': contents} for cluster_id, contents in grouped_content.items()]}",
+                "output_schema": "list[{\"cluster_id\": \"str\", \"contents\": \"list[str]\"}]"
+            }
+        },
+        "available_states": {
+            "documents": [
+                {
+                    "key": "content",
+                    "schema": "str"
+                },
+                {
+                    "key": "embeddings",
+                    "schema": "list[float]"
+                },
+                {
+                    "key": "cluster_id",
+                    "schema": "int"
+                }
+            ],
+            "embeddings": [
+                {
+                    "key": "embeddings",
+                    "schema": "float"
+                }
+            ]
+        }
+    },
+    {
+        "solves": "",
+        "id": "0.8027180816763358",
+        "label": "Label Generation",
+        "description": "Generates labels for each cluster based on its content.",
+        "explanation": "N/A",
+        "parentIds": [
+            "0.7507854916663534"
+        ],
+        "children": [],
+        "recompile_needed_IO": false,
+        "recompile_needed_parameters": false,
+        "state_input_key": "grouped_documents",
+        "doc_input_keys": [
+            "cluster_id",
+            "contents"
+        ],
+        "state_output_key": "labels",
+        "available_states": {
+            "documents": [
+                {
+                    "key": "content",
+                    "schema": "str"
+                },
+                {
+                    "key": "embeddings",
+                    "schema": "list[float]"
+                },
+                {
+                    "key": "cluster_id",
+                    "schema": "int"
+                },
+                {
+                    "key": "grouped_documents",
+                    "schema": "list[{\"cluster_id\": \"str\", \"contents\": \"list[str]\"}]"
+                }
+            ],
+            "embeddings": [
+                {
+                    "key": "embeddings",
+                    "schema": "float"
+                }
+            ],
+            "grouped_documents": [
+                {
+                    "key": "cluster_id",
+                    "schema": "str"
+                },
+                {
+                    "key": "contents",
+                    "schema": "list[str]"
+                }
+            ]
+        },
+        "input_keys": [
+            {
+                "key": "cluster_id",
+                "schema": "str"
+            },
+            {
+                "key": "contents",
+                "schema": "list[str]"
+            }
+        ],
+        "execution": {
+            "tool": "prompt_tool",
+            "parameters": {
+                "name": "Label Generation",
+                "model": "gpt-4o-mini",
+                "api_key": "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",
+                "format": "json",
+                "prompt_template": [
+                    {
+                        "role": "system",
+                        "content": "** Context **\nThe user wants to generate labels for each cluster of documents based on the content within those clusters. This involves analyzing the text in each cluster to identify key themes or topics that can serve as appropriate labels.\n** Task **\nAnalyze the content of each cluster in the grouped_documents to extract key themes or topics that can be used as labels. Provide a suitable label for each cluster based on the analysis of its contents.\n** Requirements **\nEnsure that the labels are concise and accurately reflect the main ideas present in the cluster's content. Each label should be unique to its respective cluster.\nReply with the following JSON format:\n{{\"labels\": list[str]}}"
+                    },
+                    {
+                        "role": "human",
+                        "content": "cluster_id: {cluster_id}\ncontents: {contents}"
+                    }
+                ],
+                "input_key_schemas": {
+                    "cluster_id": "str",
+                    "contents": "list[str]"
+                },
+                "output_schema": "list[{\"cluster_id\": \"str\", \"label\": \"str\"}]"
+            }
+        },
+        "existing_keys": [
+            "cluster_id"
+        ]
+    }
+]
