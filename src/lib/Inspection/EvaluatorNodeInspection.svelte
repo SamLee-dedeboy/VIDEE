@@ -14,6 +14,7 @@
   import EvaluatorResultRadialChart from "../Evaluation/EvaluatorResultRadialChart.svelte";
   import PagedDocuments from "./PagedDocuments.svelte";
   import IoInspection from "./IOInspection.svelte";
+  import SimplifiedListView from "./SimplifiedListView.svelte";
 
   let {
     evaluator = $bindable(),
@@ -271,24 +272,41 @@
         </div>
         {#if show_result}
           <div class="evaluation-result-panel flex flex-col gap-y-2">
-            <button
-              class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200 shadow-xs"
-              onclick={() => {
-                show_documents = !show_documents;
-              }}
-              onkeyup={() => {}}
-            >
-              documents
-            </button>
-            {#if show_documents}
-              <div class="shadow-xs">
-                <PagedDocuments
-                  bind:this={paged_document_component}
-                  documents={result.result.documents}
-                  bg_color="#f6fffb"
-                  bg_hover_color="oklch(0.905 0.093 164.15)"
-                ></PagedDocuments>
-              </div>
+            {#if evaluator.state_input_key === "documents"}
+              <button
+                class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200 shadow-xs"
+                onclick={() => {
+                  show_documents = !show_documents;
+                }}
+                onkeyup={() => {}}
+              >
+                documents
+              </button>
+              {#if show_documents}
+                <div class="shadow-xs">
+                  <PagedDocuments
+                    bind:this={paged_document_component}
+                    documents={result.result.documents}
+                    bg_color="#f6fffb"
+                    bg_hover_color="oklch(0.905 0.093 164.15)"
+                  ></PagedDocuments>
+                </div>
+              {/if}
+            {:else}
+              {@const state_value =
+                result.result["global_store"][evaluator.state_input_key]}
+              <button
+                class="state-key border-b-2 border-gray-200 italic text-slate-600 hover:bg-gray-200 shadow-xs"
+                onclick={async (e: any) => {
+                  console.log(e.target);
+                  show_documents = !show_documents;
+                }}>{evaluator.state_input_key}</button
+              >
+              <SimplifiedListView
+                items={state_value}
+                bg_color="oklch(0.97 0.014 254.604)"
+                bg_hover_color="oklch(0.882 0.059 254.128)"
+              />
             {/if}
             <div
               class="flex border-b-2 border-gray-200 italic text-slate-600 divide-x divide-gray-200 shadow-xs"
@@ -297,10 +315,12 @@
                 class="flex-1 hover:bg-gray-200 text-center"
                 onclick={() => (viz_mode = "bar")}>Frequency</button
               >
-              <button
-                class="flex-1 hover:bg-gray-200 text-center"
-                onclick={() => (viz_mode = "radial")}>Distribution</button
-              >
+              {#if evaluator.state_input_key === "documents"}
+                <button
+                  class="flex-1 hover:bg-gray-200 text-center"
+                  onclick={() => (viz_mode = "radial")}>Distribution</button
+                >
+              {/if}
             </div>
             {#if viz_mode === "bar"}
               <EvaluatorResult
