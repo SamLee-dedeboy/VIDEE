@@ -603,13 +603,14 @@ async def execute_primitive_tasks(request: Request):
     assert session_id in user_sessions
     execution_graph = user_sessions[session_id]["execution_graph"]
     execute_node = request["execute_node"]
+    parent_node = request["parent_node"]
     parent_version = (
         request["parent_version"] if "parent_version" in request else None
     )  # the parent version that the node is executed from
     thread_config = {"configurable": {"thread_id": 42}}
     initial_state = {"documents": json.load(open(dataset_path))}
 
-    last_state = executor.find_last_state(execution_graph, execute_node, thread_config)
+    last_state = executor.find_last_state(execution_graph, parent_node, thread_config)
     last_state = last_state if last_state is not None else initial_state
     state = executor.execute_node(
         execution_graph,

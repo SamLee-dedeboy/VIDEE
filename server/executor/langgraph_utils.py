@@ -104,7 +104,9 @@ def find_last_state(graph, execute_node, thread_config):
     if len(state_history) == 0:
         return None
     past_states = [
-        step.values for step in state_history if step.next[0] == execute_node
+        step.values
+        for step in state_history
+        if step.next[0] == f"{execute_node}_evaluation"
     ]
     if len(past_states) == 0:
         return None
@@ -1033,6 +1035,13 @@ def tools_reduce_func(
     #             result["global_store"][state_output_key] = merged_global_result
     # Subcase 2: state input is not documents, but the output is a list
     # elif isinstance(output_data, list):
+    # print("tools reduce func", isinstance(output_data, list), label_key)
+    # print(output_data)
+    # somehow we need this if statement to handle data transformation outputs when the transformation code output key matches with the state_output_key
+    # which causes outputs to has a structure like {"state_output_key": output_data}, so we need to extract the output_data
+    # TODO: data transformation output could be very chaotic: it could go to any branch for different transformation cases
+    if isinstance(output_data, dict) and isinstance(output_data.get(label_key), list):
+        output_data = output_data[label_key]
     if isinstance(output_data, list):
         # TODO: make this more graceful by using labels to decide if we should flatten
         # print(len(output_data), isinstance(output_data[0], list), len(output_data[0]))
@@ -1050,10 +1059,16 @@ def tools_reduce_func(
                 for item in sublist[label_key]
             ]
         else:
-            # only embeddings should reach here
-            result["global_store"][state_output_key] = [
-                {label_key: v} for v in output_data
-            ]
+            if label_key in ["embedding", "embeddings"]:
+                # only embeddings should reach here
+                result["global_store"][state_output_key] = [
+                    {label_key: v} for v in output_data
+                ]
+            else:
+                # data transformation could reach here
+                result["global_store"][
+                    state_output_key
+                ] = output_data  # we don't need to flatten the output or add keys for data transformation
     # Subcase 3: state input is not documents, but the output is a dictionary
     # Note, this should not happen, but we do it anyway to avoid/recover from errors at best, it handles LLM responses like {"summary": {"summary": ["str1", "str2", ...]}}
     elif isinstance(output_data, dict):

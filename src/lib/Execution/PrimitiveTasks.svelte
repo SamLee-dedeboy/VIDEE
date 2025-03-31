@@ -131,7 +131,14 @@
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ execute_node: execute_node.id, session_id }),
+      body: JSON.stringify({
+        execute_node: execute_node.id,
+        parent_node:
+          execute_node.parentIds.length === 0
+            ? null
+            : execute_node.parentIds[0],
+        session_id,
+      }),
     })
       .then((response) => response.json())
       .then((data) => {
