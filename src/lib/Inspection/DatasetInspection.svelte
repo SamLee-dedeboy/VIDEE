@@ -119,7 +119,8 @@
       class="flex flex-col aspect-square bg-gray-50 px-4 transition-all max-h-auto"
       class:hide={!show_topics}
     >
-      <svg id={svgId} class="topic-chart-svg w-full h-full"> </svg>
+      <svg id={svgId} class="topic-chart-svg w-full h-full overflow-visible">
+      </svg>
     </div>
   </div>
 </div>

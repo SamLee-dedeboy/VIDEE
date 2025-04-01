@@ -1,6 +1,6 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
-  
+
   let {
     items,
     bg_color = "#f8f8f8",
@@ -21,20 +21,20 @@
   });
 
   let page = $state(0);
-  
+
   // Track which items have expanded views
   let expanded_items = $state<Record<string, boolean>>({});
-  
+
   function toggleExpand(index: number) {
     const itemKey = `${page}-${index}`;
     expanded_items[itemKey] = !expanded_items[itemKey];
   }
-  
+
   function isExpanded(index: number): boolean {
     const itemKey = `${page}-${index}`;
     return !!expanded_items[itemKey];
   }
-  
+
   // Helper function to format values nicely
   function formatValue(value: any): string {
     if (value === null) return "null";
@@ -48,24 +48,28 @@
 
 <div
   in:slide
-  class="flex flex-col gap-y-2 max-h-[25rem] overflow-auto pr-3 pl-0.5 py-1"
+  class="flex flex-col gap-y-2 max-h-[25rem] overflow-y-auto pr-3 pl-0.5 py-1"
 >
   {#each paged_items[page] as item, index}
-    <div 
+    <div
       class="item-container flex flex-col outline-1 outline-gray-200 rounded px-1 divide-y"
       style="--bg-color: {bg_color}; --bg-hover-color: {bg_hover_color};"
     >
       <div class="flex gap-x-2 items-center">
-        <div class="font-mono text-sm text-gray-500 min-w-[4rem]">
+        <div class="font-mono text-sm text-gray-500 w-[4rem] shrink-0">
           #{page * page_size + index}
         </div>
         {#if isExpanded(index)}
-          <div class="relative w-full">
-            <div in:slide class="doc-content doc-content-full max-h-[15rem] overflow-auto whitespace-pre-line pr-3">
-              {formatValue(item)}
+          <div class="flex-1 relative grow">
+            <div in:slide class="doc-content doc-content-full h-[15rem] pr-3">
+              <div
+                class="absolute top-0 left-0 right-0 bottom-0 p-1 overflow-y-auto overflow-x-hidden"
+              >
+                {formatValue(item)}
+              </div>
             </div>
             <button
-              class="doc-content-close absolute right-0 top-0 p-0.5 rounded-full z-10"
+              class="doc-content-close absolute right-3 top-0 p-0.5 rounded-full z-10"
               title="close"
               onclick={() => toggleExpand(index)}
             >
@@ -155,4 +159,4 @@
   .doc-content-close:hover {
     background: var(--bg-hover-color);
   }
-</style> 
+</style>

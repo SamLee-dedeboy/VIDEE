@@ -100,7 +100,7 @@ def find_last_state(graph, execute_node, thread_config):
     state_history = list(
         reversed([step for step in graph.get_state_history(thread_config)])
     )
-    print([step.next[0] for step in state_history])
+    # print([step.next[0] for step in state_history])
     if len(state_history) == 0:
         return None
     past_states = [
@@ -729,24 +729,55 @@ def get_node_config(app, thread_config, node_id, execution_version=None):
         return node_configs[execution_version]
 
 
-def execute_node(app, thread_config, node_id, execution_version=None, state=None):
+async def execute_node(
+    app, thread_config, node_id, execution_version=None, state=None, parallelize=False
+):
     # if this is the first node executed in the graph
     # then we need to invoke with the initial state
     if len(list(app.get_state_history(thread_config))) == 0:
-        new_state = app.invoke(state, config=thread_config)
+        new_state = await app.ainvoke(state, config=thread_config)
         return new_state
 
     # if this is not the first node executed in the graph
     # check if this node is executed before
     node_config = get_node_config(app, thread_config, node_id, execution_version)
     if node_config is None:  # first time executing this node
-        new_state = app.invoke(Command(resume=True), config=thread_config)
+        if parallelize:
+            new_state = await app.ainvoke(Command(resume=True), config=thread_config)
+        else:
+            new_state = app.invoke(Command(resume=True), config=thread_config)
     else:  # if this node is executed before
-        new_state = app.invoke(
-            Command(goto=node_id, update=state),
-            config=node_config,
-        )
+        if parallelize:
+            new_state = await app.ainvoke(
+                Command(goto=node_id, update=state),
+                config=node_config,
+            )
+        else:
+            new_state = app.invoke(
+                Command(goto=node_id, update=state),
+                config=node_config,
+            )
     return new_state
+
+
+# def execute_node(app, thread_config, node_id, execution_version=None, state=None):
+#     # if this is the first node executed in the graph
+#     # then we need to invoke with the initial state
+#     if len(list(app.get_state_history(thread_config))) == 0:
+#         new_state = app.invoke(state, config=thread_config)
+#         return new_state
+
+#     # if this is not the first node executed in the graph
+#     # check if this node is executed before
+#     node_config = get_node_config(app, thread_config, node_id, execution_version)
+#     if node_config is None:  # first time executing this node
+#         new_state = app.invoke(Command(resume=True), config=thread_config)
+#     else:  # if this node is executed before
+#         new_state = app.invoke(
+#             Command(goto=node_id, update=state),
+#             config=node_config,
+#         )
+#     return new_state
 
 
 def execute_next(app, thread_config):

@@ -132,8 +132,8 @@
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        execute_node: execute_node.id,
-        parent_node:
+        execute_node: execute_node,
+        parent_node_id:
           execute_node.parentIds.length === 0
             ? null
             : execute_node.parentIds[0],

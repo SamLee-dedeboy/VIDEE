@@ -38,7 +38,8 @@ api_key = open(relative_path("api_key")).read()
 default_model = "gpt-4o-mini"
 user_sessions = {}
 # dataset_path = relative_path("executor/docs.json")
-dataset_path = relative_path("data/UIST/papers_small.json")
+# dataset_path = relative_path("data/UIST/papers_small.json")
+dataset_path = relative_path("data/UIST/papers.json")
 
 dev = True
 
@@ -604,29 +605,37 @@ async def execute_primitive_tasks(request: Request):
     assert session_id in user_sessions
     execution_graph = user_sessions[session_id]["execution_graph"]
     execute_node = request["execute_node"]
-    parent_node = request["parent_node"]
+    parent_node_id = request["parent_node_id"]
     parent_version = (
         request["parent_version"] if "parent_version" in request else None
     )  # the parent version that the node is executed from
     thread_config = {"configurable": {"thread_id": 42}}
     initial_state = {"documents": json.load(open(dataset_path))}
 
-    last_state = executor.find_last_state(execution_graph, parent_node, thread_config)
+    last_state = executor.find_last_state(
+        execution_graph, parent_node_id, thread_config
+    )
     last_state = last_state if last_state is not None else initial_state
     save_json(last_state, relative_path("dev_data/test_last_state.json"))
-    state = executor.execute_node(
+    parallelizable = execute_node["execution"]["tool"] not in [
+        "clustering_tool",
+        "data_transform_tool",
+        "dim_reduction_tool",
+    ]
+    state = await executor.execute_node(
         execution_graph,
         thread_config,
-        execute_node,
+        execute_node["id"],
         parent_version,
         state=last_state,
+        parallelize=parallelizable,
     )
     # update execution state by adding the executed node as "executed" and updating its children "executable" states
     user_sessions[session_id]["execution_state"] = executor.update_execution_state(
         user_sessions[session_id]["execution_state"],
-        execute_node,
+        execute_node["id"],
     )
-    user_sessions[session_id]["execution_results"][execute_node] = state
+    user_sessions[session_id]["execution_results"][execute_node["id"]] = state
     save_json(state, relative_path("dev_data/test_execution_result.json"))
     # save_json(current_steps, "test_decomposed_steps_w_children.json")
     return {
@@ -642,6 +651,23 @@ async def fetch_primitive_task_result(request: Request):
     assert session_id in user_sessions
     task_id = request["task_id"]
     result = user_sessions[session_id]["execution_results"][task_id]
+    # reduce the length of embeddings to avoid IO bottleneck
+    for index, document in enumerate(result["documents"]):
+        if "embeddings" in document:
+            document["embeddings"] = document["embeddings"][:10]
+        if "embedding" in document:
+            document["embedding"] = document["embedding"][:10]
+        result["documents"][index] = document
+    if "global_store" in result:
+        if "embeddings" in result["global_store"]:
+            result["global_store"]["embeddings"] = result["global_store"]["embeddings"][
+                :10
+            ]
+        if "embedding" in result["global_store"]:
+            result["global_store"]["embedding"] = result["global_store"]["embedding"][
+                :10
+            ]
+
     # if dev:
     #     result = json.load(open(relative_path("dev_data/test_execution_result.json")))
     # else:
