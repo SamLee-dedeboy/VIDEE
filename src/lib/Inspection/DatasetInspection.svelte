@@ -1,6 +1,6 @@
 <script lang="ts">
   import { server_address } from "constants";
-  import { getContext, onMount } from "svelte";
+  import { getContext, onMount, tick } from "svelte";
   import type { tDocument, tDRResult } from "types";
   import { RadialTopicChart } from "renderer/RadialTopicChart";
   import PagedDocuments from "./PagedDocuments.svelte";
@@ -60,8 +60,9 @@
       });
   }
 
-  function handleDocumentClicked(doc: tDocument) {
+  async function handleDocumentClicked(doc: tDocument) {
     show_documents = true;
+    await tick();
     paged_document_component.navigateToDoc(doc);
   }
 
