@@ -38,8 +38,8 @@ api_key = open(relative_path("api_key")).read()
 default_model = "gpt-4o-mini"
 user_sessions = {}
 # dataset_path = relative_path("executor/docs.json")
-# dataset_path = relative_path("data/UIST/papers_small.json")
-dataset_path = relative_path("data/UIST/papers.json")
+dataset_path = relative_path("data/UIST/papers_small.json")
+# dataset_path = relative_path("data/UIST/papers.json")
 
 dev = True
 
