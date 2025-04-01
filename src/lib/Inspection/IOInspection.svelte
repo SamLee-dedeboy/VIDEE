@@ -34,7 +34,7 @@
 
 <div in:slide class="format-container flex justify-around divide-x">
   <div class="key-section">
-    <div class="option-label">State Input Key</div>
+    <div class="option-label">Units</div>
     <div class="option-value relative">
       {state_input_key}
       <button
@@ -74,7 +74,7 @@
     </div>
   </div>
   <div class="key-section">
-    <div class="option-label">Doc Input Keys</div>
+    <div class="option-label">Unit Input Keys</div>
     {#each doc_input_keys as doc_input_key}
       <div class="option-value relative">
         {doc_input_key}
@@ -116,7 +116,7 @@
     </div>
   </div>
   <div class="key-section relative">
-    <div class="option-label">State Output Key</div>
+    <div class="option-label">Unit Output Key</div>
     <div class="option flex justify-center relative w-full">
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
