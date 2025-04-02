@@ -45,7 +45,7 @@
               behavior: "smooth",
             });
           }
-        }, 100);
+        }, 250);
       })
       .catch((error) => {
         console.error("Error:", error);

@@ -736,13 +736,11 @@ async def run_evaluators(request: Request):
     evaluation_result = evaluator_exec.invoke(
         execution_result, config={"configurable": {"thread_id": session_id}}
     )
-    user_sessions[session_id]["execution_evaluations"][task_id].append(
-        {
-            "name": evaluator_spec["name"],
-            "result": evaluation_result,
-            "possible_scores": evaluator_spec["possible_scores"],
-        }
-    )
+    user_sessions[session_id]["execution_evaluations"][task_id] = {
+        "name": evaluator_spec["name"],
+        "result": evaluation_result,
+        "possible_scores": evaluator_spec["possible_scores"],
+    }
     return {"results": user_sessions[session_id]["execution_evaluations"][task_id]}
 
 
@@ -754,10 +752,10 @@ async def fetch_primitive_task_result(request: Request):
     assert session_id in user_sessions
     task_id = request["task_id"]
     evaluator_name = request["evaluator_name"]
-    all_results = user_sessions[session_id]["execution_evaluations"][task_id]
-    evaluator_result = next(
-        filter(lambda x: x["name"] == evaluator_name, all_results), None
-    )
+    evaluator_result = user_sessions[session_id]["execution_evaluations"][task_id]
+    # evaluator_result = next(
+    #     filter(lambda x: x["name"] == evaluator_name, all_results), None
+    # )
     return {
         "result": evaluator_result,
     }

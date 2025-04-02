@@ -75,7 +75,7 @@
         {key}
       </div>
       <CodeToolOption
-        value={task.execution.parameters[key] || "default value"}
+        value={task.execution.parameters[key] || "*Input a value"}
         type_info={tool_method.parameters[key]}
         handleUpdate={(new_value) => updateTaskParameter(key, new_value)}
       ></CodeToolOption>
