@@ -376,6 +376,13 @@
         data.primitive_tasks.forEach((t) => {
           t.recompile_needed_IO = false;
           t.recompile_needed_parameters = false;
+          if (
+            task &&
+            task.id === t.id &&
+            primitiveTaskExecutionStates.executable(task.id)
+          ) {
+            t.execute_needed = true;
+          }
         });
         primitiveTaskState.primitiveTasks = data.primitive_tasks;
         primitiveTaskExecutionStates.execution_states = data.execution_state;
@@ -559,16 +566,17 @@
             }
           }}>Stop Streaming</button
         >
-        <div class="flex">
+        <div class="flex ml-[10rem]">
+          <span class="mr-2"> Stages: </span>
           <button
-            class="min-6-[6rem] px-2 py-1 font-mono rounded-l outline-1 outline-gray-400 text-slate-700 hover:outline-orange-300 hover:outline-2 hover:z-20 hover:!text-slate-700"
+            class="min-w-[10rem] px-2 py-1 font-mono rounded-l outline-1 outline-gray-400 text-slate-700 hover:outline-orange-300 hover:outline-2 hover:z-20 hover:!text-slate-700"
             class:disabled={streaming_states.started &&
               !streaming_states.paused}
             style={`${show_dag === "mcts" ? "background-color: oklch(0.901 0.076 70.697); opacity: 1;" : "background-color: #fafafa; color: rgba(0, 0, 0, 0.2)"}`}
             onclick={() => (show_dag = "mcts")}>Searching</button
           >
           <button
-            class="min-w-[6rem] px-2 py-1 font-mono rounded-r outline-1 outline-gray-400 text-slate-700 hover:outline-blue-300 hover:outline-2 hover:z-10 hover:!text-slate-700"
+            class="min-w-[10rem] px-2 py-1 font-mono rounded-r outline-1 outline-gray-400 text-slate-700 hover:outline-blue-300 hover:outline-2 hover:z-10 hover:!text-slate-700"
             class:disabled={streaming_states.started &&
               !streaming_states.paused}
             style={`${show_dag === "execution" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa;  color: rgba(0, 0, 0, 0.2)"}`}

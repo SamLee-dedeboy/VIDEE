@@ -144,7 +144,7 @@ export class RadialEvaluationChart {
           }
           const simulation = d3
             .forceSimulation(data_w_coordinates)
-            .alphaMin(0.10)
+            .alphaMin(0.05)
             .force(
               "radial",
               d3

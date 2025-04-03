@@ -69,10 +69,24 @@
           title="needs compilation"
         />
         <span class="text-sm italic text-gray-500">
-          Needs Compilation {!skip_IO_enabled
+          Needs Compilation
+          <!-- {!skip_IO_enabled
             ? "From Scratch"
-            : "(Skip I/O enabled)"}
+            : "(Skip I/O enabled)"} -->
         </span>
+      </div>
+    {/if}
+    {#if task.execute_needed}
+      <div
+        class="absolute bottom-[calc(100%+3px)] left-0 flex items-end gap-x-1 animate-bounce bg-gray-50"
+      >
+        <img
+          src="step-forward.svg"
+          class="w-4 h-4 aniamte-bounce"
+          alt="needs compilation"
+          title="needs compilation"
+        />
+        <span class="text-sm italic text-gray-500"> Needs Execution </span>
       </div>
     {/if}
     {#if card_compiling}

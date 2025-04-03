@@ -141,7 +141,7 @@
         {/if}
       </div>
       <!-- global stores -->
-      {#each Object.keys(result.global_store) as state_input_key}
+      {#each Object.keys(result.global_store).filter((k) => !["embeddings", "embeddings"].includes(k)) as state_input_key}
         {@const state_value = result.global_store[state_input_key]}
         <div class="flex flex-col state-container">
           <button

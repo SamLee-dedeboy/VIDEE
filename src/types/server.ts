@@ -68,6 +68,7 @@ export type tPrimitiveTaskDescription = {
     };
     recompile_needed_IO?: boolean;
     recompile_needed_parameters?: boolean;
+    execute_needed?: boolean;
 }
 
 export type tPrimitiveTaskExecution = {

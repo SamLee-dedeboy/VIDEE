@@ -28,9 +28,16 @@
   <div class="relative compile-container">
     <button
       class="action-button outline-blue-200 bg-[#eff6ff] hover:bg-blue-100"
+      onclick={() => {
+        if (skip_IO_enabled) {
+          handleCompile(task, true, task.recompile_skip_parameters);
+        } else {
+          handleCompile(task);
+        }
+      }}
       >Compile
     </button>
-    <div
+    <!-- <div
       class="options-compile font-mono absolute hidden flex-col divide-y top-[calc(100%+0px)] left-1/2 -translate-x-1/2 mt-[-0.5rem] pt-[0.58rem]"
     >
       <button
@@ -44,7 +51,7 @@
         class="w-max bg-[#eff6ff] border-b-2 border-x-2 border-slate-200 hover:bg-gray-200 text-sm px-1 py-0.5"
         onclick={() => handleCompile(task)}>From Scratch</button
       >
-    </div>
+    </div> -->
   </div>
   <button
     class="action-button outline-gray-200 bg-blue-200 hover:bg-blue-300"

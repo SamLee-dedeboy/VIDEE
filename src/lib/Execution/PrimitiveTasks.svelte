@@ -333,7 +333,7 @@
     </div>
     {#if primitive_tasks.length > 0}
       <button
-        class="self-end font-mono text-sm bg-blue-50 text-slate-700 hover:bg-blue-100 px-2 py-1 mx-2 w-min flex gap-x-2 items-center justify-center rounded outline-2 outline-blue-200 z-10"
+        class="invisible self-end font-mono text-sm bg-blue-50 text-slate-700 hover:bg-blue-100 px-2 py-1 mx-2 w-min flex gap-x-2 items-center justify-center rounded outline-2 outline-blue-200 z-10"
         class:disabled={primitive_tasks === undefined}
         tabindex="0"
         onclick={() => handleCompile()}

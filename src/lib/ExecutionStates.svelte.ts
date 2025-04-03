@@ -144,6 +144,9 @@ export const primitiveTaskState = {
     get inspected_primitive_task() {
         return inspected_primitive_task
     },
+    find_task_by_id(task_id: string) {
+        return primitiveTasks.find(t => t.id === task_id)
+    },
     addTask() {
         if(primitiveTasks.length === 0) {
             primitiveTasks.push(

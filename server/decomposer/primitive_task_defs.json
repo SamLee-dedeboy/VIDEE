@@ -39,24 +39,24 @@
     "label": "Embedding Generation",
     "definition": "Converts text into numerical representations for analysis.",
     "input": "Sentence/Paragraph/Document",
-    "output": "Embeddings"
+    "output": "Embeddings (Vector Representations of texts)"
   },
   {
     "label": "Clustering Analysis",
     "definition": "Groups similar texts together based on content or structure.",
-    "input": "Document/Corpus",
+    "input": "Vector Representations of texts",
     "output": "Clusters"
   },
   {
     "label": "Dimensionality Reduction",
     "definition": "Reduces the number of features in text data while keeping important patterns.",
-    "input": "Document/Corpus",
+    "input": "Vector Representations of texts",
     "output": "Reduced features"
   },
   {
     "label": "Data Transformation",
     "definition": "Converts text into a different format for analysis or modeling.",
-    "input": "Sentence/Paragraph/Document",
+    "input": "Not limited",
     "output": "Transformed text"
   },
   {

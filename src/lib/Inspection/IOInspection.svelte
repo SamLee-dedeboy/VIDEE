@@ -27,7 +27,9 @@
 
   let unselected_state_keys = $derived(
     available_states
-      ? Object.keys(available_states).filter((k) => k !== state_input_key)
+      ? Object.keys(available_states)
+          .filter((k) => k !== state_input_key)
+          .filter((k) => !["embeddings", "embedding"].includes(k))
       : []
   );
 </script>

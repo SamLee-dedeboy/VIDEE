@@ -4,6 +4,7 @@
   import {
     evaluatorState,
     primitiveTaskExecutionStates,
+    primitiveTaskState,
   } from "../ExecutionStates.svelte";
   import { custom_confirm } from "lib/customConfirm";
   import { trim } from "lib/trim";
@@ -91,7 +92,7 @@
       <div class="task-option-container flex gap-x-2 text-sm text-slate-700">
         <div class="text-sm text-gray-400 italic">Target:</div>
         <div class="options flex gap-2 flex-wrap text-sm">
-          {evaluator.task}
+          {primitiveTaskState.find_task_by_id(evaluator.task)?.label}
         </div>
       </div>
       <div class="flex flex-col justify-between gap-y-2 mt-1">
