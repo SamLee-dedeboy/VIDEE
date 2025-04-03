@@ -32,6 +32,13 @@ def load_system_message(criteria):
 
 
 def parse_result(result_text: str, flip: bool = False) -> dict:
+    """Parse the result from the agent's response.
+    Args:
+        result_text: The text response from the agent.
+        flip: Whether to flip the result (for complexity, where 0 is complex and 1 is simple).
+    Returns:
+        A dictionary with the parsed result.
+    """
     reasoning_match = re.search(r"<REASONING>(.*?)</REASONING>", result_text, re.DOTALL)
     if not reasoning_match:
         raise ValueError("Missing <REASONING> section in result text.")
@@ -39,22 +46,22 @@ def parse_result(result_text: str, flip: bool = False) -> dict:
     result_match = re.search(r"<RESULT>(.*?)</RESULT>", result_text, re.DOTALL)
     if not result_match:
         raise ValueError("Missing <RESULT> section in result text.")
+    reasoning = reasoning_match.group(1).strip() if reasoning_match else ""
+    result = result_match.group(1).strip() if result_match else ""
+    
+    try:
+        value = int(re.search(r"\d", result).group(0))
 
-    reasoning = reasoning_match.group(1).strip()
-    final_result = result_match.group(1).strip()
-
-    if final_result == "Yes":
-        value = 1
-    elif final_result == "No":
-        value = 0
-    else:
+    except (AttributeError, ValueError):
         raise ValueError(
-            f"Unexpected <RESULT> value: '{final_result}'. Expected 'Yes' or 'No'."
+            f"Unexpected <RESULT> value: '{value}'. Expected 0-4."
         )
 
-    if flip:
-        value = 1 - value
-
+    if value > 4 or value < 0:
+        raise ValueError(
+            f"Unexpected <RESULT> value: '{value}'. Expected 0-4."
+        )
+        
     return {"value": value, "reason": reasoning}
 
 
@@ -73,7 +80,7 @@ async def run_all_evaluations(
         model: The model to use for evaluation.
         api_key: The API key for the model.
     Returns:
-        Tuple of (results_grouped, reasons_grouped)
+        Tuple of (results_grouped, reasons_grouped, num_agents)
     """
     nested_tasks = []
     for goal, node, parent_node in eval_params:
@@ -131,11 +138,20 @@ async def run_all_evaluations(
         coherence_results = node_results[1]
         importance_results = node_results[2]
         
-        summed_results = [
-            sum(complexity_results[model_name]["value"] for model_name in complexity_results.keys()),
-            sum(coherence_results[model_name]["value"] for model_name in coherence_results.keys()),
-            sum(importance_results[model_name]["value"] for model_name in importance_results.keys()),
+        num_agents = len(complexity_results)
+        
+        averaged_results = [
+            sum(complexity_results[model_name]["value"] for model_name in complexity_results.keys()) / num_agents,
+            sum(coherence_results[model_name]["value"] for model_name in coherence_results.keys()) / num_agents,
+            sum(importance_results[model_name]["value"] for model_name in importance_results.keys()) / num_agents,
         ]
+        
+        print([
+            [complexity_results[model_name]["value"] for model_name in complexity_results.keys()],
+            [coherence_results[model_name]["value"] for model_name in coherence_results.keys()],
+            [importance_results[model_name]["value"] for model_name in importance_results.keys()],
+        ])
+        print(averaged_results)
         
         reasons = [
             await summarize_reason([complexity_results[model_name]["reason"] for model_name in complexity_results.keys()]),
@@ -143,11 +159,9 @@ async def run_all_evaluations(
             await summarize_reason([importance_results[model_name]["reason"] for model_name in importance_results.keys()]),
         ]
         
-        results_grouped.append(summed_results)
+        results_grouped.append(averaged_results)
         reasons_grouped.append(reasons)
     
-    num_agents = len(results_sequence[0].keys())
-
     return results_grouped, reasons_grouped, num_agents
 
 
@@ -252,7 +266,7 @@ async def run_complexity_evaluation_agent(
                     ),
                     TextMessage(
                         content=f"<REASONING>{user_reasoning}</REASONING>\n"
-                        f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
+                        f"<RESULT>{example['user_evaluation']}</RESULT>",
                         source="assistant",
                     ),
                 ]
@@ -336,7 +350,7 @@ async def run_coherence_evaluation_agent(
                     ),
                     TextMessage(
                         content=f"<REASONING>{user_reasoning}</REASONING>\n"
-                        f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
+                        f"<RESULT>{example['user_evaluation']}</RESULT>",
                         source="assistant",
                     ),
                 ]
@@ -415,7 +429,7 @@ async def run_importance_evaluation_agent(
                     ),
                     TextMessage(
                         content=f"<REASONING>{user_reasoning}</REASONING>\n"
-                        f"<RESULT>{'Yes' if example['user_evaluation'] else 'No'}</RESULT>",
+                        f"<RESULT>{example['user_evaluation']}</RESULT>",
                         source="assistant",
                     ),
                 ]
@@ -440,7 +454,7 @@ async def run_importance_evaluation_agent(
 
 
 async def get_llm_reasoning(
-    criteria: str, content: str, answer: bool, definition: str = ""
+    criteria: str, content: str, answer: int, definition: str = ""
 ) -> str:
     system_message = load_system_message(f"{criteria}_reasoner").format(
         definition=definition
@@ -456,17 +470,25 @@ async def get_llm_reasoning(
         )
 
     answer_map = {
-        "complexity": {True: "simple", False: "complex"},
-        "coherence": {True: "coherent", False: "incoherent"},
-        "importance": {True: "important", False: "unimportant"},
+        "complexity": {
+            0: "very simple", 1: "simple", 2: "moderately complex", 
+            3: "complex", 4: "very complex"
+        },
+        "coherence": {
+            0: "not coherent", 1: "slightly coherent", 2: "moderately coherent", 
+            3: "highly coherent", 4: "perfectly coherent"
+        },
+        "importance": {
+            0: "not important", 1: "slightly important", 2: "moderately important", 
+            3: "very important", 4: "critical"
+        },
     }
-    answer_text = answer_map.get(criteria, {True: "Yes", False: "No"}).get(
-        answer, "Unknown"
-    )
+    
+    answer_text = answer_map.get(criteria, {}).get(answer, f"Rating: {answer}/4")
 
     prompt = f"""Given content: {content}
 
-The user's final decision is {answer_text}
+The user's final rating is {answer_text} ({answer}/4)
 
 Provide a reasoning explanation:
 """
