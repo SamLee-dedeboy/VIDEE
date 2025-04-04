@@ -1,7 +1,7 @@
 <script lang="ts">
   import { evaluation_colors, server_address } from "constants";
   import * as d3 from "d3";
-  import { onMount, tick } from "svelte";
+  import { onMount, tick, getContext } from "svelte";
   import type { tSemanticTask, tNode, tControllers } from "types";
   import { DAG } from "renderer/dag";
   import SemanticTaskCard from "./SemanticTaskCard.svelte";
@@ -73,6 +73,8 @@
   $effect(() => {
     dag_renderer.update_next_expansion_link(next_expansion?.[id_key]);
   });
+
+  const updateNodeValue: Function = getContext("updateNodeValue");
   /**
    * Stores the id of the tasks with explanation shown
    */
@@ -278,7 +280,7 @@
         (_task) => _task[id_key] !== task[id_key]
       );
     }
-
+    updateNodeValue();
     // update_with_server();
   }
 

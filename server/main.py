@@ -306,6 +306,23 @@ async def goal_decomposition_MCTS_regenerate(request: Request):
         pass
 
 
+@app.post("/semantic_task/update_value/")
+async def update_semantic_tasks(request: Request) -> dict:
+    request = await request.body()
+    request = json.loads(request)
+    session_id = request["session_id"]
+    assert session_id in user_sessions
+    semantic_tasks = request["semantic_tasks"]
+    num_agents = request["num_agents"]
+    node_dict = {
+        t["MCT_id"]: custom_types.MCT_Node.model_validate(t) for t in semantic_tasks
+    }
+    new_semantic_tasks = decomposer.recalculate_node_values(
+        node_dict=node_dict, num_agents=num_agents
+    )
+    return {"semantic_tasks": new_semantic_tasks}
+
+
 @app.post("/semantic_task/update/")
 async def update_semantic_tasks(request: Request) -> dict:
     request = await request.body()

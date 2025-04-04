@@ -116,6 +116,7 @@ async def run_goal_decomposition_agent_stepped(
                 "explanation": "END",
                 "parentIds": ids,
             }
+            for _ in range(n)
         ]
 
     model_client = OpenAIChatCompletionClient(
@@ -207,6 +208,7 @@ async def run_goal_decomposition_agent_stepped(
                 "explanation": "The system encountered difficulties determining the next steps",
                 "parentIds": ids,
             }
+            for _ in range(n)
         ]
 
     return result

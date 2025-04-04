@@ -8,7 +8,7 @@ import server.evaluator as evaluator
 import traceback
 
 
-MAX_STEPS = 10
+MAX_STEPS = 5
 
 
 def init_MCTS():
@@ -133,7 +133,7 @@ async def MCTS_regenerate(
             node_dict[node_id].new_node = False
         parent_node = node_dict[target_node.MCT_parent_id]
         node_dict = remove_branch(target_node, node_dict)
-
+        remove_backpropagate_effect(target_node, target_node.value, node_dict)
         previous_steps = get_previous_steps(parent_node, node_dict)
         new_generation = await query.run_goal_decomposition_agent_stepped(
             goal,
@@ -168,6 +168,7 @@ async def MCTS_regenerate(
             eval_few_shot_examples=eval_few_shot_examples,
         )
         reward_value = reward_value[0]
+
         backpropagate(new_generation_as_MCT_node, reward_value, node_dict)
 
         next_selection = select(root, node_dict)
@@ -201,7 +202,7 @@ def greedy(node: MCT_Node, parent_node: MCT_Node | None) -> float:
     """Greedy selection"""
     if node.label == "END":
         return float("-inf")  # Avoid END nodes
-    return node.value
+    return node.value / node.visits
 
 
 def select(
@@ -353,6 +354,15 @@ def backpropagate(node: MCT_Node, reward: float, node_dict: dict) -> None:
         node.visits += 1
         node.value += reward
         node.print_label = f"{node.label} ({node.value}/{node.visits})"
+        node = node_dict[node.MCT_parent_id] if node.MCT_parent_id else None
+
+
+def remove_backpropagate_effect(node: MCT_Node, reward: float, node_dict: dict) -> None:
+    """Updates the tree with the simulation results"""
+    while node is not None:
+        node.visits -= 1
+        node.value -= reward
+        # node.print_label = f"{node.label} ({node.value}/{node.visits})"
         node = node_dict[node.MCT_parent_id] if node.MCT_parent_id else None
 
 

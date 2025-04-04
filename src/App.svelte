@@ -471,6 +471,7 @@
         console.error("Error:", error);
       });
   }
+  setContext("updateNodeValue", updateNodeValue);
   setContext("handleUserFeedback", handleUserFeedback);
 
   async function playTransitionToExecution() {
