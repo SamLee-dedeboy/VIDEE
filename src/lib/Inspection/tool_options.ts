@@ -197,23 +197,5 @@
             }
         }
         },
-        {
-        "algorithm": "bertopic",
-        "Good for": "Topic modeling and clustering of text documents",
-        "parameters": {
-            "min_topic_size": {
-            "type": "int",
-            "description": "Minimum size for a topic"
-            },
-            "n_neighbors": {
-            "type": "int",
-            "description": "Number of neighbors for UMAP"
-            },
-            "low_memory": {
-            "type": "boolean",
-            "description": "Lower memory usage but slower"
-            }
-        }
-        }
     ]
   }

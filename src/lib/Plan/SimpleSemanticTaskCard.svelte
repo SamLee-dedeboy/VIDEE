@@ -54,7 +54,9 @@
     <div
       class="font-mono text-orange-900 border-gray-300 text-[1.2rem] italic flex items-center justify-center"
     >
-      <span class="card-label capitalize mt-1 select-none">{task.label}</span>
+      <span class="card-label capitalize mt-1 select-none"
+        >{task.label === "Root" ? "START" : task.label}</span
+      >
     </div>
   </div>
 {:else}

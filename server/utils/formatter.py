@@ -193,6 +193,12 @@ def normalize_json_braces(json_str):
     return json_str
 
 
+def remove_trailing_commas(json_str):
+    # Remove trailing commas before closing braces/brackets
+    fixed_str = re.sub(r",\s*([\]}])", r"\1", json_str)
+    return fixed_str
+
+
 def extract_json_content(
     raw_response: str, escape_JSON_format=False
 ) -> Optional[Dict[str, Any]]:
@@ -205,13 +211,15 @@ def extract_json_content(
     Returns:
         Parsed JSON dict or None if unrecoverable
     """
+    raw_response = raw_response.strip()
+    raw_response = remove_trailing_commas(raw_response)
     try:
         # a bold try to simply load JSON. if failed, we will need to do further formating
         first_shot = json.loads(raw_response)
         return first_shot
     except Exception:
         pass
-    raw_response = raw_response.strip()
+
     raw_response = normalize_json_braces(raw_response)
     if escape_JSON_format:
         # replace single quotes with double quotes

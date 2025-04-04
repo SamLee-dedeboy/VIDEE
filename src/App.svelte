@@ -494,7 +494,9 @@
       if (!task_card_container.classList.contains("on-max-value-path")) return;
 
       // remove root
-      if (task_card_container.querySelector(".card-label").innerText === "Root")
+      if (
+        task_card_container.querySelector(".card-label").innerText === "START"
+      )
         return;
 
       plan_path.appendChild(node.cloneNode(true));

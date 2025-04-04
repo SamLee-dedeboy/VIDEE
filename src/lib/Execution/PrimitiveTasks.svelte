@@ -142,6 +142,7 @@
     })
       .then((response) => response.json())
       .then((data) => {
+        primitiveTaskState.reset_flags();
         primitiveTaskExecutionStates.execution_states = data.execution_state;
         console.log("execution: ", data);
         executed_task_id = executing_task_id;

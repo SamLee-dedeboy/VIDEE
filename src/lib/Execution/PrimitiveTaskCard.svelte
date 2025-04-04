@@ -51,7 +51,9 @@
     class="container task-card font-mono text-sky-900 w-min min-w-[5rem] pb-1 transition-all outline-2 outline-blue-100 bg-[#F2F8FD] shadow rounded relative flex justify-center gap-y-1 gap-x-2"
   >
     <div class="text-[1.2rem] italic flex items-center">
-      <span class="card-label mt-1 capitalize select-none">{task.label}</span>
+      <span class="card-label mt-1 capitalize select-none"
+        >{task.label === "Root" ? "START" : task.label}</span
+      >
     </div>
   </div>
 {:else}
@@ -108,10 +110,16 @@
         class="font-mono text-sky-900 border-b border-gray-300 text-[1.2rem] italic flex items-center relative"
         style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
       >
-        <button
+        <!-- <button
           class="card-label mr-2 mt-1 capitalize relative hover:bg-blue-200 rounded px-2 text-left"
           title="Change Label"
           onclick={(e) => (show_label_options = !show_label_options)}
+          >{task.label}
+        </button> -->
+        <button
+          class="card-label mr-2 mt-1 capitalize relative hover:bg-blue-200 rounded px-2 text-left"
+          title="Change Label"
+          onclick={(e) => handleToggleExpand(task.id)}
           >{task.label}
         </button>
         <button

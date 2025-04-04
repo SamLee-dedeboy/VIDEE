@@ -150,3 +150,7 @@ evaluation_experiments/data/**/*.jsonl
 ideation_experiments/**/*.json
 .DS_Store
 server/dev_data/**/*.json
+evaluation_experiments/results/execution/**/*.json
+execution_experiment_key
+openai_api_key
+gemini_api_key

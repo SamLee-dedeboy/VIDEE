@@ -76,7 +76,7 @@
     </div>
   </div>
   <div class="key-section">
-    <div class="option-label">Unit Input Keys</div>
+    <div class="option-label">Unit Input Attrs</div>
     {#each doc_input_keys as doc_input_key}
       <div class="option-value relative">
         {doc_input_key}
@@ -118,7 +118,7 @@
     </div>
   </div>
   <div class="key-section relative">
-    <div class="option-label">Unit Output Key</div>
+    <div class="option-label">Unit Output Attr</div>
     <div class="option flex justify-center relative w-full">
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div

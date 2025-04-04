@@ -28,7 +28,6 @@
     handleToggle?: Function;
     show_transition: boolean;
   } = $props();
-  $inspect(llm_reasoning);
 
   const setFewShotExampleExplanation: Function = getContext(
     "setFewShotExampleExplanation"

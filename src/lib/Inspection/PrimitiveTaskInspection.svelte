@@ -12,6 +12,7 @@
   import PromptToolInspection from "./PromptToolInspection.svelte";
   import CodeToolInspection from "./CodeToolInspection.svelte";
   import IOInspection from "./IOInspection.svelte";
+  import { server_address } from "constants";
   let {
     task,
   }: {
@@ -27,8 +28,17 @@
     if (task === undefined) return false;
     return execution_states?.[task.id]?.executed;
   });
-  $inspect(executed);
   let execution_result_inspection_panel: any = $state();
+
+  let primitive_task_list: any[] = $state([]);
+  function fetch_task_definitions() {
+    fetch(`${server_address}/primitive_task/list/`)
+      .then((response) => response.json())
+      .then((data) => {
+        primitive_task_list = data;
+        console.log("Primitive task list:", primitive_task_list);
+      });
+  }
 
   function handleUpdatePrompt(messages) {
     const new_task = JSON.parse(JSON.stringify(task));
@@ -235,6 +245,10 @@
 
     primitiveTaskState.updatePrimitiveTask(task.id, new_task, true);
   }
+
+  onMount(() => {
+    fetch_task_definitions();
+  });
 </script>
 
 {#key task?.id}
@@ -269,11 +283,27 @@
                   {task.description}
                 </div>
               </div>
-              <div class="flex">
-                <div class="shrink-0 px-2">
-                  <img src="bot.svg" alt="bot" class="w-7 h-7" />
+              {#if task.explanation !== "N/A"}
+                <div class="flex">
+                  <div class="shrink-0 px-2">
+                    <img src="bot.svg" alt="bot" class="w-7 h-7" />
+                  </div>
+                  <div>{task.explanation}</div>
                 </div>
-                <div>{task.explanation}</div>
+              {/if}
+              <div class="flex">
+                <div class="px-1">
+                  <span class="text-sm text-gray-500">Input - </span>
+                  {primitive_task_list.find((t) => t.label === task.label)
+                    ?.input}
+                </div>
+              </div>
+              <div class="flex">
+                <div class="px-1">
+                  <span class="text-sm text-gray-500">Output - </span>
+                  {primitive_task_list.find((t) => t.label === task.label)
+                    ?.output}
+                </div>
               </div>
             </div>
           {/if}

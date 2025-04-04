@@ -46,7 +46,7 @@
   let controllers = $state({
     show_plan: true,
     show_execution: true,
-    show_evaluation: false,
+    show_evaluation: true,
   });
 
   let generating_recommendations = $state(false);

@@ -144,6 +144,13 @@ export const primitiveTaskState = {
     get inspected_primitive_task() {
         return inspected_primitive_task
     },
+    reset_flags() {
+        primitiveTasks.forEach(t => {
+            // t.recompile_needed_IO = false
+            // t.recompile_needed_parameters = false
+            t.execute_needed = false
+        })
+    },
     find_task_by_id(task_id: string) {
         return primitiveTasks.find(t => t.id === task_id)
     },
