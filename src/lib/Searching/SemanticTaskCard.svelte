@@ -62,8 +62,11 @@
   //   handleToggleShowSubTasks(task[id_key]);
   // }
 
+  // const path_value = $derived(
+  //   +Math.pow(task.path_value, 1 / task.level).toFixed(2)
+  // );
   const path_value = $derived(
-    +Math.pow(task.path_value, 1 / task.level).toFixed(2)
+    parseFloat((task.value / task.visits).toFixed(2))
   );
   let container = $state();
   $effect(() => {

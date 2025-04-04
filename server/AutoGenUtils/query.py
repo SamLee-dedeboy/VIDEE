@@ -104,7 +104,7 @@ async def run_goal_decomposition_agent_stepped(
     api_key: str,
     temperature=0.0,
     n=1,
-    remain_steps=10,
+    remain_steps=5,
 ):
     if remain_steps <= 0:
         ids = list(map(lambda step: step["id"], previous_steps))
@@ -138,12 +138,14 @@ async def run_goal_decomposition_agent_stepped(
         ** Task **
         Your task is to provide a single next step, but with {n} possible alternatives for user to choose.
         Focus on the conceptual next step in terms of text analytics. If no further steps are needed, label the next step with "END".
-        DO NOT output steps like data collection, implementation, validation or any steps related to communication such as visualization or reporting.
+        There plan should not be more than 5 steps.
         ** Requirements **
         The name of the step should be one concise noun-phrase.
         The abstraction level of the step should be appropriate for high-level planning and communication with non-technical people.
         For the parentIds, provide the ids of the steps that this step **directly** depends on in terms of input-output data.
         The alternatives should have varying complexity, coherence with previous steps, and importance.
+        The whole pipeline should emphasize concise and clear steps, with as few steps as possible and no more than 5 steps.
+        DO NOT output steps like data collection, implementation, validation or any steps related to communication such as visualization or reporting.
         Reply with this JSON format. Do not wrap the json codes in JSON markers. Do not include any comments.
             {{
                 "next_steps": [
@@ -160,9 +162,6 @@ async def run_goal_decomposition_agent_stepped(
         ),
     )
     user_message = "My goal is: {goal}".format(goal=goal) + "\n"
-    # user_message += "There are {remaining_steps} steps remaining until you have to finish the task.\n".format(
-    #     remaining_steps=remain_steps
-    # )
     if len(previous_steps) > 0:
         previous_steps_str = "\n".join(
             list(
@@ -182,6 +181,9 @@ async def run_goal_decomposition_agent_stepped(
                 previous_steps=previous_steps_str
             )
         )
+    user_message += "There are maximally {remaining_steps} steps remaining until you have to finish the task.\n".format(
+        remaining_steps=remain_steps
+    )
 
     # Use the new retry_llm_json_extraction function to handle both the LLM call and JSON extraction
     result = await retry_llm_json_extraction(

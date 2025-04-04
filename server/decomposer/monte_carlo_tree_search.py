@@ -336,9 +336,9 @@ async def reward(
             node.user_evaluation.coherence = node.llm_evaluation.coherence
             node.user_evaluation.importance = node.llm_evaluation.importance
 
-            node.value = reward_value
-            node.path_value = node_dict[node.MCT_parent_id].path_value * reward_value
-            node.path_value_normalized = math.pow(node.path_value, 1 / node.level)
+            # node.value = reward_value
+            # node.path_value = node_dict[node.MCT_parent_id].path_value * reward_value
+            # node.path_value_normalized = math.pow(node.path_value, 1 / node.level)
             reward_value_list.append(reward_value)
         return reward_value_list
     except Exception as e:
@@ -351,9 +351,31 @@ def backpropagate(node: MCT_Node, reward: float, node_dict: dict) -> None:
     """Updates the tree with the simulation results"""
     while node is not None:
         node.visits += 1
-        # node.value += reward
+        node.value += reward
         node.print_label = f"{node.label} ({node.value}/{node.visits})"
         node = node_dict[node.MCT_parent_id] if node.MCT_parent_id else None
+
+
+def recalculate_node_values(node_dict: dict, num_agents: int):
+    """Recalculates the node values by iterating through the tree and backpropagating the values"""
+
+    # reset all nodes
+    for node_id, node in node_dict.items():
+        node_dict[node_id].value = 0
+        node_dict[node_id].visits = 0
+    # recalculate the values
+    root_node = node_dict["-1"]
+    stack = [root_node]
+    while stack:
+        node = stack.pop()
+        reward = (
+            node.user_evaluation.complexity
+            + node.user_evaluation.coherence
+            + node.user_evaluation.importance
+        ) / (3 * num_agents)
+        backpropagate(node, reward, node_dict)
+        stack += list(map(lambda id: node_dict[id], node.MCT_children_ids))
+    return list(node_dict.values())
 
 
 # def best_child(node: MCT_Node, node_dict: dict) -> MCT_Node:
@@ -374,9 +396,13 @@ def get_max_value_path(root: MCT_Node, node_dict: dict):
             )
             paths.append((path_ids + ["-1"], path_value))
         for child_id in node.MCT_children_ids:
-            stack.append(
-                (node_dict[child_id], node_dict[child_id].path_value_normalized)
-            )
+            new_path_value = node_dict[child_id].value * path_value
+            # node.path_value = node_dict[node.MCT_parent_id].path_value * reward_value
+            new_path_value_normalized = math.pow(new_path_value, 1 / (node.level + 1))
+            stack.append((node_dict[child_id], new_path_value_normalized))
+            # stack.append(
+            #     (node_dict[child_id], node_dict[child_id].path_value_normalized)
+            # )
     max_value_path = max(paths, key=lambda x: x[1])
     return max_value_path
 
