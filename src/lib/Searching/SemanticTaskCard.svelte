@@ -86,6 +86,9 @@
   bind:this={container}
   role="tooltip"
   class="task-card-container flex flex-col w-min gap-y-0.5 rounded bg-gray-50"
+  style={`pointer-events: ${
+    task[id_key] === "-1" || task["label"] === "END" ? "none" : "auto"
+  }`}
   class:next-expansion={next_expansion && controllers.show_next_expansion}
   class:bounce={!regenerating &&
     next_expansion &&
@@ -206,7 +209,7 @@
           </div>
         {/if}
 
-        {#if !isEnd}
+        {#if !isEnd && task[id_key] !== "-1"}
           <button
             class="shrink-0 ml-auto cursor-pointer hover:bg-orange-300 p-0.5 rounded"
             title="Expand/Hide"
