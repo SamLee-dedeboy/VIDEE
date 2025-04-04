@@ -42,17 +42,19 @@
   <!-- <div class="param-value whitespace-pre-wrap overflow-x-auto w-max">
     {value}
   </div> -->
-  <div
-    class="param-value whitespace-pre-wrap"
-    contenteditable
-    onblur={(e: any) => {
-      const new_value = e.target.innerText;
-      if (new_value !== value) {
-        handleUpdate(new_value);
-      }
-    }}
-  >
-    {value}
+  <div class="overflow-x-auto pb-3">
+    <div
+      class="param-value whitespace-pre-wrap w-max shrink-0"
+      contenteditable
+      onblur={(e: any) => {
+        const new_value = e.target.innerText;
+        if (new_value !== value) {
+          handleUpdate(new_value);
+        }
+      }}
+    >
+      {value}
+    </div>
   </div>
 {:else}
   <div class="param-value">{value}</div>
