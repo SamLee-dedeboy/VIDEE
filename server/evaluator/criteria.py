@@ -38,12 +38,18 @@ def load_system_message(criteria):
 
 
 def parse_result(result_text: str, flip: bool = False) -> dict:
-    reasoning_match = re.search(r"<REASONING>(.*?)</REASONING>", result_text, re.DOTALL)
+    reasoning_match = re.search(
+        r"<REASONING>(.*?)(?:</REASONING>|<REASONING>)", result_text, re.DOTALL
+    )
     if not reasoning_match:
+        print(result_text)
         raise ValueError("Missing <REASONING> section in result text.")
 
-    result_match = re.search(r"<RESULT>(.*?)</RESULT>", result_text, re.DOTALL)
+    result_match = re.search(
+        r"<RESULT>(.*?)(?:</RESULT>|<RESULT>)", result_text, re.DOTALL
+    )
     if not result_match:
+        print(result_text)
         raise ValueError("Missing <RESULT> section in result text.")
 
     reasoning = reasoning_match.group(1).strip()
@@ -54,6 +60,7 @@ def parse_result(result_text: str, flip: bool = False) -> dict:
     elif final_result == "No":
         value = 0
     else:
+        print(result_text)
         raise ValueError(
             f"Unexpected <RESULT> value: '{final_result}'. Expected 'Yes' or 'No'."
         )
