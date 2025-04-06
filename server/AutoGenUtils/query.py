@@ -287,6 +287,284 @@ async def run_decomposition_self_evaluation_agent(
         return responses
 
 
+async def run_stepped_decomposition_to_primitive_task_agent(
+    tree: list[Node],
+    primitive_task_list: list[PrimitiveTaskDescription],
+    model: str,
+    api_key: str,
+) -> None:
+    # Prepare primitive task definitions string once for reuse
+    primitive_task_defs_str = ""
+    for primitive_task in primitive_task_list:
+        primitive_task_defs_str += "<primitive_task>\n"
+        for key, value in primitive_task.items():
+            primitive_task_defs_str += f"<{key}>{value}</{key}>\n"
+        primitive_task_defs_str += "</primitive_task>\n"
+
+    # Create a comma-separated string of valid primitive task labels
+    supported_labels_str = primitive_task_list[0]["label"]
+    for primitive_task in primitive_task_list[1:]:
+        supported_labels_str += f",{primitive_task['label']}"
+
+    # Generate primitve task Label to attribute mappings
+    label_to_attribute_mapping = {}
+    for primitive_task in primitive_task_list:
+        label_to_attribute_mapping[primitive_task['label']] = primitive_task
+
+    # Configure the model client
+    model_client = OpenAIChatCompletionClient(
+        model=model,
+        api_key=api_key,
+        response_format={"type": "json_object"},
+        temperature=0.0,
+        model_capabilities={
+            "vision": False,
+            "function_calling": False,
+            "json_output": True,
+        },
+    )
+
+    # Create the agent with the system message
+    decomposition_to_primitive_task_agent = AssistantAgent(
+        name="decomposition_to_primitive_task_agent",
+        model_client=model_client,
+        system_message="""
+        ** Context **
+        You are a Natural Language Processing (NLP) assistant. You are given a list of primitive NLP tasks that could be used.
+        Here is the list of primitive NLP tasks:
+        {primitive_task_defs}
+
+        ** Task **
+        The user will describe a series of real-world tasks (semantic tasks). Your job is to convert each **currently focused** semantic task into one or more primitive NLP tasks necessary to accomplish **its specific goal**. You will process one semantic task at a time, considering previously generated primitive tasks AND the description of the **next** semantic task to avoid overlap.
+
+        ** Requirements **
+        The ids of each formulated NLP task must be unique, even if the labels are the same. This will help users correctly identify the dependent steps.
+        If the same label appears multiple times, use the ids to differentiate them.
+        For example, use 'Information Extraction-1' and 'Information Extraction-2' as ids.
+
+        1. CRITICAL: The "label" field in your output MUST ONLY use one of these exact labels from the primitive task list, i.e.: {supported_labels}
+        DO NOT create custom labels like "Graph Construction" or "Information Extraction" that aren't in the list above.
+
+        2. CRITICAL: A single semantic task often requires MULTIPLE primitive tasks chained together. Don't try to force-fit a semantic task into a single primitive task.
+
+        3. CRITICAL: STRICTLY enforce input/output compatibility between primitive tasks:
+           - Pay close attention to the `input` and `output` types specified for each primitive task in the provided definitions ({primitive_task_defs}).
+           - The `output` type of *every* prerequisite task listed in the `depend_on` field MUST SEMANTICALLY MATCH the required `input` type of the current primitive task.
+           - For example, "Clustering Analysis" requires `Vector Representation` input. Therefore, its `depend_on` field MUST ONLY contain IDs of tasks whose `output` is `Vector Representation` (like "Embedding Generation" or "Dimensionality Reduction"). Depending on a task outputting `List[Category Label (Text)]` (like "Document Classification") is strictly forbidden for "Clustering Analysis". See Example 6.
+
+        4. CRITICAL: Correctly handle dependencies WITHIN the current step. If you generate multiple primitive tasks (e.g., Task A followed by Task B) to solve the *single current semantic task*, ensure Task B correctly lists the ID of Task A in its `depend_on` field if Task B requires the output of Task A. DO NOT mistakenly depend on tasks generated for previous semantic tasks if a suitable prerequisite (Task A) is being generated in the current step.
+
+        5. For tasks that depend on other primitive tasks (either generated in this step or previous steps), specify the dependency using the "depend_on" field, referencing the `id` of the prerequisite task(s).
+           CRITICAL: If a primitive task is the very first one being generated in the entire workflow (i.e., no previous primitive tasks exist from prior semantic tasks AND it's the first primitive task for the current semantic task), its `depend_on` field MUST be an empty list `[]`. Do not hallucinate dependencies.
+
+        6. CRITICAL: MAXIMIZE REUSE of existing primitive tasks from PREVIOUS steps. Before proposing ANY new primitive task, you MUST check the list of `<primitive_task>` provided in the user message (`Here are the primitive tasks I've already created...`). If an existing task serves the *exact* same purpose (e.g., generating embeddings from the same source data for a subsequent similar semantic task), you MUST reference its `id` in the `depend_on` field of the subsequent task instead of creating a duplicate. Only create a new primitive task if it operates on genuinely different input data or requires significantly different processing logic or parameters. Explain in the 'explanation' field why a new task is needed if it seems similar to an existing one. See Example 5.
+
+        7. CRITICAL: STRICTLY ADHERE to `allow_multiple_parents` constraint.
+            - If `allow_multiple_parents` is `true` for a primitive task type, a generated task of that type *can* have multiple `depend_on` entries, referencing IDs of previously generated primitive tasks.
+            - If `allow_multiple_parents` is `false` for a primitive task type, a generated task of that type MUST have *at most one* entry in its `depend_on` field.
+            - **MANDATORY INTERMEDIATE STEP:** If a task with `allow_multiple_parents: false` logically requires input resulting from multiple distinct preceding primitive tasks (e.g., depends on outputs from `TaskA` and `TaskB`), you MUST NOT list both `TaskA` and `TaskB` in its `depend_on`. Instead, you MUST first introduce an intermediate primitive task (choose either "Data Transformation" or "Insights Summarization" based on what makes more sense - usually "Data Transformation" for combining data structures). This intermediate task's `depend_on` should list `TaskA` and `TaskB` (assuming the intermediate task type allows multiple parents). Then, the original task (the one with `allow_multiple_parents: false`) MUST depend *only* on the ID of this newly introduced intermediate task. See Example 4 for the correct structure.
+
+        8. CRITICAL: DO NOT GENERATE PRIMITIVE TASKS FOR FUTURE SEMANTIC TASKS. Look at the `<next_semantic_task>` provided in the user message. If a potential primitive task's primary purpose seems to directly address the goal of the *next* semantic task rather than the *current* one, you MUST NOT generate it now. Defer its generation until that next semantic task is processed. Focus only on the primitive steps strictly necessary for the *currently focused* semantic task. See Example 7.
+
+        9. CRITICAL: SPECIAL RULE FOR CLUSTERING ANALYSIS: The primitive task "Clustering Analysis" requires `Vector Representation` as input. Therefore, any generated "Clustering Analysis" task MUST have a `depend_on` field containing ONLY the ID(s) of prerequisite task(s) that output `Vector Representation`. Currently, only "Embedding Generation" and "Dimensionality Reduction" produce this output type. Depending on ANY other task type (like "Insights Summarization", "Label Generation", "Document Classification", "Data Transformation", etc.) for "Clustering Analysis" is ABSOLUTELY FORBIDDEN. Check this rule meticulously for every "Clustering Analysis" task you generate.
+
+        ** Examples of Common Task Chains **
+
+        Example 1 - Document clustering:
+        - Semantic task: "Cluster documents by topic"
+        - Primitive tasks needed (generated together for this semantic task):
+          1. `Embedding Generation-1` (label: "Embedding Generation", input: Text, output: `Vector Representation`, `allow_multiple_parents: false`, `depend_on: []` if first task overall, otherwise depends on prior text processing)
+          2. `Clustering Analysis-1` (label: "Clustering Analysis", input: `Vector Representation`, output: `List[Cluster Label]`, `allow_multiple_parents: false`, `depend_on: ["Embedding Generation-1"]`) <- Correctly depends on the task generated *within* this step. Strictly follows Rule 9.
+
+        Example 2 - Entity-based analysis:
+        - Semantic task: "Find relationships between companies mentioned in text"
+        - Primitive tasks needed (generated together for this semantic task):
+          1. `Entity Extraction-1` (label: "Entity Extraction", `allow_multiple_parents: true`)
+          2. `Relationship Extraction-1` (label: "Relationship Extraction", `allow_multiple_parents: true`, `depend_on: ["Entity Extraction-1"]`)
+
+        Example 3 - Analyze document similarities:
+        - Semantic task: "Analyze similarities on the given documents"
+        - Primitive tasks needed (generated together for this semantic task):
+          1. `Embedding Generation-2` (label: "Embedding Generation", `allow_multiple_parents: false`)
+          2. `Clustering Analysis-2` (label: "Clustering Analysis", `allow_multiple_parents: false`, `depend_on: ["Embedding Generation-2"]`) <- Depends on the embedding generated in this step. Strictly follows Rule 9.
+
+        Example 4 - Handling `allow_multiple_parents: false` with multiple inputs:
+        - Semantic task: "Generate embeddings based on both document summaries and extracted entities"
+        - Primitive tasks needed (generated together for this semantic task):
+          1. `Summarization-1` (label: "Summarization", `allow_multiple_parents: true`)
+          2. `Entity Extraction-2` (label: "Entity Extraction", `allow_multiple_parents: true`)
+          3. `Data Transformation-1` (label: "Data Transformation", `allow_multiple_parents: true`, `depend_on: ["Summarization-1", "Entity Extraction-2"]`)
+          4. `Embedding Generation-3` (label: "Embedding Generation", `allow_multiple_parents: false`, `depend_on: ["Data Transformation-1"]`) <- Depends *only* on the intermediate task.
+        - WRONG: `Embedding Generation-3` having `depend_on: ["Summarization-1", "Entity Extraction-2"]`.
+
+        Example 5 - Reusing tasks from previous steps:
+        - Context: Assume previous semantic tasks already generated `Embedding Generation-1`.
+            - Current Semantic task: "Summarize document relationships based on topics"
+            - Primitive tasks needed:
+                1. `Dimensionality Reduction-2` (label: "Dimensionality Reduction", `allow_multiple_parents: false`, `depend_on: ["Embedding Generation-1"]`) <- REUSES the existing embeddings from a previous step.
+        - Context: Assume previous semantic tasks generated `Entity Extraction-1`.
+            - Current Semantic task: "Summarize findings about extracted entities"
+            - Primitive tasks needed:
+                1. `Insights Summarization-1` (label: "Insights Summarization", `allow_multiple_parents: true`, `depend_on: ["Entity Extraction-1"]`) <- REUSES the existing entities.
+
+        Example 6 - Input/Output Mismatch Violation:
+        - Context: Assume previous semantic task generated `Document Classification-1` (output: `List[Category Label (Text)]`).
+        - Current Semantic task: "Group documents based on content similarity"
+        - Primitive tasks needed:
+          1. `Embedding Generation-4` (label: "Embedding Generation", output: `Vector Representation`)
+          2. `Clustering Analysis-3` (label: "Clustering Analysis", input: `Vector Representation`)
+        - **WRONG** `depend_on` for `Clustering Analysis-3`: `depend_on: ["Document Classification-1"]`. This is **INVALID** because the input (`Vector Representation`) does not match the output of the dependency (`List[Category Label (Text)]`) AND violates Rule 9.
+        - **CORRECT** `depend_on` for `Clustering Analysis-3`: `depend_on: ["Embedding Generation-4"]` (assuming it was generated in this step).
+
+        Example 7 - Deferring tasks to the next semantic step:
+        - Current Semantic Task: "Identify key topics in text"
+        - Next Semantic Task: "Group documents by topics"
+        - Primitive tasks for "Identify key topics in text":
+          1. `Label Generation-1` (To extract keywords/potential topics)
+          2. `Insights Summarization-2` (To synthesize findings related to topics)
+        - **DEFERRED TASKS**: DO NOT generate `Embedding Generation` or `Clustering Analysis` here, even though clustering *could* reveal topics. These steps are the core of the *next* task, "Group documents by topics".
+        - Later, when processing "Group documents by topics":
+          1. `Embedding Generation-5` (Depends on initial text or output of "Identify key topics in text")
+          2. `Clustering Analysis-4` (Depends on `Embedding Generation-5`)
+
+        Reply with the following JSON format:
+        {{ "primitive_tasks": [
+                {{
+                    "solves": (string) id of the user-provided semantic task that this primitive task helps solve
+                    "label": (string) (MUST be one of {supported_labels})
+                    "id": (str) (a unique id for the task, e.g., 'Label-1', 'Label-2'),
+                    "description": (string, describe implementation procedure specific to this task)
+                    "explanation": (string, explain why this primitive task is needed for the semantic task and how it differs from any similar existing tasks if applicable)
+                    "depend_on": (str[], ids of the *immediately* preceding primitive task(s) that this step depends on, ensuring output type of dependency matches input type of this task. MUST be `[]` if this is the very first task.)
+                }},
+                ...
+            ],
+            "validation_check": "I confirm all labels used above are strictly from the provided primitive task list: {supported_labels}, I have maximized reuse of existing primitive tasks (Requirement 6), and I have deferred tasks belonging to the next semantic task (Requirement 8).",
+            "dependency_validation_check": "I confirm strict adherence to input/output type compatibility (Requirement 3), especially the specific dependency rule for Clustering Analysis (Requirement 9). I confirm that dependencies correctly reference prerequisite tasks generated either in previous steps or within this current step (Requirement 4). I confirm that the very first task has an empty dependency list (Requirement 5). I confirm that for every primitive task generated with 'allow_multiple_parents' set to 'false', its 'depend_on' list contains at most one ID, and that intermediate tasks were correctly inserted where necessary (Requirement 7)."
+        }}
+        """.format(
+            primitive_task_defs=primitive_task_defs_str,
+            supported_labels=supported_labels_str,
+        ),
+    )
+
+    # Process each semantic task one at a time
+    all_primitive_tasks = []
+    # Sort the tree to ensure consistent ordering (especially for dependencies)
+    sorted_tree = sorted(tree, key=lambda x: x.id)
+    # converted task id to label mapping
+    task_id_to_label = {}
+
+    # Create a formatted string function for a single task
+    task_to_string = lambda _task: f"""
+    <semantic_task>
+        <id>{_task.id}</id>
+        <label>{_task.label}</label>
+        <description>{_task.description}</description>
+        <depend_on>{_task.parentIds}</depend_on>
+    </semantic_task>
+    """
+
+    manual_tasks_index = len(sorted_tree)
+    # Iterate through each semantic task
+    for i, semantic_task in enumerate(sorted_tree):
+        if i == 0:
+            continue
+        # Create the user message for this specific semantic task
+        user_message = f"""
+        I need to implement this semantic task:
+        {task_to_string(semantic_task)}
+        
+        Please decompose this semantic task into the necessary primitive NLP tasks that together would accomplish this goal.
+        If this task depends on outputs from other primitive tasks, make sure to specify the dependencies correctly.
+        Please consider the previous and next semantic tasks when decomposing the current task. DO NOT create duplicate primitive tasks that potentially belongs to the previous or next semantic tasks.
+
+        The previous semantic task is:
+        {task_to_string(sorted_tree[i - 1]) if i != 1 else "None"}
+        The next semantic task is:
+        {task_to_string(sorted_tree[i + 1]) if i != len(sorted_tree) - 1 else "None"}
+        """
+
+        # If there are already processed tasks, mention them for context
+        if all_primitive_tasks:
+            # Get the primitive tasks we've already created
+            previous_tasks_str = ""
+            for pt in all_primitive_tasks:
+                previous_tasks_str += f"""
+                <primitive_task>
+                    <id>{pt['id']}</id>
+                    <label>{pt['label']}</label>
+                    <solves>{pt['solves']}</solves>
+                </primitive_task>
+                """
+
+            user_message += f"""
+            Here are the primitive tasks I've already created for other semantic tasks:
+            {previous_tasks_str}
+            
+            You can reference these existing primitive tasks in the 'depend_on' field if appropriate.
+            """
+
+        # Get the primitive tasks for this semantic task
+        result = await retry_llm_json_extraction(
+            llm_call_func=decomposition_to_primitive_task_agent.on_messages,
+            llm_call_args=([TextMessage(content=user_message, source="user")],),
+            llm_call_kwargs={"cancellation_token": CancellationToken()},
+            expected_key="primitive_tasks",
+            max_retries=3,
+            retry_delay=1.0,
+            backoff_factor=2.0,
+        )
+
+        # If we got valid results, add them to our collection
+        if result:
+            # Manually add tasks to fix known issues.
+            manual_tasks_to_add = []
+            # update the task id to label mapping
+            for task in result:
+                task_id_to_label[task['id']] = task['label']
+            for task_index, task in enumerate(result):
+                primitive_def = label_to_attribute_mapping.get(task['label'])
+                if primitive_def:
+                    manual_added_task = {}
+                    # If a task should not depend on multiple parents, add an intermediate task to combine the inputs.
+                    # let's not do this for now, since the user can always select the unit and input key based on their needs.
+                    # if primitive_def.get('allow_multiple_parents') == 'false' and len(task.get('depend_on', [])) > 1:
+                    #     # Create a new "Data Transformation" primitive task
+                    #     manual_added_task['id'] = f'Data Transformation-{manual_tasks_index}'
+                    #     manual_added_task['description'] = f"Combine outputs from {', '.join(task['depend_on'])} for input into {task['id']}."
+                    #     manual_added_task['explanation'] = f"Intermediate step to consolidate multiple inputs ({', '.join(task['depend_on'])}) required by {task['label']} ({task['id']}), which does not allow multiple parents."
+                    #     manual_added_task['label'] = 'Data Transformation' # Or potentially Insights Summarization
+                    #     manual_added_task['depend_on'] = task['depend_on']
+                    #     manual_added_task['solves'] = task['solves'] # Associate with the same semantic task
+
+                    # Automatically add an Embedding Generation task if tasks that require vector representations are selected but the dependency is not Embedding Generation or Dimensionality Reduction.
+                    if task.get('label') in ['Clustering Analysis', 'Dimensionality Reduction'] and not any(task_id_to_label[dep] in ['Embedding Generation', 'Dimensionality Reduction'] for dep in task.get('depend_on', [])):
+                        manual_added_task['id'] = f'Embedding Generation-{manual_tasks_index}'
+                        manual_added_task['description'] = f"Generate embeddings to produce vector representations for the previous output data."
+                        manual_added_task['explanation'] = f"Embedding Generation is a prerequisite for Further Analysis."
+                        manual_added_task['label'] = 'Embedding Generation'
+                        manual_added_task['depend_on'] = task['depend_on']
+                        manual_added_task['solves'] = task['solves']
+
+                    # Other potential manual fixes:
+                    # - If a task has duplicated IDs, change the ID to be unique.
+
+                    # Update the original task to depend on the new intermediate task
+                    if manual_added_task:
+                        task_id_to_label[manual_added_task['id']] = manual_added_task['label']
+                        task['depend_on'] = [manual_added_task['id']]
+                        manual_tasks_to_add.append(manual_added_task)
+                        manual_tasks_index += 1
+
+            # Add any newly created intermediate tasks to the result list
+            result.extend(manual_tasks_to_add)
+            # Add these primitive tasks to our overall collection
+            all_primitive_tasks.extend(result)
+
+    # Return all primitive tasks from all semantic tasks
+    return all_primitive_tasks
+
 async def run_decomposition_to_primitive_task_agent(
     tree: list[Node],
     primitive_task_list: list[PrimitiveTaskDescription],

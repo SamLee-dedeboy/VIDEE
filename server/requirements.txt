@@ -9,6 +9,7 @@ autogen-ext[openai]==0.4.7
 autogen-ext[semantic-kernel-anthropic]
 
 google-genai
+google-generativeai
 vertexai
 ag2[gemini]
 langgraph

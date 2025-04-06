@@ -54,7 +54,7 @@ async def one_shot_decomposition_to_primitive_task(
         target_task (str): The target task to decompose. If None, decompose all tasks.
     """
     decomposed_primitive_tasks = (
-        await autogen_utils.run_decomposition_to_primitive_task_agent(
+        await autogen_utils.run_stepped_decomposition_to_primitive_task_agent(
             tree=semantic_tasks,
             primitive_task_list=primitive_task_list,
             model=model,
