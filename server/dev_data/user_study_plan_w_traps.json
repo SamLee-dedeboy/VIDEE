@@ -11,11 +11,68 @@
     },
     {
         "solves": "",
+        "id": "0.03722494503340601",
+        "label": "Summarization",
+        "description": "Creates a shorter version of the text while keeping key information.",
+        "explanation": "N/A",
+        "parentIds": [],
+        "children": [
+            "0.7674486994999428"
+        ],
+        "recompile_needed_IO": false,
+        "recompile_needed_parameters": false,
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content"
+        ],
+        "state_output_key": "summary",
+        "available_states": {
+            "documents": [
+                {
+                    "key": "content",
+                    "schema": "str"
+                }
+            ]
+        },
+        "input_keys": [
+            {
+                "key": "content",
+                "schema": "str"
+            }
+        ],
+        "execution": {
+            "tool": "prompt_tool",
+            "parameters": {
+                "name": "Summarization",
+                "model": "gpt-4o-mini",
+                "api_key": "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",
+                "format": "json",
+                "prompt_template": [
+                    {
+                        "role": "system",
+                        "content": "\n                ** Context **\n                The user wants to create a concise summary of the provided text while retaining the essential information.\n                ** Task **\n                Analyze the text and generate a shorter version that captures the key points and main ideas.\n                ** Requirements **\n                Ensure that the summary is coherent and includes all critical information from the original text without adding any new information.\n                Reply with the following JSON format:\n                {{\"summary\": \"str\"}}\n                "
+                    },
+                    {
+                        "role": "human",
+                        "content": "content: {content}"
+                    }
+                ],
+                "input_key_schemas": {
+                    "content": "str"
+                },
+                "output_schema": "str"
+            }
+        }
+    },
+    {
+        "solves": "",
         "id": "0.7674486994999428",
         "label": "Embedding Generation",
         "description": "Converts the content into embeddings for further analysis.",
         "explanation": "N/A",
-        "parentIds": [],
+        "parentIds": [
+            "0.03722494503340601"
+        ],
         "children": [
             "0.19142034688688014"
         ],
@@ -51,6 +108,10 @@
                 {
                     "key": "content",
                     "schema": "str"
+                },
+                {
+                    "key": "summary",
+                    "schema": "str"
                 }
             ]
         }
@@ -68,14 +129,14 @@
             "0.7507854916663534"
         ],
         "recompile_needed_IO": false,
-        "recompile_needed_parameters": false,
+        "recompile_needed_parameters": true,
         "state_input_key": "documents",
         "doc_input_keys": [
-            "content"
+            "summary"
         ],
         "input_keys": [
             {
-                "key": "content",
+                "key": "summary",
                 "schema": "str"
             }
         ],
@@ -85,10 +146,10 @@
             "parameters": {
                 "name": "Clustering Analysis",
                 "algorithm": "kmeans",
-                "feature_key": "embeddings",
+                "feature_key": "summary",
                 "n_clusters": 5,
                 "input_key_schemas": {
-                    "content": "str"
+                    "summary": "str"
                 },
                 "init": "k-means++",
                 "n_init": 10,
@@ -100,6 +161,10 @@
             "documents": [
                 {
                     "key": "content",
+                    "schema": "str"
+                },
+                {
+                    "key": "summary",
                     "schema": "str"
                 },
                 {
@@ -135,7 +200,7 @@
         "solves": "",
         "id": "0.7507854916663534",
         "label": "Data Transformation",
-        "description": "Groups the document content by cluster labels.",
+        "description": "Groups the summaries by cluster ids.",
         "explanation": "N/A",
         "parentIds": [
             "0.19142034688688014"
@@ -147,31 +212,41 @@
         "recompile_needed_parameters": false,
         "state_input_key": "documents",
         "doc_input_keys": [
-            "content"
+            "cluster_id",
+            "summary"
         ],
         "input_keys": [
             {
-                "key": "content",
+                "key": "cluster_id",
+                "schema": "int"
+            },
+            {
+                "key": "summary",
                 "schema": "str"
             }
         ],
-        "state_output_key": "grouped_documents",
+        "state_output_key": "grouped_results",
         "execution": {
             "tool": "data_transform_tool",
             "parameters": {
                 "name": "Data Transformation",
                 "operation": "transform",
                 "input_key_schemas": {
-                    "content": "str"
+                    "cluster_id": "int",
+                    "summary": "str"
                 },
-                "transform_code": "def transform(data):\n    grouped_content = {}\n    for doc in data:\n        cluster_label = doc.get('cluster_id')\n        if cluster_label not in grouped_content:\n            grouped_content[cluster_label] = []\n        grouped_content[cluster_label].append(doc['content'])\n    return {'grouped_documents': [{'cluster_id': cluster_id, 'contents': contents} for cluster_id, contents in grouped_content.items()]}",
-                "output_schema": "list[{\"cluster_id\": \"str\", \"contents\": \"list[str]\"}]"
+                "transform_code": "def transform(data):\n    grouped_summaries = {}\n    for doc in data:\n        cluster_id = doc['cluster_id']\n        summary = doc['summary']\n        if cluster_id not in grouped_summaries:\n            grouped_summaries[cluster_id] = []\n        grouped_summaries[cluster_id].append(summary)\n    return {'grouped_summaries': [{'cluster_id': cluster_id, 'summaries': summaries} for cluster_id, summaries in grouped_summaries.items()]}",
+                "output_schema": "list[{\"cluster_id\": \"int\", \"summaries\": \"list[str]\"}]"
             }
         },
         "available_states": {
             "documents": [
                 {
                     "key": "content",
+                    "schema": "str"
+                },
+                {
+                    "key": "summary",
                     "schema": "str"
                 },
                 {
@@ -189,7 +264,8 @@
                     "schema": "float"
                 }
             ]
-        }
+        },
+        "recompile_skip_parameters": false
     },
     {
         "solves": "",
@@ -203,16 +279,20 @@
         "children": [],
         "recompile_needed_IO": false,
         "recompile_needed_parameters": false,
-        "state_input_key": "grouped_documents",
+        "state_input_key": "grouped_results",
         "doc_input_keys": [
             "cluster_id",
-            "contents"
+            "summaries"
         ],
-        "state_output_key": "labels",
+        "state_output_key": "cluster_label",
         "available_states": {
             "documents": [
                 {
                     "key": "content",
+                    "schema": "str"
+                },
+                {
+                    "key": "summary",
                     "schema": "str"
                 },
                 {
@@ -224,8 +304,8 @@
                     "schema": "int"
                 },
                 {
-                    "key": "grouped_documents",
-                    "schema": "list[{\"cluster_id\": \"str\", \"contents\": \"list[str]\"}]"
+                    "key": "grouped_results",
+                    "schema": "list[{\"cluster_id\": \"int\", \"summaries\": \"list[str]\"}]"
                 }
             ],
             "embeddings": [
@@ -234,13 +314,13 @@
                     "schema": "float"
                 }
             ],
-            "grouped_documents": [
+            "grouped_results": [
                 {
                     "key": "cluster_id",
-                    "schema": "str"
+                    "schema": "int"
                 },
                 {
-                    "key": "contents",
+                    "key": "summaries",
                     "schema": "list[str]"
                 }
             ]
@@ -248,10 +328,10 @@
         "input_keys": [
             {
                 "key": "cluster_id",
-                "schema": "str"
+                "schema": "int"
             },
             {
-                "key": "contents",
+                "key": "summaries",
                 "schema": "list[str]"
             }
         ],
@@ -265,18 +345,18 @@
                 "prompt_template": [
                     {
                         "role": "system",
-                        "content": "** Context **\nThe user wants to generate labels for each cluster of documents based on the content within those clusters. This involves analyzing the text in each cluster to identify key themes or topics that can serve as appropriate labels.\n** Task **\nAnalyze the content of each cluster in the grouped_documents to extract key themes or topics that can be used as labels. Provide a suitable label for each cluster based on the analysis of its contents.\n** Requirements **\nEnsure that the labels are concise and accurately reflect the main ideas present in the cluster's content. Each label should be unique to its respective cluster.\nReply with the following JSON format:\n{{\"labels\": list[str]}}"
+                        "content": "** Context **\nThe user wants to generate labels for each cluster based on the content of the documents. This involves analyzing the grouped results of the documents to identify key themes or topics that can serve as appropriate labels for each cluster.\n** Task **\nAnalyze the 'grouped_results' from the documents to extract meaningful labels for each cluster. Each label should encapsulate the main idea or theme represented by the summaries within that cluster.\n** Requirements **\nEnsure that the labels are concise and accurately reflect the content of the summaries in each cluster. The output should be a list of labels corresponding to each cluster ID.\nReply with the following JSON format:\n{{\"cluster_label\": str}}"
                     },
                     {
                         "role": "human",
-                        "content": "cluster_id: {cluster_id}\ncontents: {contents}"
+                        "content": "cluster_id: {cluster_id}\nsummaries: {summaries}"
                     }
                 ],
                 "input_key_schemas": {
-                    "cluster_id": "str",
-                    "contents": "list[str]"
+                    "cluster_id": "int",
+                    "summaries": "list[str]"
                 },
-                "output_schema": "list[{\"cluster_id\": \"str\", \"label\": \"str\"}]"
+                "output_schema": "list[{\"cluster_id\": \"int\", \"label\": \"str\"}]"
             }
         },
         "existing_keys": [
