@@ -137,12 +137,12 @@ export class RadialTopicChart {
           }
           const simulation = d3
             .forceSimulation(data_w_coordinates)
-            .alphaMin(0.05)
-            .force("forceX", d3.forceX().x((d) => d.coordinates_2d[0]).strength(0.13))
-            .force("forceY", d3.forceY().y((d) => d.coordinates_2d[1]).strength(0.13))
+            .alphaMin(0.03)
+            .force("forceX", d3.forceX().x((d) => d.coordinates_2d[0]).strength(0.15))
+            .force("forceY", d3.forceY().y((d) => d.coordinates_2d[1]).strength(0.15))
             .force(
               "collide",
-              d3.forceCollide((d) => d.r * 1.3),
+              d3.forceCollide((d) => d.r * 1.5),
             )
             .on("tick", function () {
               enter_nodes.each(function (d) {

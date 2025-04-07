@@ -32,12 +32,15 @@
       console.log("Goal changed to", goal);
     }}
   >
-    I have a dataset of UIST paper abstracts. I want to extract high-level
-    concepts from the abstracts to understand research topics and trends.
-    <!-- I have a dataset of interview transcripts and I am going to do thematic
-    analysis. Help me design a codebook, annotate the transcripts with the
-    codebook, and then summarize findings -->
+    <!-- I have a dataset of UIST paper abstracts. I want to extract high-level
+    concepts from the abstracts. -->
+    <!-- I have a dataset of interview transcripts and I am going to do thematic analysis.
+    I want to develop a codebook from analysis of the corpus, and annotate the transcripts
+    with the codebook. -->
     <!-- I want to analyze media bias in news articles using knowledge graphs. -->
+    <!-- I want to generate high-level concepts from my dataset of UIST abstracts -->
+    I have a dataset of customer comments and I want to analyze the dataset to discover
+    interesting themes in customer feedback.
   </div>
   <div class="flex flex-col gap-y-1">
     <button

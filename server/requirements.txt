@@ -7,7 +7,7 @@ autogen-agentchat==0.4.7
 autogen-agentchat[gemini,retrievechat,lmm]==0.4.7
 autogen-ext[openai]==0.4.7
 autogen-ext[semantic-kernel-anthropic]
-
+google-generativeai
 google-genai
 google-generativeai
 vertexai

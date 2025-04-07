@@ -2,8 +2,8 @@ import * as d3 from "d3";
 import type { tDRResult, tExecutionEvaluatorResult } from "types";
 export class RadialEvaluationChart {
   svgId: string;
-  width: number = 300;
-  height: number = 300;
+  width: number = 400;
+  height: number = 400;
   padding = {
     left: 3,
     right: 3,
@@ -68,9 +68,10 @@ export class RadialEvaluationChart {
     this.dispatch.on(event, handler);
   }
   update(data: tDRResult[], evaluation_result: tExecutionEvaluatorResult, highlight_ids: string[] | undefined, func_id = (d) => d.id, func_value = (d) => d.value) {
+    console.log({possible_scores: evaluation_result.possible_scores })
     const self = this;
     const svg = d3.select("#" + this.svgId);
-    const circle_radius = 1.5
+    const circle_radius = 2
     const clusters = data
       .map((d) => d.cluster)
       .reduce((acc, cur) => {
@@ -91,7 +92,7 @@ export class RadialEvaluationChart {
     this.polarRadiusScale = d3
       .scaleBand()
       .domain(evaluation_result.possible_scores)
-      .range([30, Math.min(this.innerSize.width, this.innerSize.height) / 2]);
+      .range([3, Math.min(this.innerSize.width, this.innerSize.height)/ 2]);
 
       // .scaleLinear()
       // .domain([0, 1])
@@ -107,7 +108,8 @@ export class RadialEvaluationChart {
           self.innerSize.center,
           cluster_angles[datum.cluster].mid,
           // datum.angle,
-          self.polarRadiusScale(func_value(datum)) - self.polarRadiusScale.bandwidth() / 2,
+          self.polarRadiusScale(func_value(datum)),
+          // self.polarRadiusScale(func_value(datum)) - self.polarRadiusScale.bandwidth() / 2,
         ),
       };
     });
@@ -153,23 +155,30 @@ export class RadialEvaluationChart {
                   this.innerSize.center[0],
                   this.innerSize.center[1],
                 )
-                .radius((d) => self.polarRadiusScale(func_value(d)) - self.polarRadiusScale.bandwidth() / 2)
-                .strength(1),
+                // .radius((d) => self.polarRadiusScale(func_value(d)) - 20 )
+                .radius((d) => self.polarRadiusScale(func_value(d)) + self.polarRadiusScale.bandwidth() / 2)
+                .strength(0.5),
             )
             .force(
               "collide",
-              d3.forceCollide((d) => circle_radius * 1.3),
+              d3.forceCollide((d) => circle_radius * 1.5).strength(1.5),
             )
             .on("tick", function () {
               enter_nodes.each(function (d) {
-                d.x = clip(d.x, [
+                let clipped_x = clip(d.x, [
                   self.innerSize.x + circle_radius,
                   self.innerSize.x + self.innerSize.width - circle_radius,
                 ]);
-                d.y = clip(d.y, [
+                if(clipped_x !== d.x) {
+                  d.x = d.coordinates_2d[0];
+                }
+                let clipped_y = clip(d.y, [
                   self.innerSize.y + circle_radius,
                   self.innerSize.y + self.innerSize.height - circle_radius,
                 ]);
+                if(clipped_y !== d.y) {
+                  d.y = d.coordinates_2d[1]
+                }
                 [d.x, d.y] = clipClusterRange(
                   d.x,
                   d.y,
@@ -224,7 +233,7 @@ export class RadialEvaluationChart {
       .join("text")
       .text((d) => d)
       .attr("x", this.innerSize.center[0])
-      .attr("y", (d) => this.innerSize.center[1] - this.polarRadiusScale(d) + this.polarRadiusScale.bandwidth() / 2)
+      .attr("y", (d) => this.innerSize.center[1] - this.polarRadiusScale(d) - this.polarRadiusScale.bandwidth() / 4)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "middle")
       .attr("font-size", 10)
@@ -312,7 +321,7 @@ export class RadialEvaluationChart {
                 self.innerSize.center,
                 // cluster_angles[d].mid,
                 cluster_angles[d].start + (cluster_angles[d].range * 1.1) / 2,
-                Math.min(self.innerSize.width, self.innerSize.height) / 2.5,
+                Math.min(self.innerSize.width, self.innerSize.height) / 4,
               )[0]
           )
           .attr(
@@ -322,7 +331,7 @@ export class RadialEvaluationChart {
                 self.innerSize.center,
                 // cluster_angles[d].mid,
                 cluster_angles[d].start + (cluster_angles[d].range * 1.1) / 2,
-                Math.min(self.innerSize.width, self.innerSize.height) / 2.5,
+                Math.min(self.innerSize.width, self.innerSize.height) / 4,
               )[1],
           )
           .attr("text-anchor", "middle")
@@ -347,7 +356,7 @@ export class RadialEvaluationChart {
           .attr("fill", "white")
           .attr("stroke", "black")
           .attr("stroke-width", 0.5)
-          .attr("opacity", 0.5)
+          .attr("opacity", 0.75)
           .lower()
       })
       .on("mouseover", function(e, d) {

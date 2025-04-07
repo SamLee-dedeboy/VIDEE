@@ -10,7 +10,7 @@ Decomposing end-to-end Goal into a text analytics pipeline.
 13. improving the searching strategy
 # Launching
 ## Back-end 
-1. Set up virtual environment 
+1. Set up virtual environment with python 3.11 (for parallel version)
 2. Set up API keys using system environment (Instruction TBD)
 3. run `pip install -r server/requirements.txt`
 3. run `python -m server.main`
