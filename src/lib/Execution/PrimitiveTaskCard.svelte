@@ -110,18 +110,18 @@
         class="font-mono text-sky-900 border-b border-gray-300 text-[1.2rem] italic flex items-center relative"
         style={`border-bottom: ${expand ? "1px solid lightgray" : "unset"}`}
       >
-        <!-- <button
+        <button
           class="card-label mr-2 mt-1 capitalize relative hover:bg-blue-200 rounded px-2 text-left"
           title="Change Label"
           onclick={(e) => (show_label_options = !show_label_options)}
           >{task.label}
-        </button> -->
-        <button
+        </button>
+        <!-- <button
           class="card-label mr-2 mt-1 capitalize relative hover:bg-blue-200 rounded px-2 text-left"
           title="Change Label"
           onclick={(e) => handleToggleExpand(task.id)}
           >{task.label}
-        </button>
+        </button> -->
         <button
           class="shrink-0 ml-auto cursor-pointer hover:bg-blue-300 p-0.5 rounded"
           title="Expand/Hide"

@@ -84,7 +84,7 @@
             few_shot_examples_semantic_tasks[evaluation] = [];
           const example_index = few_shot_examples_semantic_tasks[
             evaluation
-          ].findIndex((t) => t.node.label === task.label);
+          ].findIndex((t) => t.node.MCT_id === task.MCT_id);
           if (example_index === -1) {
             few_shot_examples_semantic_tasks[evaluation].push({
               node: task,
@@ -112,7 +112,7 @@
           if (few_shot_examples_semantic_tasks[evaluation]) {
             const example_index = few_shot_examples_semantic_tasks[
               evaluation
-            ].findIndex((t) => t.node.label === task.label);
+            ].findIndex((t) => t.node.MCT_id === task.MCT_id);
             if (example_index !== -1) {
               few_shot_examples_semantic_tasks[evaluation].splice(
                 example_index,
@@ -356,8 +356,8 @@
   ) {
     console.log("Compiling...", { primitive_tasks, task, session_id });
     controllers.compiling = task?.id;
-    // fetch(`${server_address}/primitive_task/compile/`, {
-    fetch(`${server_address}/primitive_task/compile/dev/`, {
+    fetch(`${server_address}/primitive_task/compile/`, {
+      // fetch(`${server_address}/primitive_task/compile/dev/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -613,7 +613,7 @@
             style={`${show_dag === "execution" ? "background-color: oklch(0.882 0.059 254.128); opacity: 1;" : "background-color: #fafafa;  color: rgba(0, 0, 0, 0.2)"}`}
             onclick={() => {
               show_dag = "execution";
-              playTransitionToExecution();
+              // playTransitionToExecution();
             }}>Execution</button
           >
         </div>

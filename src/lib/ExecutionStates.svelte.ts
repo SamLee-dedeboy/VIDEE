@@ -4,7 +4,7 @@ import type { tSemanticTask, tExecutionEvaluator, tPrimitiveTask, tExecutionStat
 
 export let session_id: string = $state("312321321312321");
 // let random_session_id = Math.random().toString(36).substring(2, 15);
-export const likert_scale_num = 3;
+export const likert_scale_num = 4;
 let semantic_tasks: tSemanticTask[] = $state([])
 let select_strategy: string = $state("UCT") // UCT, greedy
 
@@ -146,8 +146,8 @@ export const primitiveTaskState = {
     },
     reset_flags() {
         primitiveTasks.forEach(t => {
-            // t.recompile_needed_IO = false
-            // t.recompile_needed_parameters = false
+            t.recompile_needed_IO = false
+            t.recompile_needed_parameters = false
             t.execute_needed = false
         })
     },
