@@ -1,4 +1,4 @@
-# Task Decomposition
+# VIDEE
 Decomposing end-to-end Goal into a text analytics pipeline.
 
 ## TODOs
