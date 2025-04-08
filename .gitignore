@@ -157,3 +157,4 @@ gemini_api_key
 evaluation_experiments/transcription
 evaluation_experiments/results/**/*.json
 server/dev_data/*.json
+*.csv
