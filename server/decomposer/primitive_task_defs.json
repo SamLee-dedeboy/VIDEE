@@ -2,85 +2,106 @@
   {
     "label": "Entity Extraction",
     "definition": "Finds and categorizes entities like names, places, and dates.",
-    "input": "Sentence/Paragraph/Document",
-    "output": "Entities"
+    "input": "Text",
+    "allow_multiple_parents": "true",
+    "output": "List[Entity]"
   },
   {
     "label": "Relationship Extraction",
     "definition": "Finds relationships between entities in text.",
-    "input": "Sentence/Paragraph/Document",
-    "output": "Entity relationships"
+    "input": "Text",
+    "allow_multiple_parents": "true",
+    "output": "List[Relationship]"
   },
   {
     "label": "Sentiment Analysis",
     "definition": "Identifies the sentiment of the text as positive, negative, or neutral.",
-    "input": "Sentence/Paragraph/Document",
-    "output": "Sentiment"
+    "input": "Text",
+    "allow_multiple_parents": "true",
+    "output": "Text (Sentiment Label)"
   },
   {
     "label": "Document Classification",
     "definition": "Assigns categories to a document based on its content.",
-    "input": "Document/Corpus",
-    "output": "Categories"
+    "input": "Text",
+    "allow_multiple_parents": "true",
+    "output": "List[Category Label (Text)]" 
   },
   {
     "label": "Label Generation",
     "definition": "Generates keywords or labels summarizing a document.",
-    "input": "Document/Document+Context",
-    "output": "Labels"
+    "input": "Text",
+    "allow_multiple_parents": "true",
+    "output": "List[Keyword Label (Text)]"
   },
   {
     "label": "Summarization",
     "definition": "Creates a shorter version of the text while keeping key information.",
-    "input": "Document/Corpus",
-    "output": "Summary"
+    "input": "Text",
+    "allow_multiple_parents": "true",
+    "output": "Text (Summary)"
   },
   {
     "label": "Embedding Generation",
-    "definition": "Converts text into numerical representations for analysis.",
-    "input": "Sentence/Paragraph/Document",
-    "output": "Embeddings"
+    "definition": "Converts text into numerical vector representations for analysis.",
+    "input": "Text",
+    "allow_multiple_parents": "true",
+    "output": "Vector Representation"
   },
   {
     "label": "Clustering Analysis",
-    "definition": "Groups similar texts together based on content or structure.",
-    "input": "Document/Corpus",
-    "output": "Clusters"
+    "definition": "Groups similar items together based on their vector representation.",
+    "input": "Vector Representation",
+    "allow_multiple_parents": "false",
+    "output": "List[Cluster Label]"
   },
   {
     "label": "Dimensionality Reduction",
-    "definition": "Reduces the number of features in text data while keeping important patterns.",
-    "input": "Document/Corpus",
-    "output": "Reduced features"
+    "definition": "Reduces the number of dimensions in vector representations while preserving important patterns.",
+    "input": "Vector Representation",
+    "allow_multiple_parents": "false",
+    "output": "Vector Representation"
   },
   {
     "label": "Data Transformation",
-    "definition": "Converts text into a different format for analysis or modeling.",
-    "input": "Sentence/Paragraph/Document",
-    "output": "Transformed text"
+    "definition": "Converts data into a different format or structure for analysis or modeling.",
+    "input": "Any",
+    "allow_multiple_parents": "true",
+    "output": "Transformed Data"
   },
   {
     "label": "Machine Translation",
     "definition": "Translates text from one language to another.",
-    "input": "Sentence/Paragraph/Document",
-    "output": "Translated text"
+    "input": "Text",
+    "allow_multiple_parents": "true",
+    "output": "Translated Text"
   },
   {
     "label": "Question Answering",
     "definition": "Finds answers to questions based on a given text.",
-    "input": "Sentence/Paragraph/Document+Context",
-    "output": "Answer"
+    "input": "Text",
+    "allow_multiple_parents": "true",
+    "output": "Answer (Text)"
   },
   {
     "label": "Natural Language Inference",
-    "definition": "Determines the relationship between two pieces of text, such as entailment or contradiction.",
-    "input": "Sentence/Paragraph",
-    "output": "Inference label"
+    "definition": "Determines the relationship (e.g., entailment, contradiction) between two pieces of text.",
+    "input": "Text",
+    "allow_multiple_parents": "true",
+    "output": "Inference Label (Text)"
   },
   {
     "label": "Segmentation",
-    "definition": "Splits text into meaningful parts like sentences, paragraphs, or topics.",
-    "input": "Document/Corpus",
-    "output": "Segments"
+    "definition": "Splits text into meaningful segments like sentences, paragraphs, or topics.",
+    "input": "Text",
+    "allow_multiple_parents": "true",
+    "output": "List[Text Segment]"
+  },
+  {
+    "label": "Insights Summarization",
+    "definition": "Synthesizes key insights and findings from previous analysis results or multiple data sources.",
+    "input": "Any Structured/Text Data",
+    "allow_multiple_parents": "true",
+    "output": "Insights Summary (Text)"
   }
 ]

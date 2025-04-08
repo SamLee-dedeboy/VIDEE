@@ -39,29 +39,76 @@ async def task_decomposition(
     return current_steps
 
 
-async def decomposition_to_primitive_task(
-    task: str,
-    current_steps: list[Node],
+async def one_shot_decomposition_to_primitive_task(
+    semantic_tasks: list[Node],
     primitive_task_list: list[PrimitiveTaskDescription],
     model: str,
     api_key: str,
 ) -> list:
+    """Decompose a list of semantic tasks into primitive tasks.
+    Args:
+        semantic_tasks (list[Node]): A list of semantic tasks to decompose.
+        primitive_task_list (list[PrimitiveTaskDescription]): A list of primitive tasks.
+        model (str): The model to use for decomposition.
+        api_key (str): The API key to use for decomposition.
+        target_task (str): The target task to decompose. If None, decompose all tasks.
+    """
     decomposed_primitive_tasks = (
-        await autogen_utils.run_decomposition_to_primitive_task_agent(
-            task=task,
-            tree=current_steps,
+        await autogen_utils.run_stepped_decomposition_to_primitive_task_agent(
+            tree=semantic_tasks,
             primitive_task_list=primitive_task_list,
             model=model,
             api_key=api_key,
         )
     )
-
-    for index in range(len(decomposed_primitive_tasks)):
-        decomposed_primitive_tasks[index]["confidence"] = random.random()
-        decomposed_primitive_tasks[index]["complexity"] = random.random()
     decomposed_primitive_tasks = add_parents_and_children(decomposed_primitive_tasks)
+    decomposed_primitive_tasks = add_root(decomposed_primitive_tasks)
     # decomposed_primitive_tasks = add_uids(decomposed_primitive_tasks)
     return decomposed_primitive_tasks
+
+
+async def stream_decomposition_to_primitive_tasks(
+    semantic_tasks: list[Node],
+    primitive_task_list: list[PrimitiveTaskDescription],
+    model: str,
+    api_key: str,
+):
+    """Decompose a list of semantic tasks into primitive tasks.
+    Args:
+        semantic_tasks (list[Node]): A list of semantic tasks to decompose.
+        primitive_task_list (list[PrimitiveTaskDescription]): A list of primitive tasks.
+        model (str): The model to use for decomposition.
+        api_key (str): The API key to use for decomposition.
+        target_task (str): The target task to decompose. If None, decompose all tasks.
+    """
+    # try:
+    semantic_tasks = sorted(semantic_tasks, key=lambda x: x.id)
+    for i, semantic_task in enumerate(semantic_tasks):
+        done_tasks = semantic_tasks[:i]
+        decomposed_primitive_tasks = (
+            await autogen_utils.run_decomposition_to_primitive_task_agent(
+                task=semantic_task,
+                done_tasks=done_tasks,
+                primitive_task_list=primitive_task_list,
+                model=model,
+                api_key=api_key,
+            )
+        )
+        # remap id
+        for i, step in enumerate(decomposed_primitive_tasks):
+            step["id"] = f"{semantic_task.id}-{step['id']}"
+            step["depend_on"] = list(
+                map(lambda d: f"{semantic_task.id}-{d}", step.get("depend_on", []))
+            )
+            decomposed_primitive_tasks[i] = step
+        decomposed_primitive_tasks = add_parents_and_children(
+            decomposed_primitive_tasks
+        )
+        yield semantic_task, decomposed_primitive_tasks
+    # except Exception as e:
+    #     print(f"Error in stream_decomposition_to_primitive_tasks: {e}")
+    #     yield []
+    pass
 
 
 def find_and_replace(decomposed_steps, task_label, current_steps):
@@ -164,6 +211,20 @@ def add_parents_and_children(decomposed_steps):
     for i, step in enumerate(decomposed_steps):
         step["children"] = children_dict[step["id"]]
         decomposed_steps[i] = step
+    return decomposed_steps
+
+
+def add_root(decomposed_steps):
+    root_step = {
+        "id": "-1",
+        "label": "Root",
+        "description": "Root",
+        "explanation": "N/A",
+        "parentIds": [],
+        "children": [],
+        "sub_tasks": [],
+    }
+    decomposed_steps.append(root_step)
     return decomposed_steps
 
 

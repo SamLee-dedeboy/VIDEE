@@ -1,0 +1,185 @@
+[
+    {
+        "solves": "1",
+        "label": "Entity Extraction",
+        "id": "Entity Extraction-1",
+        "description": "Identify and extract named entities such as names, places, and dates from the provided documents.",
+        "explanation": "This task is needed to gather the essential entities that will be used in the subsequent relationship extraction step.",
+        "parentIds": [],
+        "children": [
+            "Relationship Extraction-1"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content"
+        ],
+        "state_output_key": "entities",
+        "execution": {
+            "tool": "prompt_tool",
+            "parameters": {
+                "name": "Entity Extraction",
+                "model": "gpt-4o-mini",
+                "api_key": "",
+                "format": "json",
+                "prompt_template": [
+                    {
+                        "role": "system",
+                        "content": "\n                    ** Context **\n                    The user is trying to identify and extract named entities such as names, places, and dates from a given piece of text. This is a crucial step for gathering essential information that will be used in further analysis, specifically in relationship extraction.\n                    ** Task **\n                    Analyze the provided text to identify and extract all named entities, categorizing them into types such as 'Person', 'Location', and 'Date'. Provide a comprehensive list of these entities along with their respective categories.\n                    ** Requirements **\n                    Ensure that the extracted entities are clearly categorized and that duplicates are removed. The output should be structured in a way that allows easy access to each entity and its type.\n                    Reply with the following JSON format:\n                    {{\"entities\": [{{\"name\": \"str\", \"type\": \"str\"}}]}}\n                    "
+                    },
+                    {
+                        "role": "human",
+                        "content": "content: {content}"
+                    }
+                ],
+                "input_key_schemas": {
+                    "content": "str"
+                },
+                "output_schema": {
+                    "items": {
+                        "name": "str",
+                        "type": "str"
+                    }
+                }
+            }
+        }
+    },
+    {
+        "solves": "2",
+        "label": "Relationship Extraction",
+        "id": "Relationship Extraction-1",
+        "description": "Identify and extract relationships between the previously extracted entities from the documents.",
+        "explanation": "This task is necessary to understand how the entities are connected, which is crucial for building a knowledge graph.",
+        "parentIds": [
+            "Entity Extraction-1"
+        ],
+        "children": [
+            "Data Transformation-1"
+        ],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "content",
+            "entities"
+        ],
+        "state_output_key": "relationships",
+        "execution": {
+            "tool": "prompt_tool",
+            "parameters": {
+                "name": "Relationship Extraction",
+                "model": "gpt-4o-mini",
+                "api_key": "",
+                "format": "json",
+                "prompt_template": [
+                    {
+                        "role": "system",
+                        "content": "\n                    ** Context **\n                    The user wants to identify and extract relationships between entities that have been previously extracted from the documents. This is important for understanding the connections between entities, which is essential for constructing a knowledge graph.\n                    ** Task **\n                    Analyze the provided text to identify and extract relationships between the entities mentioned. Focus on how these entities interact or relate to one another based on the content of the text.\n                    ** Requirements **\n                    Ensure that the relationships are clearly defined and categorized. Provide examples of the types of relationships identified, such as 'friend', 'colleague', 'parent', etc. The output should be comprehensive and cover all relevant relationships found in the text.\n                    Reply with the following JSON format:\n                    {{\"relationships\": [{{\"entity1\": \"str\", \"entity2\": \"str\", \"relationship_type\": \"str\"}}]}}\n                    "
+                    },
+                    {
+                        "role": "human",
+                        "content": "content: {content}\nentities: {entities}"
+                    }
+                ],
+                "input_key_schemas": {
+                    "content": "str",
+                    "entities": {
+                        "items": {
+                            "name": "str",
+                            "type": "str"
+                        }
+                    }
+                },
+                "output_schema": {
+                    "items": {
+                        "entity1": "str",
+                        "entity2": "str",
+                        "relationship_type": "str"
+                    }
+                }
+            }
+        }
+    },
+    {
+        "solves": "3",
+        "label": "Data Transformation",
+        "id": "Data Transformation-1",
+        "description": "Build a knowledge graph using the extracted entities and their relationships.",
+        "explanation": "This task is needed to transform the extracted data into a structured format that represents the knowledge graph.",
+        "parentIds": [
+            "Relationship Extraction-1"
+        ],
+        "children": [],
+        "sub_tasks": [],
+        "state_input_key": "documents",
+        "doc_input_keys": [
+            "entities",
+            "relationships"
+        ],
+        "state_output_key": "transformed_data",
+        "execution": {
+            "tool": "data_transform_tool",
+            "parameters": {
+                "name": "Data Transformation",
+                "operation": "transform",
+                "input_key_schemas": {
+                    "entities": {
+                        "items": {
+                            "name": "str",
+                            "type": "str"
+                        }
+                    },
+                    "relationships": {
+                        "items": {
+                            "entity1": "str",
+                            "entity2": "str",
+                            "relationship_type": "str"
+                        }
+                    }
+                },
+                "output_schema": {
+                    "entities": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "type"
+                            ]
+                        }
+                    },
+                    "relationships": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "entity1": {
+                                    "type": "string"
+                                },
+                                "entity2": {
+                                    "type": "string"
+                                },
+                                "relationship_type": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "entity1",
+                                "entity2",
+                                "relationship_type"
+                            ]
+                        }
+                    }
+                },
+                "transform_code": "def transform(data):\n    knowledge_graph = {\n        'entities': [],\n        'relationships': []\n    }\n    for item in data:\n        knowledge_graph['entities'].extend(item['entities'])\n        knowledge_graph['relationships'].extend(item['relationships'])\n    return knowledge_graph"
+            }
+        }
+    }
+]

@@ -1,0 +1,232 @@
+[
+    [
+        [
+            {
+                "id": "1",
+                "label": "Entity Extraction",
+                "description": "Extract entities and their relationships from the documents.",
+                "explanation": "This step is crucial as it will identify the key entities (such as people, places, organizations) and the relationships between them, which are foundational for constructing a knowledge graph.",
+                "parentIds": [],
+                "confidence": 0.35746426023443134,
+                "complexity": 0.1401374126560878,
+                "children": [
+                    "2",
+                    "3",
+                    "4",
+                    "7"
+                ],
+                "sub_tasks": []
+            },
+            {
+                "id": "2",
+                "label": "Relationship Mapping",
+                "description": "Map the extracted entities to their relationships to form a structured representation.",
+                "explanation": "This step is necessary to organize the extracted entities into a coherent structure that reflects their interconnections, which is essential for constructing a knowledge graph.",
+                "parentIds": [
+                    "1"
+                ],
+                "confidence": 0.16383577151095796,
+                "complexity": 0.6140623083864728,
+                "children": [
+                    "3",
+                    "4",
+                    "7"
+                ],
+                "sub_tasks": []
+            },
+            {
+                "id": "3",
+                "label": "Knowledge Graph Construction",
+                "description": "Construct the knowledge graph using the structured representation of entities and their relationships.",
+                "explanation": "This step is needed to create the actual knowledge graph that will represent the extracted entities and their relationships in a format that can be queried and analyzed.",
+                "parentIds": [
+                    "1",
+                    "2"
+                ],
+                "confidence": 0.4061727945611866,
+                "complexity": 0.7572664067038921,
+                "children": [
+                    "4",
+                    "7"
+                ],
+                "sub_tasks": []
+            },
+            {
+                "id": "4",
+                "label": "Knowledge Graph Evaluation",
+                "description": "Evaluate the constructed knowledge graph for accuracy and completeness.",
+                "explanation": "After constructing the knowledge graph, it is essential to evaluate its quality to ensure that the entities and relationships accurately represent the information from the documents. This step helps identify any gaps or errors that need to be addressed.",
+                "parentIds": [
+                    "1",
+                    "2",
+                    "3"
+                ],
+                "confidence": 0.6371732570122723,
+                "complexity": 0.4216723635134303,
+                "children": [
+                    "5",
+                    "7"
+                ],
+                "sub_tasks": []
+            },
+            {
+                "id": "5",
+                "label": "Knowledge Graph Refinement",
+                "description": "Refine the knowledge graph based on the evaluation results to improve its accuracy and completeness.",
+                "explanation": "After evaluating the knowledge graph, it is essential to refine it by addressing any identified issues or gaps to enhance its quality and usability.",
+                "parentIds": [
+                    "4"
+                ],
+                "confidence": 0.2887930509522485,
+                "complexity": 0.0017879554953701415,
+                "children": [
+                    "6",
+                    "7"
+                ],
+                "sub_tasks": []
+            },
+            {
+                "id": "6",
+                "label": "Knowledge Graph Deployment",
+                "description": "Deploy the refined knowledge graph for use in applications or further analysis.",
+                "explanation": "After refining the knowledge graph based on evaluation results, the next logical step is to deploy it so that it can be utilized in real-world applications or for further analytical purposes.",
+                "parentIds": [
+                    "5"
+                ],
+                "confidence": 0.8219585553326242,
+                "complexity": 0.2554338681668703,
+                "children": [
+                    "7"
+                ],
+                "sub_tasks": []
+            },
+            {
+                "id": "7",
+                "label": "END",
+                "description": "The knowledge graph has been constructed, evaluated, refined, and deployed.",
+                "explanation": "Since all necessary steps for constructing and deploying the knowledge graph have been completed, no further steps are needed.",
+                "parentIds": [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6"
+                ],
+                "confidence": 0.3966175298871033,
+                "complexity": 0.9449560992319109,
+                "children": [],
+                "sub_tasks": []
+            }
+        ],
+        5
+    ],
+    [
+        [
+            {
+                "id": "1",
+                "label": "Entity Extraction",
+                "description": "Extract entities and their relationships from the documents.",
+                "explanation": "This step is crucial as it will identify the key entities (such as people, places, organizations) and the relationships between them, which are foundational for constructing a knowledge graph.",
+                "parentIds": [],
+                "confidence": 0.3197095240723383,
+                "complexity": 0.5964214773655355,
+                "children": [
+                    "2",
+                    "3",
+                    "4"
+                ],
+                "sub_tasks": []
+            },
+            {
+                "id": "2",
+                "label": "Relationship Mapping",
+                "description": "Map the extracted entities to their relationships to form a structured representation.",
+                "explanation": "This step is necessary to organize the extracted entities into a coherent structure that reflects their interconnections, which is essential for constructing a knowledge graph.",
+                "parentIds": [
+                    "1"
+                ],
+                "confidence": 0.0038412957474603937,
+                "complexity": 0.7892829928580634,
+                "children": [
+                    "3",
+                    "4"
+                ],
+                "sub_tasks": []
+            },
+            {
+                "id": "3",
+                "label": "Knowledge Graph Construction",
+                "description": "Construct the knowledge graph using the structured representation of entities and their relationships.",
+                "explanation": "This step is needed to create the actual knowledge graph that will represent the extracted entities and their relationships in a format that can be queried and analyzed.",
+                "parentIds": [
+                    "1",
+                    "2"
+                ],
+                "confidence": 0.9099416224456897,
+                "complexity": 0.39862906660002684,
+                "children": [
+                    "4"
+                ],
+                "sub_tasks": []
+            },
+            {
+                "id": "4",
+                "label": "Knowledge Graph Evaluation",
+                "description": "Evaluate the constructed knowledge graph for accuracy and completeness.",
+                "explanation": "After constructing the knowledge graph, it is essential to evaluate its quality to ensure that the entities and relationships accurately represent the information from the documents. This step helps identify any gaps or errors that need to be addressed.",
+                "parentIds": [
+                    "1",
+                    "2",
+                    "3"
+                ],
+                "confidence": 0.4432190032037666,
+                "complexity": 0.6930081461001385,
+                "children": [
+                    "5"
+                ],
+                "sub_tasks": []
+            },
+            {
+                "id": "5",
+                "label": "Knowledge Graph Refinement",
+                "description": "Refine the knowledge graph based on the evaluation results to improve its accuracy and completeness.",
+                "explanation": "After evaluating the knowledge graph, it is essential to refine it by addressing any identified issues or gaps to enhance its quality and usability.",
+                "parentIds": [
+                    "4"
+                ],
+                "confidence": 0.3029905525572232,
+                "complexity": 0.22829615308781148,
+                "children": [
+                    "6"
+                ],
+                "sub_tasks": []
+            },
+            {
+                "id": "6",
+                "label": "Knowledge Graph Deployment",
+                "description": "Deploy the refined knowledge graph for use in applications or further analysis.",
+                "explanation": "After refining the knowledge graph based on evaluation results, the next logical step is to deploy it so that it can be utilized in real-world applications or for further analytical purposes.",
+                "parentIds": [
+                    "5"
+                ],
+                "confidence": 0.4790333098271051,
+                "complexity": 0.22645448081938135,
+                "children": [],
+                "sub_tasks": []
+            },
+            {
+                "id": "7",
+                "label": "END",
+                "description": "All necessary steps for constructing the knowledge graph have been completed.",
+                "explanation": "You have successfully extracted entities, mapped relationships, constructed the knowledge graph, evaluated it, refined it, and deployed it. No further steps are needed.",
+                "parentIds": [],
+                "confidence": 0.8146334112270973,
+                "complexity": 0.2083212629014516,
+                "children": [],
+                "sub_tasks": []
+            }
+        ],
+        5
+    ]
+]
